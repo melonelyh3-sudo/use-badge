@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base target="_top">
+<title>منصة شارات USE</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#f2f5f8;--surface:#fff;--ink:#152430;--muted:#5b6b78;--line:#d9e1e8;--brand:#1f4e78;--brand-soft:#e3edf6;--btn:#1f4e78;--btn-ink:#fff;--good:#1e7a45;--good-soft:#e0f2e7;--warn:#8a5a00;--warn-soft:#fdf0d5;--bad:#a5302a;--bad-soft:#fbe4e1;--chip:#eaeff3;--shadow:0 1px 2px rgba(21,36,48,.06),0 4px 14px rgba(21,36,48,.05)}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;font-size:15px;line-height:1.7;padding-inline:16px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.app{max-width:1180px;margin:0 auto;padding-block:20px 60px}
+h1,h2,h3,p{margin:0}
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.brand{display:flex;flex-direction:column}
+.brand b{font-size:20px;color:var(--brand);line-height:1.3}
+.brand span{font-size:12.5px;color:var(--muted)}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;flex-wrap:wrap}
+.tab{border:0;background:none;padding:7px 14px;border-radius:7px;cursor:pointer;color:var(--muted);font-weight:500}
+.tab[aria-current="true"]{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.banner{background:var(--warn-soft);color:var(--warn);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:14px}
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--brand)}
+.btn.primary{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
+.btn.bad{color:var(--bad);border-color:var(--bad)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.bar .sp{flex:1}
+input[type=text],input[type=month],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;width:100%}
+select,input.inl{width:auto}
+textarea{resize:vertical;min-height:84px;line-height:1.7}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:12px;color:var(--muted);font-weight:600;text-align:right;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr.row{cursor:pointer}
+tbody tr.row:hover{background:var(--brand-soft)}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:13px;direction:ltr;unicode-bidi:embed}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:99px;white-space:nowrap}
+.p-ok{background:var(--good-soft);color:var(--good)}.p-wait{background:var(--warn-soft);color:var(--warn)}.p-no{background:var(--bad-soft);color:var(--bad)}.p-na{background:var(--chip);color:var(--muted)}
+.dots{display:flex;gap:4px}
+.dot{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font-size:11px;font-weight:700;direction:ltr;border:1.5px solid transparent}
+.d-Met{background:var(--btn);color:var(--btn-ink)}
+.d-NotMet{background:var(--bad-soft);color:var(--bad)}
+.d-NA{background:var(--chip);color:var(--muted)}
+.d-Incomplete{border:1.5px dashed var(--warn);color:var(--warn);background:transparent}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted);padding:12px 14px;border-top:1px solid var(--line)}
+.legend span{display:flex;align-items:center;gap:6px}
+.empty{padding:44px 20px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+/* editor */
+.ed{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+.ed-main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.ed-rail{position:sticky;top:12px;display:flex;flex-direction:column;gap:14px}
+@media (max-width:920px){.ed{grid-template-columns:1fr}.ed-rail{position:static;order:-1}}
+.sec{padding:16px 18px}
+.sec h3{font-size:15px;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.bcard{overflow:hidden}
+.bhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:12px 18px;background:var(--brand-soft)}
+.bhead b{color:var(--brand);font-size:16px}
+.bdef{font-size:13px;color:var(--muted);padding:10px 18px 0}
+.q{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:start;padding:12px 18px;border-top:1px solid var(--line)}
+.q.disq{background:var(--bad-soft)}
+.q.gate{background:var(--brand-soft)}
+.code{font-size:12px;font-weight:700;color:var(--muted);direction:ltr;padding-top:3px}
+.qt{font-size:14.5px}
+.tagt{display:block;width:fit-content;font-size:11px;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--chip);color:var(--muted);margin-top:4px;direction:rtl}
+.qb-head .tagt{display:inline-block;margin:0}
+.qtext{display:block;font-size:14.5px;line-height:1.8}
+.q.disq .tagt{background:var(--surface);color:var(--bad)}
+.q.gate .tagt{background:var(--surface);color:var(--brand)}
+details{margin-top:4px;font-size:13px;color:var(--muted)}
+summary{cursor:pointer;width:fit-content}
+details p{margin-top:3px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:6px 16px;cursor:pointer;font-weight:600;min-width:58px}
+.seg button+button{border-inline-start:1px solid var(--line)}
+.seg button[aria-pressed="true"][data-v="Y"]{background:var(--btn);color:var(--btn-ink)}
+.seg button[aria-pressed="true"][data-v="N"]{background:var(--ink);color:var(--surface)}
+.q.disq .seg button[aria-pressed="true"][data-v="Y"]{background:var(--bad);color:#fff}
+.seg button[disabled]{cursor:not-allowed;opacity:.6}
+.skip{padding:12px 18px;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line)}
+.ev{padding:12px 18px 16px;border-top:1px solid var(--line)}
+.ev label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
+.ev .req{color:var(--bad);font-weight:600}
+.rail-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;font-size:14px}
+.issues{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.issues li{background:var(--warn-soft);color:var(--warn);padding:6px 10px;border-radius:6px}
+.ok-msg{background:var(--good-soft);color:var(--good);padding:8px 10px;border-radius:6px;font-size:13.5px;font-weight:500}
+.save{font-size:12.5px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpi{padding:14px 16px}
+.kpi span{font-size:12.5px;color:var(--muted);display:block}
+.kpi b{font-size:26px;font-variant-numeric:tabular-nums;line-height:1.3}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.meter{display:flex;align-items:center;gap:8px;min-width:130px}
+.meter i{display:block;height:8px;border-radius:4px;background:var(--btn);min-width:2px}
+.meter .track{flex:1;background:var(--chip);border-radius:4px;height:8px;display:flex}
+.cycle{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;overflow:hidden}
+.cy{padding:12px 14px;border-inline-start:1px solid var(--line)}
+.cy:first-child{border-inline-start:0}
+.cy.now{background:var(--brand-soft)}
+.cy .d{font-size:12px;font-weight:700;color:var(--brand);direction:ltr;text-align:right}
+.cy .n{font-weight:600}.cy .o{font-size:12.5px;color:var(--muted)}
+h2.sh{font-size:16px;margin:22px 0 10px}
+.note{font-size:13px;color:var(--muted);margin-top:8px;max-width:75ch}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid var(--line)}
+.toggle:first-child{border-top:0}
+.toggle small{display:block;color:var(--muted);font-size:12.5px}
+.toggle input[type=checkbox]{width:20px;height:20px}
+.tabs-sub{margin-bottom:10px}
+/* v3 */
+button.kpi{cursor:pointer;text-align:start;font:inherit;color:inherit;width:100%}
+button.kpi:hover{border-color:var(--brand)}
+button.kpi[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft)}
+.blist{display:flex;flex-direction:column;gap:10px}
+.binfo{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px}
+.binfo-main{flex:1;min-width:220px}
+.binfo-head{display:flex;align-items:center;gap:10px}
+.binfo-head b{font-size:16px}
+.qb{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px}
+.qb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.role{display:flex;gap:10px;align-items:center}
+
+.login{max-width:400px;margin:40px auto;padding:22px}
+.login h2{font-size:17px;margin-bottom:8px}
+.who{font-size:13px;color:var(--muted)}
+.codebox{margin-top:14px;padding:14px;border-radius:8px;background:var(--good-soft);color:var(--good)}
+.codebox .big{font-size:26px;font-weight:700;letter-spacing:3px;margin:8px 0;text-align:center}
+
+.lrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}.lrow input[type=text]{flex:1}
+#postCv{width:100%;max-width:540px;height:auto;border-radius:10px;box-shadow:var(--shadow);display:block;margin:0 auto}
+
+#logoImg{height:34px;width:auto;display:block;margin-bottom:2px;object-fit:contain}
+.aichip{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--good-soft);color:var(--good);margin-inline-start:6px;vertical-align:middle}
+
+/* ===== هوية Training Operations Hub (V17) ===== */
+:root{--navy:#003261;--navy-2:#0a4a86;--blue:#2FB3DF;--bg:#f4f7fb;--surface:#fff;--ink:#1a2b45;--muted:#6b7c93;--line:#dce4ef;--row-alt:#f8fafd;
+ --brand:#003261;--btn:#003261;--btn-ink:#fff;--brand-soft:#e5f0fb;--good:#1f9d55;--good-soft:#e7f7ee;--warn:#b8720a;--warn-soft:#fff4e2;--bad:#c0392b;--bad-soft:#fdecea;--chip:#eef2f7;--shadow:none;color-scheme:light}
+body{font-family:'Inter','IBM Plex Sans Arabic',system-ui,sans-serif;font-size:14px;background:var(--bg);color:var(--ink);padding-inline:0}
+.topbar{background:var(--navy);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.topbar .brand{display:flex;flex-direction:row;align-items:center;gap:12px;min-width:0}
+body{margin:0}
+.tabs:empty{display:none}
+#logoBox{width:44px;height:44px;border-radius:8px;background:rgba(255,255,255,.12);border:1.5px dashed rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#aecbe6;overflow:hidden;flex-shrink:0}
+#logoBox.has-img{background:#fff;border:0;padding:4px}
+#logoBox img{width:100%;height:100%;object-fit:contain}
+.topbar h1{font-size:21px;margin:0;font-weight:800;line-height:1.3}
+.dept-label{display:block;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.55);direction:ltr;text-align:right}
+.topbar p{margin:0;font-size:12px;color:var(--blue)}
+.role-indicator{display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap}
+.role-indicator .rbadge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:5px 12px;border-radius:20px;font-weight:600;font-size:12px}
+.role-indicator .who{color:#fff;font-weight:600}
+.role-indicator .btn{background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px}
+.role-indicator .btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.6)}
+.app{max-width:1400px;margin:0 auto;padding:18px 16px 60px}
+.tabs{display:flex;gap:4px;border:0;border-bottom:2px solid var(--line);border-radius:0;background:transparent;padding:0;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:9px 18px;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;font-size:13px;font-weight:700;color:var(--muted);background:transparent}
+.tab[aria-current="true"]{color:var(--navy);background:var(--surface);border-color:var(--line);border-bottom:2px solid var(--surface);margin-bottom:-2px;font-weight:700}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:none}
+h2.sh{font-size:15px;color:var(--navy);padding-inline-start:12px;border-inline-start:4px solid var(--blue);font-weight:700;line-height:1.5}
+.sec h3{color:var(--navy);font-size:14px;font-weight:700}
+.btn{border:1.5px solid var(--navy);background:#fff;color:var(--navy);padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:700}
+.btn:hover{background:var(--row-alt);border-color:var(--navy)}
+.btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn.primary:hover{background:var(--navy-2);border-color:var(--navy-2)}
+.btn.bad{background:#fff;border-color:var(--bad);color:var(--bad)}
+.btn.bad:hover{background:var(--bad-soft)}
+input[type=text],input[type=month],input[type=password],select,textarea{border:1.5px solid var(--line);border-radius:7px;background:#fff;font-size:13px;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--blue);outline-offset:1px}
+label.f{font-size:11.5px;font-weight:700;color:var(--muted)}
+.tw{border-radius:10px}
+table{font-size:13px;background:#fff}
+thead th{background:var(--navy);color:#fff;padding:12px 14px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.6px;border-bottom:0}
+tbody td{padding:10px 14px;border-bottom:0;box-shadow:inset 0 -1px 0 0 var(--line)}
+tbody tr:nth-child(even){background:var(--row-alt)}
+tbody tr.row:hover,tbody tr:hover{background:#eaf3fb}
+.kpis{gap:10px}
+.kpi{padding:10px 14px;border:1.5px solid var(--line);border-radius:10px}
+.kpi span{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.3px}
+.kpi b{font-size:22px;font-weight:800;color:var(--navy)}
+button.kpi[aria-pressed="true"]{background:var(--navy);border-color:var(--navy)}
+button.kpi[aria-pressed="true"] span,button.kpi[aria-pressed="true"] b{color:#fff}
+.pill{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px}
+.banner{border-radius:8px;border-inline-start:4px solid var(--warn)}
+.bhead{background:#eaf3fb}.bhead b{color:var(--navy)}
+.login{border-top:5px solid var(--navy);border-radius:14px;box-shadow:0 24px 70px rgba(0,50,97,.10)}
+.login h2{color:var(--navy);font-size:19px;font-weight:800}
+.cy.now,.cy .d{color:var(--navy)}
+.meter i{background:var(--navy)}
+.seg button[aria-pressed="true"][data-v="Y"]{background:var(--navy);color:#fff}
+@media (max-width:820px){#pList section{grid-template-columns:1fr!important}}
+@media (max-width:640px){.topbar{padding:12px 16px}.topbar h1{font-size:18px}.tab{padding:8px 12px}}
+</style>
+</head>
+<body>
+<header class="topbar" dir="rtl">
+  <div class="brand"><div id="logoBox">LOGO</div><div><span class="dept-label">Talent Management</span><h1>منصة شارات USE</h1><p id="sub"></p></div></div>
+  <div class="role-indicator" id="roleBox"></div>
+</header>
+<div class="app" id="app" dir="rtl">
+  <nav class="tabs" id="tabs" aria-label="الأقسام"></nav>
+  <div id="banner"></div>
+  <main id="main"></main>
+</div>
+<script>
+(function(){
+'use strict';
+document.documentElement.dir='rtl';
+document.documentElement.lang='ar';
+
+const RES_AR={'Met':'متحققة','Not Met':'غير متحققة','N/A':'لا تنطبق','Incomplete':'غير مكتملة'};
+const RES_CLS={'Met':'Met','Not Met':'NotMet','N/A':'NA','Incomplete':'Incomplete'};
+const STATUS={Pending:['قيد المراجعة','p-wait'],Approved:['معتمدة','p-ok'],Rejected:['مرفوضة','p-no']};
+const CYCLE=[['25 → 1','الاختيار','EGY Team'],['2','المراجعة الأولية','KSA Team'],['4','الاعتماد','KSA Team'],['4 → 8','التصميم','EGY Team'],['8','المراجعة النهائية','KSA Team'],['10','الإرسال للنشر','KSA Team']];
+const ACT_AR={nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار'};
+const STAGE_KEYS=['selected','design','final','sent','published'];
+const STAGE_AR={selected:'مختارة',design:'قيد التصميم',final:'مراجعة نهائية',sent:'أُرسلت للنشر',published:'نُشرت'};
+const QT={gate:'سؤال أولي',must:'شرط',disq:'استبعاد'};
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+const $=s=>document.querySelector(s);
+const isoDay=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+function monthLabel(m){if(!m) return '—';const [y,mo]=m.split('-').map(Number);try{return new Date(y,mo-1,1).toLocaleDateString('ar-EG-u-nu-latn-ca-gregory',{month:'long',year:'numeric'});}catch(e){return m;}}
+
+/* ---------- State ---------- */
+const S={token:'',me:{id:null,name:'',role:'',canEdit:false,canWrite:true},preview:false,
+ badges:[],cases:new Map(),dec:new Map(),audit:[],users:[],settings:{sep:true,reqQuote:true,reqBadge:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'},code:null,busy:false,
+ view:'cases',openId:null,filters:{month:'all',status:'all',q:''},dashMonth:'all',draft:null,isNew:false,rail:{reason:'',mode:''},railErr:'',saveState:'',saveErr:'',bd:null,aiCodes:new Set(),aiBusy:false,aiErr:'',aiKeyMsg:''};
+const adminMode=()=>S.me.canEdit&&!S.preview;
+function lsGet(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
+function lsSet(k,v){try{if(v) localStorage.setItem(k,v); else localStorage.removeItem(k);}catch(e){}}
+
+/* ---------- Badges & results ---------- */
+const allBadges=()=>S.badges.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+const activeBadges=()=>allBadges().filter(b=>b.active!==false);
+function badgeResult(b,a){
+  const qs=b.qs||[]; const g=qs.find(q=>q.t==='gate');
+  if(g){const v=a[g.c]; if(!v) return 'Incomplete'; if(v==='N') return b.gateFail==='Not Met'?'Not Met':'N/A';}
+  const rest=qs.filter(q=>q.t!=='gate');
+  if(!rest.length||rest.some(q=>!a[q.c])) return 'Incomplete';
+  const ok=rest.filter(q=>q.t==='must').every(q=>a[q.c]==='Y')&&rest.filter(q=>q.t==='disq').every(q=>a[q.c]==='N');
+  return ok?'Met':'Not Met';
+}
+function resultsLive(c,bs){const r={};bs.forEach(b=>{r[b.key]=badgeResult(b,c.answers||{});});return r;}
+function statusOf(id){const d=S.dec.get(id);return (d&&d.status)||'Pending';}
+function resultsOf(id,c){const d=S.dec.get(id); if(d&&d.status&&d.status!=='Pending'&&d.results) return d.results; return resultsLive(c,activeBadges());}
+const badgesIn=r=>allBadges().filter(b=>b.key in r);
+const metCount=r=>Object.values(r).filter(v=>v==='Met').length;
+const abOf=b=>(b.ab||b.name||'?').slice(0,2);
+
+/* =========================================================================
+   منصة شارات USE — ملف واحد مستقل
+   ما يحتاج القسم التقني تعديله موجود في ثلاث طبقات معزولة فقط:
+     (1) Store  — التخزين: list / get / put
+     (2) AI     — التحليل بالذكاء الاصطناعي: analyze(prompt, schema) → كائن JSON
+     (3) call() — نقطة الاتصال بالخادم: كل الواجهة تمر عبرها
+   الوضع الحالي: منطق الخادم (SERVER) يعمل داخل الصفحة للتجربة.
+   للإنتاج: انقلوا SERVER إلى الخادم كما هو، واجعلوا call() ترسل
+   {token, action, payload} إليه. الواجهة لا تتغير.
+   ========================================================================= */
+
+/* ---------- (0) Backend URL (تجربة GitHub + Google Apps Script) ---------- */
+// ضع هنا رابط تطبيق الويب لخادم Apps Script (ينتهي بـ /exec). يُستخدم للتخزين المشترك ولاستدعاء Claude.
+const BACKEND_URL='https://script.google.com/macros/s/AKfycbw-y9CeJ9n7gwwqrr-3ENUi1iTegXMrq5HY2YLvKNvyCdvPU9WpsWmzTzLkOEEn0W-Z/exec';
+async function bk(op,body){
+  let r; try{ r=await fetch(BACKEND_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({op},body||{}))}); }
+  catch(e){ throw Object.assign(new Error('تعذر الاتصال بالخادم. تحقق من الإنترنت.'),{code:'unavailable'}); }
+  if(!r.ok) throw Object.assign(new Error('الخادم أعاد خطأ ('+r.status+').'),{code:'unavailable'});
+  const j=await r.json(); if(!j||!j.ok) throw new Error((j&&j.error)||'خطأ في الخادم.'); return j.data;
+}
+
+/* ---------- (1) Storage adapter ---------- */
+// الأولوية: قاعدة بيانات Claude (عند التشغيل داخل Claude) ← window.storage (نمط V17) ← متصفح محلي (للتجربة فقط).
+const Store=(()=>{
+  let kind=null, db=null, mem=new Map(), snap=null, snapAt=0, snapP=null;
+  async function remoteAll(){ if(snap&&Date.now()-snapAt<2500) return snap; if(!snapP) snapP=bk('all').then(d=>{ snap=d||{}; snapAt=Date.now(); snapP=null; return snap; }).catch(e=>{ snapP=null; throw e; }); return snapP; }
+  const clone=o=>o==null?o:JSON.parse(JSON.stringify(o));
+  const k=(c,id)=>'useb:'+c+':'+id;
+  async function init(){
+    if(kind) return kind;
+    if(BACKEND_URL){ kind='remote'; return kind; }
+    // داخل Claude: قاعدة بيانات الصفحة فقط، بلا أي بديل (حتى لا تظهر بيانات فارغة أو شاشة إعداد بالخطأ).
+    if(window.claude&&typeof window.claude.use==='function'){
+      try{ db=await window.claude.use('db'); }catch(e){ db=null; }
+      kind=db?'db':'unavailable'; return kind;
+    }
+    if(window.storage&&typeof window.storage.get==='function'){ kind='wstorage'; return kind; }
+    kind='local'; return kind;
+  }
+  async function retry(fn){ try{ return await fn(); }catch(e){ if(e&&e.code==='unavailable'){ await new Promise(r=>setTimeout(r,400+Math.random()*600)); return fn(); } throw e; } }
+  function lsKeys(prefix){ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const key=localStorage.key(i); if(key&&key.indexOf(prefix)===0) out.push(key); } }catch(e){ mem.forEach((v,key)=>{ if(key.indexOf(prefix)===0) out.push(key); }); } return out; }
+  function lsGet(key){ try{ const v=localStorage.getItem(key); return v==null?null:JSON.parse(v); }catch(e){ return mem.has(key)?JSON.parse(mem.get(key)):null; } }
+  function lsSet(key,v){ const s=JSON.stringify(v); try{ localStorage.setItem(key,s); }catch(e){ mem.set(key,s); } }
+  async function wsGet(key){ try{ const r=await window.storage.get(key,true); return r&&r.value!=null?JSON.parse(r.value):null; }catch(e){ return null; } }
+  async function wsSet(key,v){ const r=await window.storage.set(key,JSON.stringify(v),true); if(!r) throw new Error('storage save failed'); }
+  return {
+    init, kind:()=>kind,
+    async list(c){
+      await init(); if(kind==='unavailable') throw Object.assign(new Error('storage_unavailable'),{code:'storage_unavailable'});
+      if(kind==='remote') return Object.values((await remoteAll())[c]||{}).map(clone);
+      if(kind==='db'){ const s=await retry(()=>db.collection(c).limit(1000).get()); return s.docs.map(d=>clone(d.data())); }
+      if(kind==='wstorage'){ const idx=(await wsGet(k(c,'__index')))||[]; const out=[]; for(const id of idx){ const v=await wsGet(k(c,id)); if(v) out.push(v); } return out; }
+      return lsKeys('useb:'+c+':').map(lsGet).filter(Boolean);
+    },
+    async get(c,id){
+      await init(); if(kind==='unavailable') throw Object.assign(new Error('storage_unavailable'),{code:'storage_unavailable'});
+      if(kind==='remote'){ const v=((await remoteAll())[c]||{})[id]; return v?clone(v):null; }
+      if(kind==='db'){ const s=await retry(()=>db.doc(c+'/'+id).get()); return s.exists?clone(s.data()):null; }
+      if(kind==='wstorage') return wsGet(k(c,id));
+      return lsGet(k(c,id));
+    },
+    async put(c,id,obj){
+      await init(); if(kind==='unavailable') throw Object.assign(new Error('storage_unavailable'),{code:'storage_unavailable'});
+      if(kind==='remote'){ await bk('put',{col:c,id,obj}); if(snap){ (snap[c]=snap[c]||{})[id]=clone(obj); } return; }
+      if(kind==='db') return retry(()=>db.doc(c+'/'+id).set(clone(obj)));
+      if(kind==='wstorage'){ await wsSet(k(c,id),obj); const idx=(await wsGet(k(c,'__index')))||[]; if(idx.indexOf(id)<0){ idx.push(id); await wsSet(k(c,'__index'),idx); } return; }
+      lsSet(k(c,id),obj);
+    }
+  };
+})();
+
+/* ---------- (2) AI adapter ---------- */
+// AI_ENDPOINT: يضعه القسم التقني = رابط خادمهم الذي يستقبل POST {prompt, schema} ويُرجع كائن JSON
+// (يربطونه بـ Claude API أو Gemini من جهة الخادم، والمفتاح لا يصل للمتصفح).
+// إن بقي فارغًا وكانت الصفحة تعمل داخل Claude، يستخدم Claude مباشرة للتجربة.
+const AI_ENDPOINT='';
+const AI=(()=>{
+  let src=null, sample=null;
+  async function init(){
+    if(src) return src;
+    if(AI_ENDPOINT){ src='endpoint'; return src; }
+    if(BACKEND_URL){ try{ const st=await bk('aiStatus'); src=st&&st.enabled?'backend':'none'; }catch(e){ src='none'; } return src; }
+    try{ if(window.claude&&typeof window.claude.use==='function'){ sample=await window.claude.use('sample'); if(sample){ src='claude'; return src; } } }catch(e){}
+    src='none'; return src;
+  }
+  function errText(e){
+    const c=e&&e.code;
+    if(c==='not_granted') return 'لم تُمنح الصفحة صلاحية استخدام Claude. وافق على طلب الصلاحية ثم أعد المحاولة.';
+    if(c==='rate_limited') return 'تم تجاوز الحد المسموح مؤقتًا. حاول بعد دقائق.';
+    if(c==='invalid_json') return 'لم يرجع الذكاء الاصطناعي النتيجة بالشكل المطلوب. حاول مرة أخرى.';
+    if(c==='prompt_too_large') return 'النص طويل جدًا. اختصره ثم أعد المحاولة.';
+    if(c==='cancelled') return 'أُلغي الطلب.';
+    return 'تعذر الاتصال بالذكاء الاصطناعي. حاول لاحقًا.';
+  }
+  async function analyze(prompt,schema){
+    await init();
+    if(src==='endpoint'){
+      let r; try{ r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({prompt,schema})}); }catch(e){ throw new Error('تعذر الاتصال بخادم الذكاء الاصطناعي.'); }
+      if(!r.ok) throw new Error('خادم الذكاء الاصطناعي أعاد خطأ ('+r.status+').');
+      return r.json();
+    }
+    if(src==='backend') return bk('ai',{prompt,schema});
+    if(src==='claude'){
+      try{ return await sample.json(prompt+'\n\nأعد فقط كائن JSON واحدًا مطابقًا لهذا المخطط (JSON Schema)، بلا أي نص خارجه:\n'+JSON.stringify(schema),{modelTier:'default'}); }
+      catch(e){ throw new Error(errText(e)); }
+    }
+    throw new Error('الذكاء الاصطناعي غير متصل في هذه النسخة.');
+  }
+  async function ping(){
+    await init();
+    if(src==='claude'){ try{ const r=await sample('أجب فقط بكلمة: تم',{modelTier:'quick'}); return String(r.text||'').trim(); }catch(e){ throw new Error(errText(e)); } }
+    if(src==='backend'){ const r=await bk('ai',{prompt:'أجب فقط بكلمة: تم'}); return String((r&&r.text)||'').trim(); }
+    const o=await analyze('أجب بكائن JSON فيه المفتاح ok وقيمته كلمة: تم',{type:'object',properties:{ok:{type:'string'}},required:['ok']});
+    return String((o&&o.ok)||'تم');
+  }
+  return {init, analyze, ping, source:()=>src};
+})();
+
+/* ---------- File save (Excel/CSV + صورة البوست) ---------- */
+async function saveFile(filename,blob){
+  if(/\.csv$/i.test(filename)){
+    try{ if(window.claude&&typeof window.claude.use==='function'){ const dl=await window.claude.use('downloads'); if(dl){ await dl.save({filename,data:blob}); return; } } }
+    catch(e){ if(e&&e.code==='declined') return; if(e&&!/^(unavailable|not_granted|capability_disabled|capability_removed|transform_error)$/.test(e.code||'')) throw new Error('تعذر حفظ الملف.'); }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+}
+
+/* ---------- (3) SERVER logic (منقول من Code.gs كما هو) ---------- */
+// للإنتاج: هذا الجزء كله يُنقل إلى الخادم. التحقق من الدخول والصلاحيات يجب أن يتم هناك.
+const SERVER=(()=>{
+const DEFAULT_BADGES=[
+ {
+  "key": "USE",
+  "name": "USE Model",
+  "ab": "U",
+  "def": "تطبيق منهجية USE بوضوح أثناء فهم احتياج العميل والوصول للتوصية.",
+  "order": 1,
+  "active": true,
+  "gateFail": "",
+  "qs": [
+   {
+    "c": "U1",
+    "t": "must",
+    "q": "الحالة تحدد احتياج العميل أو مشكلته الأساسية بوضوح",
+    "y": "النص يذكر الشكوى أو الهدف صراحة (مثال: تصبغات وبقع داكنة).",
+    "n": "الحالة تبدأ بأسماء المنتجات مباشرة."
+   },
+   {
+    "c": "U2",
+    "t": "must",
+    "q": "ذُكر ما جمعه الصيدلي من العميل (أسئلة أو معلومات) قبل التوصية",
+    "y": "مذكور سؤال أو معلومة فعلية (نوع البشرة، مدة المشكلة، الروتين الحالي، الحساسية).",
+    "n": "لا أثر لحوار مع العميل في النص."
+   },
+   {
+    "c": "U3",
+    "t": "must",
+    "q": "التوصية مرتبطة صراحةً بما اكتُشف في U1 وU2",
+    "y": "يظهر سبب اختيار كل توصية بناءً على ما اكتُشف.",
+    "n": "التوصية عامة ولا تُنسب لمعلومة اكتُشفت."
+   },
+   {
+    "c": "U4",
+    "t": "disq",
+    "q": "هل المشاركة مجرد قائمة منتجات أو نتيجة نهائية دون منطق للتعامل؟",
+    "y": "قائمة أسماء منتجات بلا سياق، فتسقط الشارة.",
+    "n": "يظهر التسلسل: احتياج ← أسئلة ← توصية."
+   }
+  ]
+ },
+ {
+  "key": "OFFERS",
+  "name": "Utilizing Offers",
+  "ab": "O",
+  "def": "استخدام عرض متاح بطريقة تضيف قيمة للعميل وتدعم الحل المقترح.",
+  "order": 2,
+  "active": true,
+  "gateFail": "N/A",
+  "qs": [
+   {
+    "c": "O0",
+    "t": "gate",
+    "q": "هل استُخدم عرض متاح ضمن الحالة؟",
+    "y": "ذُكر عرض أو خصم فعلي على منتج في الحالة.",
+    "n": "لا عرض في الحالة، فتكون النتيجة «لا تنطبق»."
+   },
+   {
+    "c": "O1",
+    "t": "must",
+    "q": "العرض محدد بوضوح (نوعه والمنتجات المشمولة)",
+    "y": "مثال: «خصم التطبيق 15% على الغسول» أو «1+1 على واقي الشمس».",
+    "n": "عبارة عامة مثل «استفدنا من العروض»."
+   },
+   {
+    "c": "O2",
+    "t": "must",
+    "q": "المنتج المرتبط بالعرض مناسب للحالة حتى لو لم يوجد العرض",
+    "y": "المنتج ضمن التوصية المهنية أصلًا (اختبار «بدون العرض»).",
+    "n": "لولا العرض لما أُوصي بالمنتج."
+   },
+   {
+    "c": "O3",
+    "t": "must",
+    "q": "العرض أضاف قيمة للعميل (توفير أو حل أكمل)",
+    "y": "ذُكر أثر العرض على العميل.",
+    "n": "لا أثر مذكور للعرض."
+   },
+   {
+    "c": "O4",
+    "t": "disq",
+    "q": "هل أُضيف منتج غير ضروري للاستفادة من العرض، أو ذُكر الخصم دون ارتباط بالحاجة؟",
+    "y": "تسقط الشارة.",
+    "n": "العرض تابع للحاجة وليس العكس."
+   }
+  ]
+ },
+ {
+  "key": "COMPLETE",
+  "name": "Complete Solution",
+  "ab": "C",
+  "def": "تقديم حل متكامل يغطي الاحتياج الأساسي بدل الاكتفاء بمنتج منفرد.",
+  "order": 3,
+  "active": true,
+  "gateFail": "",
+  "qs": [
+   {
+    "c": "C1",
+    "t": "must",
+    "q": "التوصية تتضمن عنصرين أو أكثر (منتجات أو إجراءات)",
+    "y": "مذكور عنصران على الأقل مرتبطان بالمشكلة الأساسية.",
+    "n": "منتج منفرد."
+   },
+   {
+    "c": "C2",
+    "t": "must",
+    "q": "دور كل عنصر في معالجة الحالة مذكور",
+    "y": "مثال: «غسول لطيف للتنظيف، واقي شمس للحماية».",
+    "n": "أسماء منتجات دون بيان دورها."
+   },
+   {
+    "c": "C3",
+    "t": "must",
+    "q": "العناصر معًا تغطي الاحتياج الأساسي في تسلسل منطقي (Regimen)",
+    "y": "مثال: تنظيف + علاج + ترطيب + حماية.",
+    "n": "عناصر متفرقة لا تُكمل بعضها."
+   },
+   {
+    "c": "C4",
+    "t": "disq",
+    "q": "هل تعددت المنتجات دون أن تشكل Regimen أو Solution منطقيًا؟",
+    "y": "تسقط الشارة.",
+    "n": "المنتجات تشكل حلًا مترابطًا."
+   }
+  ]
+ },
+ {
+  "key": "CROSS",
+  "name": "Cross Selling",
+  "ab": "X",
+  "def": "اكتشاف احتياج إضافي غير الاحتياج الأساسي وتقديم حل مناسب له.",
+  "order": 4,
+  "active": true,
+  "gateFail": "Not Met",
+  "qs": [
+   {
+    "c": "X1",
+    "t": "gate",
+    "q": "هل ظهر أثناء الحالة احتياج إضافي مختلف عن الاحتياج الأساسي؟",
+    "y": "احتياج ثانٍ مستقل (مثال: جفاف الشفاه أو حساسية العين أثناء علاج التصبغات).",
+    "n": "لا يوجد احتياج ثانٍ، فتكون النتيجة «غير متحققة» مباشرة."
+   },
+   {
+    "c": "X2",
+    "t": "must",
+    "q": "الاحتياج الإضافي اكتُشف أثناء الحوار (بسؤال أو ملاحظة أو ذكر العميل)",
+    "y": "النص يبين كيف ظهر الاحتياج.",
+    "n": "إضافة منتج دون بيان كيف اكتُشف احتياجه."
+   },
+   {
+    "c": "X3",
+    "t": "must",
+    "q": "قُدّم منتج أو حل إضافي مرتبط مباشرة بالاحتياج الثاني",
+    "y": "الإضافة تعالج الاحتياج الثاني تحديدًا.",
+    "n": "الإضافة عامة أو لا تخص الاحتياج الثاني."
+   },
+   {
+    "c": "X4",
+    "t": "disq",
+    "q": "هل المنتجات الإضافية مجرد جزء طبيعي من الحل الأساسي؟",
+    "y": "تسقط الشارة (مثل إضافة واقي الشمس لروتين علاج التصبغات).",
+    "n": "الإضافة خارج نطاق الحل الأساسي."
+   }
+  ]
+ },
+ {
+  "key": "WASFATY",
+  "name": "Wasfaty",
+  "ab": "W",
+  "def": "الاستخدام الصحيح لخدمة أو مسار وصفتي ضمن رحلة العميل.",
+  "order": 5,
+  "active": true,
+  "gateFail": "N/A",
+  "qs": [
+   {
+    "c": "W0",
+    "t": "gate",
+    "q": "هل تتضمن الحالة وصفة أو مسار وصفتي؟",
+    "y": "توجد وصفة أو مسار وصفتي في رحلة العميل.",
+    "n": "لا علاقة لوصفتي بالحالة، فتكون النتيجة «لا تنطبق»."
+   },
+   {
+    "c": "W1",
+    "t": "must",
+    "q": "دور وصفتي محدد في الحالة (صرف، تسهيل حصول على العلاج، متابعة)",
+    "y": "مذكور ما فعلته وصفتي تحديدًا.",
+    "n": "ذكر عام لوصفتي."
+   },
+   {
+    "c": "W2",
+    "t": "must",
+    "q": "أثر وصفتي على العميل أو على إدارة الحالة مذكور",
+    "y": "مذكور الأثر (سرعة، تكلفة، استمرارية علاج).",
+    "n": "لا أثر مذكور."
+   },
+   {
+    "c": "W3",
+    "t": "disq",
+    "q": "هل هو مجرد وجود وصفة أو ذكر وصفتي دون دور واضح؟",
+    "y": "تسقط الشارة.",
+    "n": "لوصفتي دور فعلي."
+   }
+  ]
+ }
+];
+const DEFAULT_STRENGTH={USE:'كشف الاحتياج الحقيقي',OFFERS:'الاستفادة من العروض',COMPLETE:'تقديم حل متكامل',CROSS:'البيع المتقاطع المناسب',WASFATY:'توظيف وصفتي'};
+const STAGES=['selected','design','final','sent','published'];
+const SET_DEFAULT={bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
+const now_=()=>new Date().toISOString();
+const today_=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const rid=()=>Math.random().toString(36).slice(2,10);
+const clean_=(a,max,len)=>(Array.isArray(a)?a:[]).map(x=>String(x||'').trim().slice(0,len)).filter(Boolean).slice(0,max);
+const isHex_=v=>/^#[0-9a-fA-F]{6}$/.test(String(v||''));
+function err(m){ return new Error(m); }
+let chain=Promise.resolve();
+function withLock_(fn){ const p=chain.then(fn,fn); chain=p.catch(()=>{}); return p; }
+
+async function meta_(){ return (await Store.get('meta','main'))||{}; }
+async function hash_(pin){
+  const salt=(await meta_()).salt||'';
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+':'+String(pin)));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+const normUser_=u=>String(u||'').toLowerCase().replace(/\s+/g,'').slice(0,30);
+const pinLen_=role=>role==='admin'?6:4;
+const pinWeak_=p=>/^(\d)\1+$/.test(p)||'0123456789'.indexOf(p)>=0||'9876543210'.indexOf(p)>=0;
+function checkPin_(pin,role){
+  pin=String(pin||'');
+  if(!/^\d+$/.test(pin)||pin.length!==pinLen_(role)) throw err('الرقم السري '+pinLen_(role)+' أرقام فقط'+(role==='admin'?' للمدير.':' للمقيّم.'));
+  if(pinWeak_(pin)) throw err('الرقم السري سهل التخمين (مثل 1234 أو 1111). اختر غيره.');
+  return pin;
+}
+async function pinTaken_(pin,exceptId){ const h=await hash_(pin); return (await Store.list('users')).some(u=>u.id!==exceptId&&u.codeHash===h); }
+async function genPin_(role,exceptId){
+  const n=pinLen_(role);
+  for(let t=0;t<200;t++){ let p=''; const r=crypto.getRandomValues(new Uint8Array(n)); for(let i=0;i<n;i++) p+=String(r[i]%10); if(!pinWeak_(p)&&!(await pinTaken_(p,exceptId))) return p; }
+  throw err('تعذر توليد رقم سري، أعد المحاولة.');
+}
+const fails={};
+function parseToken_(t){ t=String(t||''); const i=t.indexOf('\n'); return i<0?{u:'',p:''}:{u:normUser_(t.slice(0,i)),p:t.slice(i+1).replace(/\D/g,'')}; }
+async function authUser_(token){
+  const tk=parseToken_(token), key=tk.u||'?', f=fails[key];
+  if(f&&f.n>=5&&Date.now()-f.t<15*60000) throw err('locked');
+  if(tk.u&&tk.p){
+    const h=await hash_(tk.p); const u=(await Store.list('users')).find(x=>normUser_(x.username)===tk.u);
+    if(u&&u.active&&u.codeHash===h){ delete fails[key]; return u; }
+  }
+  fails[key]={n:((f&&Date.now()-f.t<15*60000)?f.n:0)+1,t:Date.now()};
+  return null;
+}
+async function uniqueUsername_(un,exceptId){
+  un=normUser_(un);
+  if(un.length<2) throw err('اسم الدخول حرفان على الأقل (بدون مسافات).');
+  if((await Store.list('users')).some(u=>u.id!==exceptId&&normUser_(u.username)===un)) throw err('اسم الدخول مستخدم. اختر اسمًا آخر.');
+  return un;
+}
+
+function badgeResult_(b,a){
+  const qs=b.qs||[]; const gate=qs.find(q=>q.t==='gate');
+  if(gate){ const v=a[gate.c]; if(!v) return 'Incomplete'; if(v==='N') return b.gateFail==='Not Met'?'Not Met':'N/A'; }
+  const rest=qs.filter(q=>q.t!=='gate');
+  if(!rest.length||rest.some(q=>!a[q.c])) return 'Incomplete';
+  return rest.every(q=>q.t==='must'?a[q.c]==='Y':a[q.c]==='N')?'Met':'Not Met';
+}
+function resultsLive_(answers,badges){ const r={}; badges.forEach(b=>{ r[b.key]=badgeResult_(b,answers||{}); }); return r; }
+const metCount_=r=>Object.keys(r).filter(k=>r[k]==='Met').length;
+async function allBadges_(){ return (await Store.list('badges')).sort((a,b)=>(a.order||0)-(b.order||0)); }
+async function activeBadges_(){ return (await allBadges_()).filter(b=>b.active!==false); }
+async function settings_(){
+  const s=Object.assign({},SET_DEFAULT,(await Store.get('settings','main'))||{});
+  await AI.init(); s.aiSource=AI.source(); s.aiEnabled=s.aiOn!==false&&AI.source()!=='none';
+  return s;
+}
+function issues_(c,r,badges,set,approver){
+  const out=[];
+  if(!String(c.pharmacist||'').trim()||!String(c.summary||'').trim()) out.push('أكمل بيانات الحالة: الصيدلي وملخص الحالة.');
+  const byKey={}; badges.forEach(b=>{byKey[b.key]=b;});
+  const keys=Object.keys(r);
+  if(!keys.length) out.push('لا توجد شارات مفعّلة لتقييم الحالة.');
+  const inc=keys.filter(k=>r[k]==='Incomplete');
+  if(inc.length) out.push('أسئلة غير مجابة في: '+inc.map(k=>byKey[k]?byKey[k].name:k).join('، ')+'.');
+  if(approver){
+    if(set.reqBadge&&metCount_(r)===0&&!inc.length) out.push('لا توجد شارة متحققة، والإعداد الحالي لا يسمح باعتماد حالة بلا شارات.');
+    if(set.sep&&approver.id===c.reviewerId) out.push('لا يمكنك اعتماد حالة قيّمتها بنفسك. يعتمدها معتمد آخر.');
+  }
+  if(c.nominated&&(!String(c.startPoint||'').trim()||!String(c.outcome||'').trim())) out.push('الحالة مرشّحة لبوست الشهر: أكمل نقطة البداية والنتيجة في محتوى البوست.');
+  return out;
+}
+
+/* AI prompt & schema (نفس منطق نسخة Apps Script) */
+function aiSchema_(){
+  // الترتيب مقصود: الملخص السردي أولًا كأرضية، ثم الاقتباس (quote) قبل القرار (answer) لكل سؤال.
+  return {type:'object',properties:{
+    startPoint:{type:'string'},outcome:{type:'string'},situation:{type:'array',items:{type:'string'}},
+    suggestions:{type:'array',items:{type:'object',properties:{code:{type:'string'},quote:{type:'string'},answer:{type:'string',enum:['Y','N','unclear']}},required:['code','quote','answer']}}
+  },required:['startPoint','outcome','situation','suggestions']};
+}
+function aiPrompt_(text,badges){
+  const lines=['أنت مساعد يحلّل نصًا كتبه صيدلي عن تعامله مع عميل، وتجيب فقط بناءً على ما ورد صراحةً في هذا النص، ولا تفترض أي معلومة غير مكتوبة.','',
+    'المطلوب أولًا — لملخص بوست الحالة، استخرج دائمًا من النص (لا تتركها فارغة إلا إذا كان النص لا يصف أي تفاعل مع عميل إطلاقًا):',
+    'startPoint: جملة قصيرة جدًا تصف ما احتاجه/طلبه العميل في البداية.',
+    'outcome: جملة قصيرة جدًا تصف ما انتهى إليه الموقف أو ما أوصى به الصيدلي في النهاية.',
+    'situation: حتى 5 نقاط قصيرة جدًا (كل نقطة أقل من سطر) تلخّص أهم ما حدث بالترتيب الزمني.',
+    'لا تخترع تفاصيل غير موجودة في النص، ولا تذكر أسماء منتجات في startPoint أو outcome أو situation.','',
+    'المطلوب ثانيًا — لكل سؤال أدناه أعد: code، وquote (اقتباس حرفي قصير من النص نفسه يدعم إجابتك، أو نص فارغ إن لم يوجد)، وanswer (Y أو N بناءً على الاقتباس، أو unclear إن لم يذكر النص إجابة واضحة).','',
+    'نص الصيدلي:','"""'+text+'"""','','الأسئلة:'];
+  badges.forEach(b=>{ lines.push('# '+b.name); (b.qs||[]).forEach(q=>lines.push(q.c+': '+q.q+' (نعم عندما: '+(q.y||'—')+' | لا عندما: '+(q.n||'—')+')')); });
+  lines.push('','أعد النتيجة ككائن JSON واحد فقط بالمفاتيح startPoint وoutcome وsituation وsuggestions.');
+  return lines.join('\n');
+}
+function aiApply_(obj,badges){
+  const byCode={}; badges.forEach(b=>(b.qs||[]).forEach(q=>{byCode[q.c]=1;}));
+  if(typeof obj==='string'){ try{ obj=JSON.parse(obj); }catch(e){ throw err('تعذّر فهم ردّ الذكاء الاصطناعي.'); } }
+  if(!obj||typeof obj!=='object'||Array.isArray(obj)||!Array.isArray(obj.suggestions)) throw err('تعذّر فهم ردّ الذكاء الاصطناعي.');
+  const out=[];
+  obj.suggestions.forEach(it=>{ if(!it||!byCode[it.code]) return; if(it.answer!=='Y'&&it.answer!=='N') return; out.push({code:it.code,answer:it.answer,quote:String(it.quote||'').trim().slice(0,300)}); });
+  return {suggestions:out,startPoint:String(obj.startPoint||'').trim().slice(0,400),outcome:String(obj.outcome||'').trim().slice(0,400),situation:clean_(obj.situation,5,160)};
+}
+const aiUse={};
+function aiThrottle_(u){ const h=Math.floor(Date.now()/3600000), k=u.id+':'+h; aiUse[k]=(aiUse[k]||0)+1; if(aiUse[k]>20) throw err('تجاوزت الحد المسموح (20 اقتراحًا كل ساعة). حاول لاحقًا.'); }
+
+async function audit_(u,caseId,action,note){
+  const m=today_().slice(0,7); const doc=(await Store.get('audit',m))||{month:m,items:[]};
+  doc.items.push({ts:now_(),caseId:caseId||'',action,byId:u.id,byName:u.name,note:note||''});
+  if(doc.items.length>1500) doc.items=doc.items.slice(-1500);
+  await Store.put('audit',m,doc);
+}
+async function decOf_(id){ return Store.get('decisions',id); }
+function decOut_(d){ return {postStage:d.postStage||'',featured:d.featured===true,featuredNote:d.featuredNote||'',status:d.status,approverId:d.approverId,approverName:d.approverName,approvedAt:d.approvedAt,rejectReason:d.rejectReason,results:d.results||null,metCount:d.metCount}; }
+function needAdmin_(u){ if(u.role!=='admin') throw err('هذه العملية للمدير فقط.'); }
+
+/* عمليات بدون تسجيل دخول: حالة التهيئة والإعداد الأول */
+const PUBLIC={
+  status: async()=>{ const k=await Store.init(); if(k==='unavailable') return {initialized:true,storage:k}; return {initialized:(await Store.list('users')).length>0,storage:k}; },
+  setupFirstAdmin: (p)=>withLock_(async()=>{
+    if((await Store.list('users')).length) throw err('المنصة مُعدّة مسبقًا.');
+    const name=String(p.name||'').trim()||'المدير';
+    const un=await uniqueUsername_(p.username||'admin');
+    const m=await meta_(); if(!m.salt){ m.salt=crypto.getRandomValues(new Uint32Array(4)).join('-'); await Store.put('meta','main',m); }
+    const pin=checkPin_(String(p.pin||'').trim(),'admin');
+    if(!(await allBadges_()).length) for(const b of DEFAULT_BADGES) await Store.put('badges',b.key,Object.assign({},b,{strength:b.strength||DEFAULT_STRENGTH[b.key]||'',icon:b.icon||''}));
+    if(!(await Store.get('settings','main'))) await Store.put('settings','main',Object.assign({},SET_DEFAULT));
+    const u={id:'u_admin',name,role:'admin',active:true,codeHash:await hash_(pin),createdAt:now_(),username:un};
+    await Store.put('users',u.id,u); await audit_(u,'','user','إعداد المنصة وإنشاء المدير: '+name);
+    return {username:un};
+  })
+};
+
+const ACTIONS={
+  bootstrap: async(u)=>{
+    const admin=u.role==='admin';
+    const allDec=await Store.list('decisions'); const appr={}; allDec.forEach(d=>{ if(d.status==='Approved') appr[d.caseId]=1; });
+    const cases=(await Store.list('cases')).filter(c=>admin||c.reviewerId===u.id||(c.nominated&&appr[c.id]));
+    const ids={}; cases.forEach(c=>{ids[c.id]=1;});
+    const decisions={}; allDec.forEach(d=>{ if(ids[d.caseId]) decisions[d.caseId]=decOut_(d); });
+    const out={user:{id:u.id,name:u.name,role:u.role},badges:await allBadges_(),cases,decisions,settings:await settings_()};
+    if(admin){
+      const au=[]; (await Store.list('audit')).sort((a,b)=>a.month<b.month?-1:1).forEach(d=>au.push(...(d.items||[])));
+      out.audit=au.slice(-150).reverse();
+      out.users=(await Store.list('users')).map(x=>({id:x.id,username:x.username,name:x.name,role:x.role,active:x.active,createdAt:x.createdAt}));
+    }
+    return out;
+  },
+  saveCase:(u,p)=>withLock_(async()=>{
+    const badges=await activeBadges_();
+    const all=await Store.list('cases'); let id=String(p.id||''); const old=id?all.find(c=>c.id===id):null;
+    if(id&&!old) throw err('الحالة غير موجودة.');
+    const month=/^\d{4}-\d{2}$/.test(String(p.month||''))?p.month:(old?old.month:today_().slice(0,7));
+    if(old){
+      if(u.role!=='admin'&&old.reviewerId!==u.id) throw err('ليس لك صلاحية تعديل هذه الحالة.');
+      const d=await decOf_(id); if(d&&d.status!=='Pending') throw err('الحالة مغلقة بعد اتخاذ القرار.');
+    } else {
+      let n=all.filter(c=>c.id.indexOf(month+'-')===0).length+1;
+      do{ id=month+'-'+String(n).padStart(3,'0'); n++; } while(all.some(c=>c.id===id)||(await Store.get('cases',id)));
+    }
+    const answers={}; Object.keys(p.answers||{}).forEach(k=>{ if(p.answers[k]==='Y'||p.answers[k]==='N') answers[k]=p.answers[k]; });
+    const reasons={}; Object.keys(p.reasons||{}).forEach(k=>{ reasons[k]=String(p.reasons[k]||'').slice(0,2000); });
+    const r=resultsLive_(answers,badges);
+    const rec={id,month,pharmacist:String(p.pharmacist||'').slice(0,120),branch:String(p.branch||'').slice(0,120),supervisor:String(p.supervisor||'').slice(0,120),
+      reviewerId:old?old.reviewerId:u.id,reviewerName:old?old.reviewerName:u.name,summary:String(p.summary||'').slice(0,5000),
+      startPoint:String(p.startPoint||'').slice(0,400),outcome:String(p.outcome||'').slice(0,400),situation:clean_(p.situation,6,400),products:clean_(p.products,8,80),
+      answers,reasons,results:r,metCount:metCount_(r),nominated:!!p.nominated,createdAt:old?old.createdAt:now_(),updatedAt:now_(),example:old?!!old.example:false};
+    if(!!p.nominated!==!!(old&&old.nominated)&&(old||p.nominated)) await audit_(u,id,p.nominated?'nominated':'unnominated','');
+    await Store.put('cases',id,rec);
+    if(!old) await audit_(u,id,'created','');
+    return {id,results:r,metCount:rec.metCount,updatedAt:rec.updatedAt};
+  }),
+  decide:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    const badges=await activeBadges_(), set=await settings_(); const c=await Store.get('cases',p.id);
+    if(!c) throw err('الحالة غير موجودة.');
+    const d0=await decOf_(c.id); if(d0&&d0.status!=='Pending') throw err('تم اتخاذ قرار في هذه الحالة مسبقًا.');
+    const r=resultsLive_(c.answers||{},badges); const approve=p.kind==='approve';
+    if(approve){ const is=issues_(c,r,badges,set,u); if(is.length) throw err(is[0]); }
+    else if(!String(p.reason||'').trim()) throw err('اكتب سبب الرفض.');
+    const dec={caseId:c.id,status:approve?'Approved':'Rejected',approverId:u.id,approverName:u.name,approvedAt:approve?today_():'',rejectReason:approve?'':String(p.reason).trim().slice(0,1000),results:r,metCount:metCount_(r),updatedAt:now_(),postStage:'',featured:false,featuredNote:''};
+    await Store.put('decisions',c.id,dec); await audit_(u,c.id,approve?'approved':'rejected',approve?'':dec.rejectReason);
+    return decOut_(dec);
+  }); },
+  reopen:(u,p)=>{ needAdmin_(u); if(!String(p.reason||'').trim()) throw err('اكتب سبب إعادة الفتح.'); return withLock_(async()=>{
+    const d0=await decOf_(p.id); const before=(d0&&d0.status)||'Pending';
+    await Store.put('decisions',p.id,{caseId:p.id,status:'Pending',approverId:'',approverName:'',approvedAt:'',rejectReason:'',results:null,metCount:0,updatedAt:now_(),postStage:'',featured:false,featuredNote:''});
+    await audit_(u,p.id,'reopened',String(p.reason).trim()+' (كانت: '+before+')');
+    return {status:'Pending'};
+  }); },
+  saveBadge:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    const name=String(p.name||'').trim(), ab=String(p.ab||'').toUpperCase();
+    if(!name) throw err('اكتب اسم الشارة.');
+    if(!/^[A-Z]{1,2}$/.test(ab)) throw err('الرمز حرف أو حرفان إنجليزيان.');
+    const all=await allBadges_(); const old=all.find(b=>b.key===p.key)||null;
+    if(all.some(b=>b.key!==p.key&&String(b.ab).toUpperCase()===ab)) throw err('الرمز مستخدم لشارة أخرى.');
+    if(old&&String(old.ab).toUpperCase()!==ab) throw err('رمز الشارة لا يتغير بعد إنشائها.');
+    const icon=String(p.icon||''); if(icon.length>40000) throw err('صورة الشارة كبيرة. استخدم صورة أصغر.'); if(icon&&icon.indexOf('data:image/')!==0) throw err('صورة الشارة غير صالحة.');
+    const qs=(p.qs||[]).map(q=>({c:String(q.c),t:q.t,q:String(q.q||'').trim(),y:String(q.y||'').trim(),n:String(q.n||'').trim()}));
+    if(!qs.some(q=>q.t==='must'&&q.q)) throw err('أضف شرطًا واحدًا على الأقل.');
+    const key=old?old.key:'b_'+ab.toLowerCase()+rid().slice(0,4);
+    const order=p.order||(all.reduce((m,b)=>Math.max(m,b.order||0),0)+1);
+    const b={key,name,ab,def:String(p.def||'').trim(),order:Number(order),active:p.active!==false,gateFail:p.gateFail==='Not Met'?'Not Met':(qs.some(q=>q.t==='gate')?'N/A':''),qs,strength:String(p.strength||'').trim().slice(0,80),icon};
+    await Store.put('badges',key,b); await audit_(u,'','badge',(old?'تعديل شارة: ':'إضافة شارة: ')+name);
+    return b;
+  }); },
+  setFeatured:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    const d=await decOf_(p.id); if(!d||d.status!=='Approved') throw err('الاختيار للحالات المعتمدة فقط.');
+    const c=await Store.get('cases',p.id); if(!c||!c.nominated) throw err('يُختار أفضل المشاركات من الحالات التي رشّحها المقيّم لبوست الشهر فقط.');
+    const on=!!p.featured, note=String(p.reason||'').trim().slice(0,500);
+    if(on===!!d.featured) return {featured:on};
+    if(on){
+      const set=await settings_(); const monthCases={}; (await Store.list('cases')).forEach(x=>{ if(x.month===c.month) monthCases[x.id]=1; });
+      const n=(await Store.list('decisions')).filter(x=>monthCases[x.caseId]&&x.featured&&x.status==='Approved').length;
+      if(n>=(set.bestCount||3)) throw err('وصلت للعدد المحدد لأفضل المشاركات هذا الشهر ('+(set.bestCount||3)+'). ألغِ اختيار حالة أو غيّر العدد.');
+    }
+    d.featured=on; d.featuredNote=on?note:''; d.postStage=on?'selected':''; d.updatedAt=now_();
+    await Store.put('decisions',p.id,d); await audit_(u,p.id,on?'featured':'unfeatured',on?note:'إلغاء الاختيار');
+    return {featured:on,postStage:d.postStage};
+  }); },
+  setPostStage:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    if(STAGES.indexOf(p.stage)<0) throw err('مرحلة غير معروفة.');
+    const d=await decOf_(p.id); if(!d||d.status!=='Approved'||!d.featured) throw err('المراحل تخص الحالات المختارة لبوست الشهر فقط.');
+    const before=d.postStage; d.postStage=p.stage; d.updatedAt=now_(); await Store.put('decisions',p.id,d);
+    await audit_(u,p.id,'stage',(before||'-')+' ← '+p.stage);
+    return {postStage:p.stage};
+  }); },
+  saveSettings:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    const s=Object.assign({},SET_DEFAULT,(await Store.get('settings','main'))||{});
+    ['sep','reqQuote','reqBadge','aiOn'].forEach(k=>{ if(k in p) s[k]=!!p[k]; });
+    if('brandPrimary' in p){ if(!isHex_(p.brandPrimary)) throw err('لون غير صالح.'); s.brandPrimary=p.brandPrimary; }
+    if('brandAccent' in p){ if(!isHex_(p.brandAccent)) throw err('لون غير صالح.'); s.brandAccent=p.brandAccent; }
+    if('bestCount' in p){ const n=parseInt(p.bestCount,10); if(!(n>=1&&n<=20)) throw err('عدد أفضل المشاركات بين 1 و20.'); s.bestCount=n; }
+    if('brandLogo' in p){ const lg=String(p.brandLogo||''); if(lg&&(lg.indexOf('data:image/')!==0||lg.length>60000)) throw err('صورة الشعار غير صالحة أو كبيرة جدًا.'); s.brandLogo=lg; }
+    delete s.aiEnabled; delete s.aiSource;
+    await Store.put('settings','main',s);
+    await audit_(u,'','settings',JSON.stringify(Object.assign({},p,{aiEnabled:undefined,aiSource:undefined,brandLogo:('brandLogo' in p)?(p.brandLogo?'(صورة)':'(إزالة)'):undefined})));
+    return settings_();
+  }); },
+  addUser:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    const name=String(p.name||'').trim(); if(!name) throw err('اكتب اسم المستخدم.');
+    const role=p.role==='admin'?'admin':'reviewer'; const un=await uniqueUsername_(p.username);
+    let pin; if(String(p.pin||'').trim()){ pin=checkPin_(String(p.pin).trim(),role); if(await pinTaken_(pin,'')) throw err('الرقم السري مستخدم لمستخدم آخر. اختر غيره.'); } else pin=await genPin_(role,'');
+    const nu={id:'u_'+rid(),name,role,active:true,codeHash:await hash_(pin),createdAt:now_(),username:un};
+    await Store.put('users',nu.id,nu); await audit_(u,'','user','إضافة مستخدم: '+name+' ('+un+', '+role+')');
+    return {id:nu.id,name,username:un,role,pin};
+  }); },
+  resetCode:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    const t=await Store.get('users',p.id); if(!t) throw err('المستخدم غير موجود.');
+    let pin; if(String(p.pin||'').trim()){ pin=checkPin_(String(p.pin).trim(),t.role); if(await pinTaken_(pin,t.id)) throw err('الرقم السري مستخدم لمستخدم آخر. اختر غيره.'); } else pin=await genPin_(t.role,t.id);
+    t.codeHash=await hash_(pin); await Store.put('users',t.id,t); delete fails[normUser_(t.username)];
+    await audit_(u,'','user','رقم سري جديد لـ '+t.name);
+    return {id:t.id,name:t.name,username:t.username,pin};
+  }); },
+  setUser:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    const users=await Store.list('users'); const t=users.find(x=>x.id===p.id); if(!t) throw err('المستخدم غير موجود.');
+    let newPin='';
+    if('active' in p) t.active=!!p.active;
+    if('role' in p){ const nr=p.role==='admin'?'admin':'reviewer'; if(nr!==t.role){ newPin=await genPin_(nr,t.id); t.codeHash=await hash_(newPin); t.role=nr; } }
+    const admins=users.filter(x=>x.id!==t.id&&x.role==='admin'&&x.active).length+(t.role==='admin'&&t.active?1:0);
+    if(!admins) throw err('يجب أن يبقى مدير واحد مفعّل على الأقل.');
+    await Store.put('users',t.id,t); await audit_(u,'','user','تعديل مستخدم: '+t.name+' ('+t.role+', '+(t.active?'مفعّل':'معطّل')+')');
+    return {ok:true,pin:newPin,name:t.name,username:t.username};
+  }); },
+  savePostImages:(u,p)=>withLock_(async()=>{
+    const c=await Store.get('cases',p.id); if(!c) throw err('الحالة غير موجودة.');
+    if(u.role!=='admin'){ if(c.reviewerId!==u.id) throw err('ليس لك صلاحية على هذه الحالة.'); const d=await decOf_(c.id); if(d&&d.status!=='Pending') throw err('الحالة مغلقة بعد اتخاذ القرار.'); }
+    const imgs=(Array.isArray(p.imgs)?p.imgs:[]).slice(0,8).map(x=>{ x=String(x||''); if(x&&(x.indexOf('data:image/')!==0||x.length>45000)) throw err('صورة منتج غير صالحة أو كبيرة.'); return x; });
+    await Store.put('postimgs',c.id,{caseId:c.id,imgs,updatedAt:now_()});
+    return {ok:true};
+  }),
+  getPostImages: async(u,p)=>{
+    const out={}; for(const id of (Array.isArray(p.ids)?p.ids:[]).slice(0,60)){
+      if(u.role!=='admin'){ const c=await Store.get('cases',id); if(!c) continue; if(c.reviewerId!==u.id){ const dd=await decOf_(id); if(!(c.nominated&&dd&&dd.status==='Approved')) continue; } }
+      const d=await Store.get('postimgs',String(id)); out[id]=(d&&d.imgs)||[];
+    } return out;
+  },
+  aiSuggest: async(u,p)=>{
+    const set=await settings_(); if(!set.aiEnabled) throw err('الذكاء الاصطناعي غير مفعّل.');
+    aiThrottle_(u);
+    const text=String(p.text||'').trim();
+    if(!text) throw err('لا يوجد نص لتحليله.');
+    if(text.length>8000) throw err('النص طويل جدًا (الحد 8000 حرف). اختصره ثم أعد المحاولة.');
+    const all=await activeBadges_(); const badges=(p.badgeKeys&&p.badgeKeys.length)?all.filter(b=>p.badgeKeys.indexOf(b.key)>=0):all;
+    if(!badges.length) throw err('لا توجد شارات مفعّلة لتحليلها.');
+    const result=aiApply_(await AI.analyze(aiPrompt_(text,badges),aiSchema_()),badges);
+    await audit_(u,p.caseId||'','ai_suggest','اقتراحات AI: '+result.suggestions.length+' إجابة');
+    return result;
+  },
+  aiTest: async(u)=>{ needAdmin_(u); return {ok:true,sample:(await AI.ping()).slice(0,60)}; },
+  exportReport: async(u)=>{
+    needAdmin_(u);
+    const badges=await allBadges_(); const decs={}; (await Store.list('decisions')).forEach(d=>{decs[d.caseId]=d;});
+    const head=['Month','Case ID','Pharmacist','Branch','Supervisor','Reviewer','Status','Approved By','Approval Date','Nominated','Best of Month','Post Stage','Case Summary','Start Point','Outcome'];
+    badges.forEach(b=>{ head.push(b.name); head.push(b.name+' Reason'); }); head.push('Total Badges');
+    const rows=(await Store.list('cases')).sort((a,b)=>a.id<b.id?-1:1).map(c=>{
+      const d=decs[c.id], dr=d&&d.status!=='Pending'&&d.results?d.results:(c.results||{}); const reasons=c.reasons||{};
+      const row=[c.month,c.id,c.pharmacist,c.branch,c.supervisor,c.reviewerName,d?d.status:'Pending',d?d.approverName:'',d?d.approvedAt:'',c.nominated?'YES':'',d&&d.featured?'YES':'',d?d.postStage:'',c.summary,c.startPoint,c.outcome];
+      badges.forEach(b=>{ row.push(b.key in dr?dr[b.key]:''); row.push(reasons[b.key]||''); }); row.push(metCount_(dr)); return row;
+    });
+    return {head,rows};
+  }
+};
+
+async function api(token,action,payload){
+  try{
+    if(PUBLIC[action]) return {ok:true,data:await PUBLIC[action](payload||{})};
+    const u=await authUser_(token);
+    if(!u) return {ok:false,error:'auth'};
+    const fn=ACTIONS[action]; if(!fn) return {ok:false,error:'unknown'};
+    return {ok:true,data:await fn(u,payload||{})};
+  }catch(e){ return {ok:false,error:String(e&&e.message||e)}; }
+}
+return {api};
+})();
+
+/* ---------- نقطة الاتصال الوحيدة بين الواجهة والخادم ---------- */
+// للإنتاج: API_URL = رابط خادم القسم التقني، يستقبل POST {token, action, payload} ويُرجع {ok, data|error}.
+const API_URL='';
+function call(action,payload){
+  const done=r=>{ if(r&&r.ok) return r.data; const e=new Error(errText(r&&r.error)); e.code=(r&&r.error)||'error'; throw e; };
+  if(API_URL){
+    return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:S.token,action,payload:payload||{}})})
+      .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .catch(x=>{ const e=new Error('تعذر الاتصال بالخادم. تحقق من الإنترنت.'); e.code='network'; e.raw=x&&x.message; throw e; })
+      .then(done);
+  }
+  return SERVER.api(S.token,action,payload).then(done);
+}
+
+function errText(c){
+  if(c==='auth') return 'اسم الدخول أو الرقم السري غير صحيح، أو الحساب معطّل.';
+  if(c==='locked') return 'محاولات خاطئة كثيرة لهذا المستخدم. انتظر 15 دقيقة ثم أعد المحاولة.';
+  if(c==='unknown') return 'عملية غير معروفة.';
+  return c||'حدث خطأ.';
+}
+async function load(){
+  const d=await call('bootstrap');
+  S.me={id:d.user.id,name:d.user.name,role:d.user.role,canEdit:d.user.role==='admin',canWrite:true};
+  S.badges=d.badges||[]; S.cases=new Map((d.cases||[]).map(c=>[c.id,c])); S.dec=new Map(Object.entries(d.decisions||{}));
+  S.settings=Object.assign({sep:true,reqQuote:true,reqBadge:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'},d.settings||{}); applyBrand(); S.audit=d.audit||[]; S.users=d.users||[];
+}
+async function reload(){ await load(); onData(); }
+function toast(t,bad){ const b=$('#banner'); b.innerHTML='<div class="banner"'+(bad?'':' style="background:var(--good-soft);color:var(--good)"')+'>'+esc(t)+'</div>'; clearTimeout(toast.t); toast.t=setTimeout(()=>{b.innerHTML='';},6000); }
+async function init(){
+  let st={initialized:true,storage:'server'};
+  try{ st=await call('status'); }catch(e){}
+  S.storage=st.storage;
+  if(st.storage==='unavailable'){ $('#sub').textContent=''; $('#main').innerHTML='<div class="panel login"><h2>تعذر الاتصال بقاعدة بيانات المنصة</h2><p class="note" style="margin:0 0 12px">لم تتصل هذه الصفحة بقاعدة البيانات في هذا العرض، فلم نعرض أي بيانات حتى لا تظهر فارغة بالخطأ. أعد تحميل الصفحة، أو افتحها من رابطها مباشرة في المتصفح. بياناتك محفوظة ولم تتأثر.</p><div class="actions"><button class="btn primary" id="btnReloadPage" style="width:100%">إعادة تحميل الصفحة</button></div></div>'; return; }
+  if(!st.initialized) return showSetup('');
+  S.token=lsGet('use_code');
+  if(!S.token) return showLogin('');
+  try{ await load(); enter(); }
+  catch(e){ if(e.code==='auth'){ lsSet('use_code',''); S.token=''; showLogin(''); } else showLogin(e.message); }
+}
+function showLogin(msg){
+  S.me={id:null,name:'',role:'',canEdit:false,canWrite:true};
+  $('#sub').textContent='تسجيل الدخول'; $('#tabs').innerHTML=''; $('#roleBox').innerHTML='';
+  $('#main').innerHTML='<div class="panel login"><h2>تسجيل الدخول</h2><p class="note" style="margin:0 0 12px">أدخل اسم الدخول والرقم السري اللذين سلّمهما لك المدير. لا تشاركهما مع أحد، فكل إجراء يُسجَّل باسمك.</p><label class="f">اسم الدخول<input type="text" id="loginUser" autocomplete="username" autocapitalize="none" spellcheck="false" style="direction:ltr"></label><label class="f" style="margin-top:10px">الرقم السري<input type="password" id="loginPin" inputmode="numeric" autocomplete="current-password" maxlength="6" class="mono" style="text-align:center;font-size:20px;letter-spacing:4px"></label><div id="loginErr">'+(msg?'<div class="banner" style="margin-top:10px">'+esc(msg)+'</div>':'')+'</div><div class="actions" style="margin-top:12px"><button class="btn primary" id="btnLogin" style="width:100%">دخول</button></div></div>';
+  const i2=$('#loginUser'); if(i2) i2.focus();
+}
+function showSetup(msg){
+  $('#sub').textContent='الإعداد الأول'; $('#tabs').innerHTML=''; $('#roleBox').innerHTML='';
+  $('#main').innerHTML='<div class="panel login"><h2>إعداد المنصة لأول مرة</h2><p class="note" style="margin:0 0 12px">أنشئ حساب المدير. بعدها تضيف المقيّمين من تبويب «المستخدمون». الشارات الخمسة وأسئلتها تُضاف تلقائيًا.</p>'+
+   '<label class="f">اسم المدير الظاهر<input type="text" id="suName" value="المدير"></label>'+
+   '<label class="f" style="margin-top:10px">اسم الدخول<input type="text" id="suUser" value="admin" autocapitalize="none" spellcheck="false" style="direction:ltr"></label>'+
+   '<label class="f" style="margin-top:10px">رقم سري من 6 أرقام (احفظه جيدًا)<input type="password" id="suPin" inputmode="numeric" maxlength="6" class="mono" style="text-align:center;font-size:20px;letter-spacing:4px"></label>'+
+   '<div id="suErr">'+(msg?'<div class="banner" style="margin-top:10px">'+esc(msg)+'</div>':'')+'</div><div class="actions" style="margin-top:12px"><button class="btn primary" id="btnSetup" style="width:100%">إنشاء المدير وبدء المنصة</button></div></div>';
+}
+async function doSetup(){
+  const n=($('#suName').value||'').trim(), u=($('#suUser').value||'').trim(), p=($('#suPin').value||'').replace(/\D/g,'');
+  const btn=$('#btnSetup'); btn.disabled=true;
+  try{ const r=await call('setupFirstAdmin',{name:n,username:u,pin:p}); S.token=r.username+'\n'+p; await load(); lsSet('use_code',S.token); enter(); }
+  catch(e){ showSetup(e.message); }
+}
+async function doLogin(){
+  const u=($('#loginUser').value||'').trim(), p=($('#loginPin').value||'').replace(/\D/g,'');
+  if(!u||p.length<4){ $('#loginErr').innerHTML='<div class="banner" style="margin-top:10px">اكتب اسم الدخول والرقم السري.</div>'; return; }
+  const btn=$('#btnLogin'); btn.disabled=true; btn.textContent='جارٍ التحقق…';
+  S.token=u+'\n'+p;
+  try{ await load(); lsSet('use_code',S.token); enter(); }
+  catch(e){ S.token=''; showLogin(e.message); }
+}
+function enter(){
+  S.view='cases'; S.openId=null; S.draft=null; S.bd=null; S.preview=false; $('#banner').innerHTML='';
+  renderShell(); mount();
+  clearInterval(enter.t); enter.t=setInterval(poll,25000);
+}
+async function poll(){
+  if(document.hidden||!S.me.id||S.bd||S.busy) return;
+  if(S.saveState==='saving'||S.saveState==='error') return;
+  try{ await load(); onData(); }catch(e){ if(e.code==='auth'){ logout(true); } }
+}
+function logout(expired){ clearInterval(enter.t); lsSet('use_code',''); S.token=''; showLogin(expired?'انتهت الجلسة أو عُطّل الحساب. أدخل الكود من جديد.':''); }
+function nameOf(id,fallback){ return fallback||'—'; }
+let raf=0;
+function onData(){ cancelAnimationFrame(raf); raf=requestAnimationFrame(update); }
+
+/* ---------- Governance ---------- */
+function issuesFor(id,c,forApproval){
+  const out=[]; const r=resultsOf(id,c);
+  if(!(c.pharmacist||'').trim()||!(c.summary||'').trim()) out.push('أكمل بيانات الحالة: الصيدلي وملخص الحالة.');
+  const inc=badgesIn(r).filter(b=>r[b.key]==='Incomplete').map(b=>b.name);
+  if(!Object.keys(r).length) out.push('لا توجد شارات مفعّلة لتقييم الحالة.');
+  if(inc.length) out.push('أسئلة غير مجابة في: '+inc.join('، ')+'.');
+  if(c.nominated&&(!(c.startPoint||'').trim()||!(c.outcome||'').trim())) out.push('الحالة مرشّحة لبوست الشهر: أكمل نقطة البداية والنتيجة في محتوى البوست.');
+  if(forApproval){
+    if(S.settings.reqBadge&&metCount(r)===0&&!inc.length) out.push('لا توجد شارة متحققة، والإعداد الحالي لا يسمح باعتماد حالة بلا شارات.');
+    if(S.settings.sep&&(!S.me.id||S.me.id===c.reviewerId)) out.push(S.me.id?'لا يمكنك اعتماد حالة قيّمتها بنفسك. يعتمدها معتمد آخر.':'تعذر تحديد هويتك، فلا يمكن التحقق من فصل المقيّم عن المعتمد.');
+  }
+  return out;
+}
+
+/* ---------- Shell ---------- */
+function tabsFor(){
+  return adminMode()?[['cases','الاعتماد والحالات'],['posts','بوستات الشهر'],['badges','الشارات'],['dash','لوحة المتابعة'],['log','المستخدمون والإعدادات']]:[['cases','حالاتي'],['posts','بوستات الشهر']];
+}
+function hexMix_(hex,pct){ const h=hex.replace('#',''); const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); const mix=(v)=>Math.round(v*pct+255*(1-pct)); return 'rgb('+mix(r)+','+mix(g)+','+mix(b)+')'; }
+function applyBrand(){
+  const box=$('#logoBox'); if(!box) return;
+  if(S.settings.brandLogo){ box.classList.add('has-img'); box.innerHTML='<img src="'+S.settings.brandLogo+'" alt="الشعار">'; }
+  else { box.classList.remove('has-img'); box.textContent='LOGO'; }
+}
+function renderShell(){
+  const admin=adminMode();
+  const sb=$('#storeNote'); if(sb) sb.remove();
+  if(S.storage==='local'){ const n=document.createElement('div'); n.id='storeNote'; n.className='banner'; n.textContent='وضع تجربة: البيانات محفوظة في هذا المتصفح فقط ولا يراها غيرك. عند الاستضافة يربطها القسم التقني بقاعدة بيانات مشتركة.'; $('#app').insertBefore(n,$('#banner')); }
+  applyBrand();
+  $('#sub').textContent=admin?'تقييم حالات USE Community واعتماد الشارات وبوست الشهر':(S.me.canEdit?'معاينة بوابة الإدخال كما يراها المقيّم':'بوابة الإدخال: أدخل حالاتك وتابع اعتمادها');
+  $('#tabs').innerHTML=tabsFor().map(([k,l])=>'<button class="tab" data-tab="'+k+'" aria-current="'+(S.view===k)+'">'+l+'</button>').join('');
+  $('#roleBox').innerHTML='<span class="rbadge">'+(S.me.role==='admin'?'مدير':'مقيّم')+'</span><span class="who">'+esc(S.me.name)+'</span>'+(S.me.canEdit?'<button class="btn" id="btnPreview">'+(S.preview?'← العودة للوحة التحكم':'عرض بوابة الإدخال')+'</button>':'')+'<button class="btn" id="btnLogout">خروج</button>';
+}
+function go(v){S.pick=v==='best'?S.pick:null;S.view=v;S.openId=null;S.draft=null;S.bd=null;renderShell();mount();window.scrollTo(0,0);}
+function mount(){
+  if(S.view==='cases'){ S.openId?mountEditor():mountCases(); }
+  else if(S.view==='badges') S.bd?mountBadgeEditor():mountBadges();
+  else if(S.view==='dash') mountDash();
+  else if(S.view==='rules') mountRules();
+  else if(S.view==='users') mountUsers();
+  else if(S.view==='post') mountPost();
+  else if(S.view==='posts') mountPosts();
+  else if(S.view==='best') mountBest();
+  else mountLog();
+  update();
+}
+function update(){
+  if(S.view==='cases'){ if(S.openId) refreshEditor(); else updateCases(); }
+  else if(S.view==='badges'){ if(!S.bd) updateBadges(); }
+  else if(S.view==='dash') updateDash();
+  else if(S.view==='log'){ updateLog(); updateUsers(); }
+  else if(S.view==='posts') updatePosts();
+  else if(S.view==='users') updateUsers();
+  else if(S.view==='best') updateBest();
+}
+
+/* ---------- Cases list ---------- */
+function allMonths(){return [...new Set([...S.cases.values()].map(c=>c.month).filter(Boolean))].sort().reverse();}
+function mineOnly(id,c){return !S.me.id||c.reviewerId===S.me.id;}
+function visibleCases(){return [...S.cases.entries()].filter(([id,c])=>adminMode()||mineOnly(id,c));}
+function isReady(id,c){return issuesFor(id,c,false).length===0;}
+function matchStatus(id,c,f){
+  const st=statusOf(id);
+  if(f==='all') return true; if(f==='Ready') return st==='Pending'&&isReady(id,c); if(f==='Featured') return st==='Approved'&&!!(S.dec.get(id)||{}).featured; if(f==='Nominated') return !!c.nominated; return st===f;
+}
+function mountCases(){
+  const admin=adminMode();
+  $('#main').innerHTML=
+  '<div class="kpis" id="cKpis"></div>'+
+  '<div class="bar"><select id="fMonth" aria-label="الشهر"></select>'+
+  '<select id="fStatus" aria-label="الحالة"><option value="all">كل الحالات</option><option value="Pending">قيد المراجعة</option>'+(admin?'<option value="Ready">جاهزة للاعتماد</option>':'')+'<option value="Approved">معتمدة</option>'+(admin?'<option value="Nominated">مرشّحة لبوست الشهر</option><option value="Featured">أفضل المشاركات</option>':'')+'<option value="Rejected">مرفوضة</option></select>'+
+  '<input type="text" id="fQ" placeholder="بحث باسم الصيدلي أو المشرف أو الفرع أو رقم الحالة" style="max-width:320px" aria-label="بحث">'+
+  '<span class="sp"></span>'+(admin?'<button class="btn" id="btnReport">تصدير التقرير (Excel)</button>':'')+
+  '<button class="btn primary" id="btnNew"'+(S.me.canWrite?'':' disabled')+'>+ حالة جديدة</button></div>'+
+  '<div class="panel"><div class="tw"><table><thead><tr><th>رقم الحالة</th><th>الشهر</th><th>الصيدلي</th><th>الفرع</th><th>المشرف</th>'+(admin?'<th>المقيّم</th>':'')+'<th>الشارات</th><th>الحالة</th><th>'+(admin?'الجاهزية / أفضل مشاركة':'ملاحظة')+'</th></tr></thead><tbody id="tb"></tbody></table></div>'+
+  '<div class="legend" id="legend"></div></div>';
+  $('#fStatus').value=S.filters.status; $('#fQ').value=S.filters.q;
+}
+function filteredCases(){
+  const f=S.filters; const q=f.q.trim().toLowerCase();
+  return visibleCases().filter(([id,c])=>(f.month==='all'||c.month===f.month)&&matchStatus(id,c,f.status)&&(!q||[id,c.pharmacist,c.branch,c.supervisor].join(' ').toLowerCase().includes(q)))
+   .sort((a,b)=>(b[1].month||'').localeCompare(a[1].month||'')||b[0].localeCompare(a[0]));
+}
+function dotsFor(id,c){
+  const r=resultsOf(id,c);
+  return '<div class="dots">'+badgesIn(r).map(b=>'<i class="dot d-'+RES_CLS[r[b.key]]+'" title="'+esc(b.name+': '+RES_AR[r[b.key]])+'">'+esc(abOf(b))+'</i>').join('')+'</div>';
+}
+function pastPick(id,c){ const nm=(c.pharmacist||'').trim(); if(!nm) return ''; const ms=[...S.cases.entries()].filter(([i,x])=>i!==id&&x.month!==c.month&&(x.pharmacist||'').trim()===nm&&(S.dec.get(i)||{}).featured).map(([i,x])=>monthLabel(x.month)); return [...new Set(ms)].join('، '); }
+function updateCases(){
+  const sel=$('#fMonth'); if(!sel) return; const admin=adminMode();
+  const ms=allMonths(); if(S.filters.month!=='all'&&!ms.includes(S.filters.month)) S.filters.month='all';
+  sel.innerHTML='<option value="all">كل الأشهر</option>'+ms.map(m=>'<option value="'+m+'">'+esc(monthLabel(m))+'</option>').join(''); sel.value=S.filters.month;
+  const vis=visibleCases(); const cnt={all:vis.length,Pending:0,Ready:0,Approved:0,Rejected:0,Featured:0,Nominated:0};
+  vis.forEach(([id,c])=>{const st=statusOf(id); cnt[st]++; if(st==='Pending'&&isReady(id,c)) cnt.Ready++; if(st==='Approved'&&(S.dec.get(id)||{}).featured) cnt.Featured++; if(c.nominated) cnt.Nominated++;});
+  const K=admin?[['Pending','بانتظار الاعتماد',cnt.Pending],['Ready','جاهزة للاعتماد',cnt.Ready],['Approved','معتمدة',cnt.Approved],['Nominated','مرشّحة لبوست الشهر',cnt.Nominated],['Rejected','مرفوضة',cnt.Rejected]]:[['all','كل حالاتي',cnt.all],['Pending','قيد المراجعة',cnt.Pending],['Approved','معتمدة',cnt.Approved],['Rejected','مرفوضة',cnt.Rejected]];
+  $('#cKpis').innerHTML=K.map(k=>'<button class="panel kpi" data-st="'+k[0]+'" aria-pressed="'+(S.filters.status===k[0])+'"><span>'+k[1]+'</span><b>'+k[2]+'</b></button>').join('');
+  $('#fStatus').value=S.filters.status;
+  const bs=activeBadges();
+  $('#legend').innerHTML='<span><i class="dot d-Met">U</i> متحققة</span><span><i class="dot d-NotMet">U</i> غير متحققة</span><span><i class="dot d-NA">U</i> لا تنطبق</span><span><i class="dot d-Incomplete">U</i> غير مكتملة</span><span style="margin-inline-start:auto">'+bs.map(b=>esc(abOf(b))+'='+esc(b.name)).join('، ')+'</span>';
+  const rows=filteredCases(); const cols=admin?9:8;
+  if(!rows.length){
+    $('#tb').innerHTML='<tr><td colspan="'+cols+'"><div class="empty"><b>'+(vis.length?'لا نتائج مطابقة':'لا توجد حالات بعد')+'</b>'+(vis.length?'غيّر الفلاتر أو البحث.':(admin?'تظهر هنا الحالات التي يدخلها المقيّمون.':'ابدأ بإدخال حالتك الأولى.'))+'</div></td></tr>'; return;
+  }
+  $('#tb').innerHTML=rows.map(([id,c])=>{ const nomTag=c.nominated?' <span class="pill p-wait">مرشّحة لبوست الشهر</span>':'';
+    const st=statusOf(id); const stp=STATUS[st]; const dec=S.dec.get(id)||{};
+    let last;
+    if(admin){ const is=issuesFor(id,c,false); last=st==='Pending'?(is.length?'<span class="pill p-wait">ناقصة ('+is.length+')</span>':'<span class="pill p-ok">جاهزة للاعتماد</span>'):(st==='Approved'?(dec.featured?'<span class="pill p-ok">★ أفضل مشاركة</span>':c.nominated?'<span class="pill p-wait">مرشّحة لبوست الشهر</span>':'<span class="pill p-na">—</span>'):'<span class="pill p-na">—</span>'); if(st==='Pending'&&c.nominated) last+=' <span class="pill p-wait">مرشّحة</span>'; }
+    else { last=nomTag+' '+(st==='Rejected'?esc(dec.rejectReason||'—'):st==='Approved'?'اعتُمدت في <span class="mono">'+esc(dec.approvedAt||'')+'</span>'+(dec.featured?' · اختيرت ضمن أفضل المشاركات ('+STAGE_AR[dec.postStage||'selected']+')':''):(issuesFor(id,c,false).length?'<span class="pill p-wait">ينقصها إكمال</span>':'مكتملة وبانتظار الاعتماد')); }
+    return '<tr class="row" data-open="'+esc(id)+'" tabindex="0"><td class="mono">'+esc(id)+(c.example?' <span class="pill p-na">مثال</span>':'')+'</td><td>'+esc(monthLabel(c.month))+'</td><td>'+esc(c.pharmacist||'—')+'</td><td>'+esc(c.branch||'—')+'</td><td>'+esc(c.supervisor||'—')+'</td>'+(admin?'<td>'+esc(c.reviewerName||'—')+'</td>':'')+'<td>'+dotsFor(id,c)+'</td><td><span class="pill '+stp[1]+'">'+stp[0]+'</span></td><td>'+last+'</td></tr>';
+  }).join('');
+}
+
+/* ---------- Editor ---------- */
+function newDraft(){
+  const d=new Date(); const pm=new Date(d.getFullYear(),d.getMonth()-1,1); const month=pm.getFullYear()+'-'+String(pm.getMonth()+1).padStart(2,'0');
+  return {nominated:false,id:'',month,pharmacist:'',branch:'',supervisor:'',summary:'',answers:{},reasons:{},startPoint:'',outcome:'',situation:[],products:[],reviewerId:S.me.id,reviewerName:S.me.name||''};
+}
+function openCase(id){
+  if(S.view!=='cases'){S.view='cases';renderShell();}
+  S.rail={reason:'',mode:''};
+  if(id){S.draft=JSON.parse(JSON.stringify(S.cases.get(id)));S.draft.id=id;S.draft.answers=S.draft.answers||{};S.draft.reasons=S.draft.reasons||{};S.draft.situation=S.draft.situation||[];S.draft.products=S.draft.products||[];S.isNew=false;}
+  else{S.draft=newDraft();S.isNew=true;}
+  S.openId=S.draft.id||'new'; S.saveState=''; S.saveErr=''; S.railErr=''; S.aiCodes=new Set(); S.aiErr=''; mount(); window.scrollTo(0,0);
+}
+function locked(){
+  const d=S.draft; if(!S.me.canWrite) return true;
+  if(!S.isNew&&statusOf(d.id)!=='Pending') return true;
+  if(!adminMode()&&!S.isNew&&S.me.id&&d.reviewerId!==S.me.id) return true;
+  return false;
+}
+function qHtml(q){
+  return '<div class="q '+q.t+'" data-row="'+esc(q.c)+'"><span class="code">'+esc(q.c)+'<span class="tagt">'+QT[q.t]+'</span><span class="aichip" data-aichip="'+esc(q.c)+'" hidden title="مقترح من الذكاء الاصطناعي، راجعه">AI</span></span><div class="qt"><span class="qtext">'+esc(q.q)+'</span>'+
+    '<details><summary>متى تكون الإجابة نعم أو لا؟</summary><p><b>نعم:</b> '+esc(q.y||'—')+'</p><p><b>لا:</b> '+esc(q.n||'—')+'</p></details></div>'+
+    '<div class="seg" role="group" aria-label="'+esc(q.c)+'"><button data-q="'+esc(q.c)+'" data-v="Y" aria-pressed="false">نعم</button><button data-q="'+esc(q.c)+'" data-v="N" aria-pressed="false">لا</button></div></div>';
+}
+function mountEditor(){
+  const d=S.draft; const r0=resultsOf(d.id,d); const bs=badgesIn(r0);
+  const cards=bs.map(b=>{
+    const qs=(b.qs||[]).map(qHtml); const g=(b.qs||[]).find(q=>q.t==='gate'); const gateHtml=g?qs.shift():'';
+    return '<section class="panel bcard" data-badge="'+esc(b.key)+'"><div class="bhead"><b>'+esc(b.name)+'</b><span class="pill" data-res="'+esc(b.key)+'"></span></div><p class="bdef">'+esc(b.def||'')+'</p>'+
+      gateHtml+'<div data-rest="'+esc(b.key)+'">'+qs.join('')+'</div><div class="skip" data-skip="'+esc(b.key)+'" hidden></div>'+
+      '<div class="ev" data-ev="'+esc(b.key)+'"><label>الدليل من نص الحالة <span class="note" style="font-weight:400">(اختياري، يفضَّل عند تحقق الشارة)</span></label><textarea data-reason="'+esc(b.key)+'" rows="2" placeholder="اقتباس قصير أو إشارة من النص يثبت الإجابات بنعم"></textarea></div></section>';
+  }).join('') || '<div class="panel empty"><b>لا توجد شارات مفعّلة</b>يضيف مدير النظام الشارات من لوحة التحكم.</div>';
+  $('#main').innerHTML=
+  '<div class="bar"><button class="btn" id="btnBack">← الحالات</button><span class="mono" style="font-weight:600" id="cid">'+(d.id?esc(d.id):'رقم جديد (يُعطى عند أول حفظ)')+'</span><span class="sp"></span><span class="save" id="saveState"></span></div>'+
+  '<div class="ed"><div class="ed-main">'+
+  '<section class="panel sec"><h3>بيانات الحالة</h3><div class="grid">'+
+  '<label class="f">الشهر<input type="month" data-f="month" value="'+esc(d.month)+'"></label>'+
+  '<label class="f">اسم الصيدلي<input type="text" data-f="pharmacist" value="'+esc(d.pharmacist)+'"></label>'+
+  '<label class="f">الفرع<input type="text" data-f="branch" value="'+esc(d.branch)+'"></label>'+
+  '<label class="f">اسم المشرف<input type="text" data-f="supervisor" value="'+esc(d.supervisor||'')+'"></label></div>'+
+  '<label class="f" style="margin-top:12px">ملخص الحالة (كما كتبه الصيدلي)<textarea data-f="summary" rows="4">'+esc(d.summary)+'</textarea></label>'+
+  (S.settings.aiEnabled?'<div class="actions" style="margin-top:10px"><button class="btn" id="btnAiSuggest"'+(locked()?' disabled':'')+'>✨ اقترح الإجابات من النص أعلاه</button><span class="note" id="aiStatus" style="margin-inline-start:8px"></span></div><div id="aiErrBox"></div><p class="note" style="margin-top:6px">يقترح الذكاء الاصطناعي إجابات الأسئلة، ونقطة البداية والنتيجة ووصف الموقف في محتوى البوست أدناه — كل ذلك من نص ملخص الحالة، ويملأ فقط ما هو فارغ. راجع كل شيء قبل الحفظ.</p>':(adminMode()?'<p class="note" style="margin-top:10px">اقتراح الإجابات بالذكاء الاصطناعي غير متاح حاليًا. راجع تبويب «السجل والإعدادات».</p>':''))+
+  '<p class="note">المقيّم: <b>'+esc(d.reviewerName||S.me.name)+'</b></p></section>'+
+  '<section class="panel sec"><label class="toggle" style="padding:0 0 12px;border:0;border-bottom:1px solid var(--line);margin-bottom:12px"><span><b>ترشيح الحالة لبوست الشهر</b><small>يرشّحها المقيّم، ويعتمد المعتمد الحالة كاملة مع الترشيح، ثم يختار أفضل المشاركات من المرشّحة.</small></span><input type="checkbox" id="nomToggle"'+(d.nominated?' checked':'')+'></label><h3>محتوى البوست</h3><p class="note" style="margin:0 0 10px">يُستخدم لتوليد بوست الشهر بعد الاعتماد. اكتب ما حدث فعلًا كما في نص الحالة.</p><div class="grid"><label class="f">نقطة البداية<textarea data-f="startPoint" rows="2">'+esc(d.startPoint||'')+'</textarea></label><label class="f">النتيجة<textarea data-f="outcome" rows="2">'+esc(d.outcome||'')+'</textarea></label></div><h3 style="margin-top:14px">وصف الموقف (نقاط قصيرة، حتى 5)</h3><div id="lSituation">'+listHtml('situation')+'</div><h3 style="margin-top:14px">المنتجات المذكورة (حتى 8)</h3><div id="lProducts">'+listHtml('products')+'</div></section>'+cards+'</div>'+
+  '<aside class="ed-rail" id="rail"></aside></div>';
+  $('#main').querySelectorAll('[data-reason]').forEach(t=>{t.value=(d.reasons||{})[t.dataset.reason]||'';});
+}
+function pillFor(v){return v==='Met'?'p-ok':v==='Not Met'?'p-no':v==='Incomplete'?'p-wait':'p-na';}
+function refreshEditor(){
+  const d=S.draft; if(!d||!$('#rail')) return;
+  const L=locked(); const r=resultsOf(d.id,d); const bs=badgesIn(r); const admin=adminMode(); const st=statusOf(d.id); const dec=S.dec.get(d.id)||{};
+  document.querySelectorAll('#main [data-f],#main [data-reason],#main [data-l],#main [data-ladd],#main [data-ldel],#nomToggle').forEach(el=>{el.disabled=L;});
+  document.querySelectorAll('#main [data-q]').forEach(btn=>{btn.setAttribute('aria-pressed',String(d.answers[btn.dataset.q]===btn.dataset.v)); btn.disabled=L;});
+  document.querySelectorAll('#main [data-aichip]').forEach(el=>{el.hidden=!S.aiCodes.has(el.dataset.aichip);});
+  const abtn=$('#btnAiSuggest'); if(abtn) abtn.disabled=L||S.aiBusy;
+  const aerr=$('#aiErrBox'); if(aerr) aerr.innerHTML=S.aiErr?'<div class="banner">'+esc(S.aiErr)+'</div>':'';
+  bs.forEach(b=>{
+    const res=r[b.key]; const chip=document.querySelector('[data-res="'+b.key+'"]'); if(!chip) return;
+    chip.textContent=RES_AR[res]; chip.className='pill '+pillFor(res);
+    const g=(b.qs||[]).find(q=>q.t==='gate'); const gateNo=g&&d.answers[g.c]==='N';
+    document.querySelector('[data-rest="'+b.key+'"]').hidden=!!gateNo;
+    const skip=document.querySelector('[data-skip="'+b.key+'"]'); skip.hidden=!gateNo;
+    if(gateNo) skip.textContent=b.gateFail==='Not Met'?'الشارة غير متحققة لأن السؤال الأولي = لا، ولا حاجة لبقية الأسئلة.':'لا تنطبق هذه الشارة على الحالة، فلا حاجة لبقية الأسئلة.';
+    document.querySelector('[data-ev="'+b.key+'"]').hidden=!!gateNo;
+  });
+  const is=issuesFor(d.id,d,admin); const stp=STATUS[st];
+  let h='<div class="panel sec"><h3>نتيجة التقييم</h3>'+bs.map(b=>'<div class="rail-row"><span>'+esc(b.name)+'</span><span class="pill '+pillFor(r[b.key])+'">'+RES_AR[r[b.key]]+'</span></div>').join('')+
+    '<div class="rail-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:10px"><b>عدد الشارات</b><b class="num">'+metCount(r)+' من '+bs.length+'</b></div>'+
+    '<p class="note">النتيجة تُحسب من إجاباتك تلقائيًا ولا تُعدَّل يدويًا.</p></div>';
+  h+='<div class="panel sec"><h3>'+(admin?'الاعتماد':'حالة الاعتماد')+' <span class="pill '+stp[1]+'" style="margin-inline-start:6px">'+stp[0]+'</span></h3>';
+  if(S.isNew) h+='<p class="note" style="margin:0">تُحفظ الحالة تلقائيًا عند أول تعديل وتصل إلى المعتمد.</p>';
+  else if(st==='Pending'){
+    const own=is.filter(x=>true);
+    if(own.length) h+='<ul class="issues">'+own.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'; else h+='<div class="ok-msg">'+(admin?'مستوفية شروط الاعتماد.':'الحالة مكتملة وبانتظار اعتماد المسؤول.')+'</div>';
+    if(admin&&S.railErr) h+='<div class="banner" style="margin-top:10px">'+esc(S.railErr)+'</div>';
+    if(admin){
+      if(S.rail.mode==='reject') h+='<label class="f" style="margin-top:10px">سبب الرفض<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn bad" id="btnRejectOk">تأكيد الرفض</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
+      else h+='<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnApprove"'+((is.length||!S.me.canWrite)?' disabled':'')+'>اعتماد</button><button class="btn bad" id="btnReject"'+(S.me.canWrite?'':' disabled')+'>رفض</button></div>';
+    }
+  } else {
+    h+='<p class="note" style="margin:0">'+(st==='Approved'?'اعتمدها <b>'+esc(dec.approverName||'—')+'</b> بتاريخ <span class="mono">'+esc(dec.approvedAt||'')+'</span>.':'رُفضت. السبب: '+esc(dec.rejectReason||'—'))+'</p>';
+    if(admin&&S.railErr) h+='<div class="banner" style="margin-top:10px">'+esc(S.railErr)+'</div>';
+    if(admin&&S.me.canWrite){
+      if(S.rail.mode==='reopen') h+='<label class="f" style="margin-top:10px">سبب إعادة الفتح (يُسجَّل في السجل)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn primary" id="btnReopenOk">إعادة فتح</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
+      else h+='<div class="actions" style="margin-top:10px"><button class="btn" id="btnReopen">إعادة فتح للتعديل</button></div>';
+    } else if(st==='Rejected') h+='<p class="note">للتعديل أو إعادة التقديم تواصل مع المعتمد.</p>';
+  }
+  h+='</div>';
+  h+='<div class="panel sec"><h3>بوست الشهر</h3>';
+  if(!d.nominated) h+='<p class="note" style="margin:0">غير مرشّحة. '+(L?'':'فعّل «ترشيح الحالة لبوست الشهر» في محتوى البوست لترشيحها.')+'</p>';
+  else {
+    h+=dec.featured?'<div class="ok-msg">★ اختيرت ضمن أفضل المشاركات</div>':'<div class="ok-msg" style="background:var(--warn-soft);color:var(--warn)">مرشّحة لبوست الشهر'+(st==='Approved'?' وبانتظار اختيار المعتمد':'')+'</div>';
+    if(dec.featured) h+='<label class="f" style="margin-top:8px">مرحلة البوست'+(admin?'<select data-stage="'+esc(d.id)+'" style="width:100%">'+STAGE_KEYS.map(k=>'<option value="'+k+'"'+((dec.postStage||'selected')===k?' selected':'')+'>'+STAGE_AR[k]+'</option>').join('')+'</select>':'<b style="color:var(--ink)">'+STAGE_AR[dec.postStage||'selected']+'</b>')+'</label>';
+    h+=d.id?'<div class="actions" style="margin-top:10px"><button class="btn primary" data-post="'+esc(d.id)+'">توليد البوست وإضافة صور المنتجات</button></div>':'<p class="note">احفظ الحالة أولًا (تُحفظ تلقائيًا عند التعديل).</p>';
+  }
+  h+='</div>';
+  $('#rail').innerHTML=h;
+  const ss=$('#saveState'); if(ss) ss.textContent=saveMsg();
+}
+async function runAiSuggest(){
+  const d=S.draft; if(!d||locked()||S.aiBusy) return;
+  S.aiBusy=true; S.aiErr=''; const btn=$('#btnAiSuggest'); if(btn){btn.disabled=true;btn.textContent='جارٍ التحليل…';}
+  const st=$('#aiStatus'); if(st) st.textContent='';
+  let text=(d.summary||'').trim();
+  if(d.situation&&d.situation.length) text+='\n\nنقاط الموقف:\n- '+d.situation.filter(Boolean).join('\n- ');
+  if(d.products&&d.products.length) text+='\n\nالمنتجات المذكورة: '+d.products.filter(Boolean).join('، ');
+  if(!text.trim()){ S.aiErr='اكتب ملخص الحالة أولًا قبل طلب الاقتراح.'; }
+  else{
+    try{
+      const r=await call('aiSuggest',{caseId:d.id||'',text:text});
+      const codeToBadge={}; activeBadges().forEach(b=>{(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;});});
+      let applied=0, skipped=0;
+      (r.suggestions||[]).forEach(s=>{
+        if(d.answers[s.code]){ skipped++; return; } // لا يستبدل إجابة موجودة
+        d.answers[s.code]=s.answer; S.aiCodes.add(s.code); applied++;
+        const bk=codeToBadge[s.code];
+        if(bk&&s.quote&&!(d.reasons[bk]||'').trim()) d.reasons[bk]=s.quote;
+      });
+      // محتوى البوست: يملأ فقط الحقول الفارغة، لا يستبدل ما كتبه المقيّم
+      const filledLabels=[];
+      if(r.startPoint&&!(d.startPoint||'').trim()){ d.startPoint=r.startPoint; filledLabels.push('نقطة البداية'); const el=$('[data-f="startPoint"]'); if(el) el.value=d.startPoint; }
+      if(r.outcome&&!(d.outcome||'').trim()){ d.outcome=r.outcome; filledLabels.push('النتيجة'); const el=$('[data-f="outcome"]'); if(el) el.value=d.outcome; }
+      if(r.situation&&r.situation.length&&!(d.situation||[]).filter(Boolean).length){ d.situation=r.situation.slice(0,5); filledLabels.push('وصف الموقف'); }
+      const total=(r.suggestions||[]).length;
+      let msg=total===0?'لم يجد الذكاء الاصطناعي إجابات واضحة في النص.':(applied?('تم اقتراح '+applied+' إجابة جديدة، راجعها أدناه.'+(skipped?(' (تجاهل '+skipped+' سؤالًا مُجابًا مسبقًا.)'):'')):'كل الأسئلة التي فهمها الذكاء الاصطناعي من النص مُجابة مسبقًا.');
+      if(filledLabels.length) msg+=' كما اقترح محتوى: '+filledLabels.join('، ')+'.';
+      if(st) st.textContent=msg;
+      if(applied||filledLabels.length){ touch(); }
+      if(filledLabels.indexOf('وصف الموقف')>=0) relist(); // يعيد رسم قائمة نقاط الموقف مع القيم الجديدة
+      document.querySelectorAll('#main [data-reason]').forEach(t=>{ if(d.reasons[t.dataset.reason]!==undefined) t.value=d.reasons[t.dataset.reason]||''; });
+    }catch(e){ S.aiErr=e.message||'تعذر الاتصال بالذكاء الاصطناعي.'; }
+  }
+  S.aiBusy=false; refreshEditor();
+  const btn2=$('#btnAiSuggest'); if(btn2) btn2.textContent='✨ اقترح الإجابات من النص أعلاه';
+}
+let saveTimer=null, chain=Promise.resolve();
+function payload(d){
+  return {id:d.id||'',month:d.month,pharmacist:d.pharmacist,branch:d.branch,supervisor:d.supervisor||'',summary:d.summary,answers:d.answers,reasons:d.reasons,startPoint:d.startPoint||'',outcome:d.outcome||'',situation:d.situation||[],products:d.products||[],nominated:!!d.nominated};
+}
+function touch(){
+  if(locked()) return; S.saveState='saving'; const ss=$('#saveState'); if(ss) ss.textContent='جارٍ الحفظ…';
+  clearTimeout(saveTimer); saveTimer=setTimeout(flush,700);
+}
+let saveTry=0;
+function saveMsg(){
+  if(S.saveState==='saving') return 'جارٍ الحفظ…'; if(S.saveState==='saved') return 'حُفظ تلقائيًا';
+  if(S.saveState==='error') return 'تعذر الحفظ: '+(S.saveErr||'')+(saveTry&&saveTry<4?' (تتم إعادة المحاولة)':'');
+  return '';
+}
+function flush(){
+  clearTimeout(saveTimer);
+  const d0=S.draft;
+  chain=chain.then(async()=>{
+    const d=d0; if(!d) return;
+    try{
+      const res=await call('saveCase',payload(d));
+      if(S.draft===d){
+        if(!d.id){ d.id=res.id; S.openId=res.id; S.isNew=false; const c=$('#cid'); if(c) c.textContent=res.id; setTimeout(refreshEditor,0); }
+        d.updatedAt=res.updatedAt;
+      }
+      S.cases.set(res.id,Object.assign({},d,{id:res.id,results:res.results,metCount:res.metCount,reviewerId:d.reviewerId||S.me.id,reviewerName:d.reviewerName||S.me.name,answers:JSON.parse(JSON.stringify(d.answers)),reasons:JSON.parse(JSON.stringify(d.reasons))}));
+      S.saveState='saved'; S.saveErr=''; saveTry=0;
+    }catch(e){
+      S.saveState='error'; S.saveErr=e.message||'';
+      if(e.code==='auth'){ logout(true); return; }
+      const transient=e.code==='network'||/lock|timed out|Service|Exception/i.test(e.message||'');
+      if(transient&&saveTry<4){saveTry++; clearTimeout(saveTimer); saveTimer=setTimeout(flush,1500*saveTry);}
+    }
+    const ss=$('#saveState'); if(ss) ss.textContent=saveMsg();
+  });
+  return chain;
+}
+async function decide(kind){
+  const d=S.draft; if(S.busy) return; S.busy=true; S.railErr='';
+  try{ if(S.saveState==='saving'||S.saveState==='error') await flush(); await call('decide',{id:d.id,kind,reason:S.rail.reason}); S.rail={reason:'',mode:''}; await load(); }
+  catch(e){ if(e.code==='auth') return logout(true); S.railErr=e.message; }
+  S.busy=false; refreshEditor();
+}
+async function reopen(){
+  const d=S.draft; if(S.busy) return; S.busy=true; S.railErr='';
+  try{ await call('reopen',{id:d.id,reason:S.rail.reason}); S.rail={reason:'',mode:''}; await load(); }
+  catch(e){ if(e.code==='auth') return logout(true); S.railErr=e.message; }
+  S.busy=false; refreshEditor();
+}
+
+/* ---------- Badge builder (admin) ---------- */
+function mountBadges(){
+  $('#main').innerHTML='<div class="bar"><h2 class="sh" style="margin:0">الشارات</h2><span class="sp"></span><button class="btn primary" id="btnNewBadge">+ شارة جديدة</button></div><div id="bList" class="blist"></div><p class="note">الحالات المعتمدة والمرفوضة تحتفظ بنتائجها كما اعتُمدت، فلا يغيّرها أي تعديل هنا. التعديل يؤثر فقط على الحالات قيد المراجعة والحالات الجديدة. إضافة سؤال لشارة قائمة تجعلها «غير مكتملة» في الحالات قيد المراجعة إلى أن تُجاب.</p>';
+}
+function updateBadges(){
+  const box=$('#bList'); if(!box) return; const bs=allBadges();
+  if(!bs.length){box.innerHTML='<div class="panel empty"><b>لا توجد شارات</b>أضف أول شارة لتبدأ.</div>';return;}
+  box.innerHTML=bs.map((b,i)=>{
+    const n=(b.qs||[]).length; const used=[...S.cases.entries()].filter(([id,c])=>b.key in resultsOf(id,c)).length;
+    return '<div class="panel binfo"><div class="binfo-main"><div class="binfo-head"><i class="dot d-Met">'+esc(abOf(b))+'</i><b>'+esc(b.name)+'</b><span class="pill '+(b.active===false?'p-na':'p-ok')+'">'+(b.active===false?'معطّلة':'مفعّلة')+'</span></div><p class="note" style="margin:4px 0 0">'+esc(b.def||'')+'</p><p class="note" style="margin:2px 0 0">'+n+' أسئلة، مستخدمة في '+used+' حالة</p></div>'+
+      '<div class="actions"><button class="btn" data-bmove="'+esc(b.key)+'" data-dir="-1"'+(i===0?' disabled':'')+' aria-label="تقديم">↑</button><button class="btn" data-bmove="'+esc(b.key)+'" data-dir="1"'+(i===bs.length-1?' disabled':'')+' aria-label="تأخير">↓</button><button class="btn" data-bedit="'+esc(b.key)+'">تعديل</button><button class="btn" data-btoggle="'+esc(b.key)+'">'+(b.active===false?'تفعيل':'تعطيل')+'</button></div></div>';
+  }).join('');
+}
+function blankQ(t){return {c:null,t:t,q:'',y:'',n:''};}
+function openBadge(key){
+  if(key){const b=JSON.parse(JSON.stringify(S.badges.find(x=>x.key===key)));
+    const qs=b.qs||[]; const g=qs.find(q=>q.t==='gate');
+    S.bd={isNew:false,key:b.key,name:b.name||'',ab:b.ab||'',def:b.def||'',order:b.order||0,active:b.active!==false,strength:b.strength||'',icon:b.icon||'',gateOn:!!g,gate:g||blankQ('gate'),gateFail:b.gateFail==='Not Met'?'Not Met':'N/A',musts:qs.filter(q=>q.t==='must'),disqs:qs.filter(q=>q.t==='disq')};
+  } else {
+    const mx=allBadges().reduce((m,b)=>Math.max(m,b.order||0),0);
+    S.bd={isNew:true,key:'',name:'',ab:'',def:'',order:mx+1,active:true,strength:'',icon:'',gateOn:false,gate:blankQ('gate'),gateFail:'N/A',musts:[blankQ('must'),blankQ('must')],disqs:[blankQ('disq')]};
+  }
+  mountBadgeEditor(); window.scrollTo(0,0);
+}
+function qBlock(kind,i,q){
+  const label=QT[kind]; const k=kind==='gate'?'gate':kind==='must'?'musts':'disqs';
+  return '<div class="qb"><div class="qb-head"><span class="tagt">'+label+(kind!=='gate'?' '+(i+1):'')+'</span>'+(kind!=='gate'?'<button class="btn" data-bqdel="'+k+':'+i+'" aria-label="حذف السؤال">حذف</button>':'')+'</div>'+
+   '<label class="f">'+(kind==='disq'?'نص السؤال (اجعل الإجابة نعم = تسقط الشارة)':'نص السؤال')+'<input type="text" data-bq="'+k+':'+i+':q" value="'+esc(q.q)+'"></label>'+
+   '<div class="grid" style="margin-top:8px"><label class="f">متى تكون الإجابة نعم<input type="text" data-bq="'+k+':'+i+':y" value="'+esc(q.y)+'"></label><label class="f">متى تكون الإجابة لا<input type="text" data-bq="'+k+':'+i+':n" value="'+esc(q.n)+'"></label></div></div>';
+}
+function mountBadgeEditor(){
+  const b=S.bd;
+  $('#main').innerHTML='<div class="bar"><button class="btn" id="btnBadgeBack">← الشارات</button><h2 class="sh" style="margin:0">'+(b.isNew?'شارة جديدة':'تعديل: '+esc(b.name))+'</h2></div>'+
+  '<div class="ed-main">'+
+  '<section class="panel sec"><h3>بيانات الشارة</h3><div class="grid"><label class="f">اسم الشارة<input type="text" data-bf="name" value="'+esc(b.name)+'"></label>'+
+  '<label class="f">رمز من حرف أو حرفين (إنجليزي)'+(b.isNew?'':' — لا يتغير')+'<input type="text" data-bf="ab" maxlength="2" value="'+esc(b.ab)+'"'+(b.isNew?'':' disabled')+' style="direction:ltr;text-transform:uppercase"></label></div>'+
+  '<label class="f" style="margin-top:12px">تعريف الشارة<textarea data-bf="def" rows="2">'+esc(b.def)+'</textarea></label><label class="f" style="margin-top:12px">عبارة القوة (تظهر في البوست عند تحقق الشارة)<input type="text" data-bf="strength" value="'+esc(b.strength||'')+'"></label><div style="margin-top:12px"><span class="note">صورة الشارة (اختيارية، تظهر في البوست)</span><div class="lrow" style="margin-top:6px"><span id="bIconPrev">'+(b.icon?'<img src="'+b.icon+'" width="56" height="56" alt="">':'')+'</span><input type="file" id="bIcon" accept="image/*"><button class="btn" id="bIconDel">إزالة</button></div></div></section>'+
+  '<section class="panel sec"><h3>سؤال أولي (اختياري)</h3><p class="note" style="margin:0 0 10px">يحدد هل تنطبق الشارة أصلًا، مثل: هل استُخدم عرض؟ إذا كانت إجابته لا تتوقف الشارة عند نتيجة محددة.</p>'+
+  '<label class="toggle" style="padding:0 0 10px;border:0"><span>تفعيل السؤال الأولي</span><input type="checkbox" data-bf="gateOn"'+(b.gateOn?' checked':'')+'></label>'+
+  (b.gateOn?qBlock('gate',0,b.gate)+'<label class="f" style="margin-top:10px">إذا كانت الإجابة لا، فالنتيجة<select data-bf="gateFail" style="width:auto"><option value="N/A"'+(b.gateFail==='N/A'?' selected':'')+'>لا تنطبق</option><option value="Not Met"'+(b.gateFail==='Not Met'?' selected':'')+'>غير متحققة</option></select></label>':'')+'</section>'+
+  '<section class="panel sec"><h3>الشروط (كلها يجب أن تكون نعم)</h3><div class="qlist">'+b.musts.map((q,i)=>qBlock('must',i,q)).join('')+'</div><div class="actions" style="margin-top:10px"><button class="btn" data-badd="must">+ شرط</button></div></section>'+
+  '<section class="panel sec"><h3>حالات الاستبعاد (يجب أن تكون لا)</h3><div class="qlist">'+b.disqs.map((q,i)=>qBlock('disq',i,q)).join('')+'</div><div class="actions" style="margin-top:10px"><button class="btn" data-badd="disq">+ استبعاد</button></div></section>'+
+  '<div id="bErr"></div><div class="actions"><button class="btn primary" id="btnBadgeSave">حفظ الشارة</button><button class="btn" id="btnBadgeCancel">إلغاء</button></div></div>';
+}
+async function saveBadge(){
+  const b=S.bd; const err=m=>{$('#bErr').innerHTML='<div class="banner">'+esc(m)+'</div>';return false;};
+  if(!b.name.trim()) return err('اكتب اسم الشارة.');
+  const ab=(b.ab||'').trim().toUpperCase();
+  if(!/^[A-Z]{1,2}$/.test(ab)) return err('الرمز حرف أو حرفان إنجليزيان.');
+  if(allBadges().some(x=>x.key!==b.key&&(x.ab||'').toUpperCase()===ab)) return err('الرمز مستخدم لشارة أخرى.');
+  if(b.gateOn&&!b.gate.q.trim()) return err('اكتب نص السؤال الأولي أو أوقفه.');
+  const musts=b.musts.filter(q=>q.q.trim()), disqs=b.disqs.filter(q=>q.q.trim());
+  if(!musts.length) return err('أضف شرطًا واحدًا على الأقل.');
+  const all=[].concat(b.gateOn?[b.gate]:[],musts,disqs); let next=1;
+  all.forEach(q=>{const m=q.c&&String(q.c).match(/(\d+)$/); if(m) next=Math.max(next,+m[1]+1);});
+  const assign=q=>{if(!q.c){q.c=ab+(next++);} return {c:q.c,t:q.t,q:q.q.trim(),y:q.y.trim(),n:q.n.trim()};};
+  const qs=[]; if(b.gateOn) qs.push({c:b.gate.c||ab+'0',t:'gate',q:b.gate.q.trim(),y:b.gate.y.trim(),n:b.gate.n.trim()});
+  musts.forEach(q=>qs.push(assign(q))); disqs.forEach(q=>qs.push(assign(q)));
+  try{
+    await call('saveBadge',{key:b.isNew?'':b.key,name:b.name.trim(),ab:ab,def:b.def.trim(),order:b.order,active:b.active,gateFail:b.gateOn?b.gateFail:'',qs:qs,strength:(b.strength||'').trim(),icon:b.icon||''});
+    await load();
+  }catch(e){return err(e.message||'تعذر الحفظ.');}
+  S.bd=null; mountBadges(); update();
+}
+function badgeBody(b,over){return Object.assign({key:b.key,name:b.name,ab:b.ab,def:b.def,order:b.order,active:b.active!==false,gateFail:b.gateFail,qs:b.qs,strength:b.strength||'',icon:b.icon||''},over||{});}
+async function moveBadge(key,dir){
+  const bs=allBadges(); const i=bs.findIndex(b=>b.key===key); const j=i+dir; if(i<0||j<0||j>=bs.length) return;
+  const a=bs[i],c=bs[j]; if(S.busy) return; S.busy=true;
+  try{
+    // إعادة ترقيم كل الشارات لتفادي التعادل
+    const order=bs.map(b=>b.key); order.splice(i,1); order.splice(j,0,key);
+    for(let k=0;k<order.length;k++){ const b=bs.find(x=>x.key===order[k]); if((b.order||0)!==k+1) await call('saveBadge',badgeBody(b,{order:k+1})); }
+    await load(); onData();
+  }catch(e){ toast(e.message,true); }
+  S.busy=false;
+}
+async function toggleBadge(key){
+  const b=S.badges.find(x=>x.key===key); if(!b||S.busy) return; S.busy=true;
+  try{ await call('saveBadge',badgeBody(b,{active:b.active===false})); await load(); onData(); }catch(e){ toast(e.message,true); }
+  S.busy=false;
+}
+
+/* ---------- Dashboard ---------- */
+function cycleStage(){
+  const d=new Date().getDate();
+  if(d>=25||d<=1) return 0; if(d<=3) return 1; if(d===4) return 2; if(d<=7) return 3; if(d===8) return 4; if(d<=10) return 5; return -1;
+}
+function mountDash(){ $('#main').innerHTML='<div class="bar"><select id="dMonth" aria-label="الشهر"></select><span class="sp"></span></div><div id="dBody"></div>'; }
+function pct(a,b){return b?Math.round(a/b*100):null;}
+function updateDash(){
+  const sel=$('#dMonth'); if(!sel) return;
+  const ms=allMonths(); if(S.dashMonth!=='all'&&!ms.includes(S.dashMonth)) S.dashMonth='all';
+  sel.innerHTML='<option value="all">كل الأشهر</option>'+ms.map(m=>'<option value="'+m+'">'+esc(monthLabel(m))+'</option>').join(''); sel.value=S.dashMonth;
+  const cs=[...S.cases.entries()].filter(([id,c])=>S.dashMonth==='all'||c.month===S.dashMonth).map(([id,c])=>({id,c,st:statusOf(id),r:resultsOf(id,c)}));
+  const ap=cs.filter(x=>x.st==='Approved'), pe=cs.filter(x=>x.st==='Pending'), rj=cs.filter(x=>x.st==='Rejected');
+  const inc=cs.filter(x=>Object.values(x.r).includes('Incomplete')).length;
+  const flags=pe.filter(x=>issuesFor(x.id,x.c,false).length).length;
+  const avg=ap.length?(ap.reduce((s,x)=>s+metCount(x.r),0)/ap.length).toFixed(1):'—';
+  const stage=cycleStage();
+  let h='<div class="kpis">'+[['المقدَّمة',cs.length],['المعتمدة',ap.length],['قيد المراجعة',pe.length],['المرفوضة',rj.length],['متوسط الشارات للمعتمدة',avg],['أدلة غير مكتملة',inc],['ملاحظات حوكمة',flags]].map(k=>'<div class="panel kpi"><span>'+k[0]+'</span><b>'+k[1]+'</b></div>').join('')+'</div>';
+  h+='<h2 class="sh" style="margin-top:0">مراحل بوست الشهر (للمختارة)</h2><div class="kpis">'+STAGE_KEYS.map(k=>'<div class="panel kpi"><span>'+STAGE_AR[k]+'</span><b>'+ap.filter(x=>(S.dec.get(x.id)||{}).featured&&((S.dec.get(x.id)||{}).postStage||'selected')===k).length+'</b></div>').join('')+'</div>';
+  const rowsB=allBadges().filter(b=>b.active!==false||cs.some(x=>b.key in x.r));
+  h+='<div class="panel tw"><table><thead><tr><th>الشارة</th><th>المقدَّمة</th><th>المنطبقة</th><th>متحققة</th><th>الانتشار على المنطبقة</th><th>على المعتمدة فقط</th></tr></thead><tbody>'+
+   (rowsB.length?rowsB.map(b=>{
+    const has=cs.filter(x=>b.key in x.r); const app=has.filter(x=>x.r[b.key]!=='N/A'&&x.r[b.key]!=='Incomplete').length; const met=has.filter(x=>x.r[b.key]==='Met').length;
+    const apH=ap.filter(x=>b.key in x.r); const apMet=apH.filter(x=>x.r[b.key]==='Met').length; const p=pct(met,app); const p2=pct(apMet,apH.length);
+    return '<tr><td><b>'+esc(b.name)+'</b>'+(b.active===false?' <span class="pill p-na">معطّلة</span>':'')+'</td><td class="num">'+has.length+'</td><td class="num">'+app+'</td><td class="num">'+met+'</td><td><div class="meter"><div class="track"><i style="width:'+(p||0)+'%"></i></div><span class="num">'+(p==null?'—':p+'%')+'</span></div></td><td class="num">'+(p2==null?'—':p2+'%')+'</td></tr>';
+   }).join(''):'<tr><td colspan="6"><div class="empty">لا توجد شارات</div></td></tr>')+'</tbody></table></div><p class="note">المنطبقة تستبعد النتائج «لا تنطبق» و«غير مكتملة». الانتشار على المنطبقة يقيس السلوك دون أن تظلمه الحالات التي لا يخصها العرض أو وصفتي، أما «على المعتمدة فقط» فيقيس جودة الحالات المختارة للنشر.</p>';
+  const ph={}; cs.forEach(x=>{const k=(x.c.pharmacist||'—').trim()||'—'; const o=ph[k]||(ph[k]={n:0,a:0,b:0}); o.n++; if(x.st==='Approved') o.a++; o.b+=metCount(x.r);});
+  const phr=Object.entries(ph).sort((a,b)=>b[1].b-a[1].b||b[1].n-a[1].n).slice(0,12);
+  h+='<div class="two"><div><h2 class="sh">الصيادلة</h2><div class="panel tw"><table><thead><tr><th>الصيدلي</th><th>الحالات</th><th>المعتمدة</th><th>الشارات</th></tr></thead><tbody>'+
+   (phr.length?phr.map(([k,o])=>'<tr><td>'+esc(k)+'</td><td class="num">'+o.n+'</td><td class="num">'+o.a+'</td><td class="num">'+o.b+'</td></tr>').join(''):'<tr><td colspan="4"><div class="empty">لا بيانات بعد</div></td></tr>')+
+   '</tbody></table></div></div><div><h2 class="sh">Workflow</h2><div class="panel tw"><table><thead><tr><th>اليوم</th><th>المرحلة</th><th>المسؤول</th></tr></thead><tbody>'+
+   CYCLE.map((c,i)=>'<tr'+(i===stage?' style="background:var(--brand-soft)"':'')+'><td class="mono">'+c[0]+'</td><td>'+c[1]+(i===stage?' <span class="pill p-ok">الآن</span>':'')+'</td><td>'+c[2]+'</td></tr>').join('')+
+   '</tbody></table></div><p class="note">'+(stage<0?'نحن بين دورتين حاليًا. تبدأ مرحلة الاختيار يوم 25. ':'')+'الأرقام أيام من الشهر. الاختيار يمتد من 25 إلى 1 من الشهر التالي.</p></div></div>';
+  $('#dBody').innerHTML=h;
+}
+
+/* ---------- Rules ---------- */
+function mountRules(){
+  const admin=adminMode(); const bs=admin?allBadges():allBadges().filter(b=>b.active!==false);
+  $('#main').innerHTML='<div class="panel sec"><h3>كيف تُحسب الشارة</h3><ul class="issues" style="gap:8px">'+
+   ['<li style="background:var(--good-soft);color:var(--good)"><b>متحققة:</b> كل أسئلة «شرط» = نعم، وأسئلة «استبعاد» = لا.</li>',
+    '<li style="background:var(--bad-soft);color:var(--bad)"><b>غير متحققة:</b> أي شرط = لا، أو استبعاد = نعم، أو سؤال أولي محدد لنتيجة «غير متحققة» وإجابته لا.</li>',
+    '<li style="background:var(--chip);color:var(--ink)"><b>لا تنطبق:</b> عندما تكون إجابة السؤال الأولي = لا في شارة نتيجتها عندئذ «لا تنطبق».</li>',
+    '<li><b>لا يُفترض شيء غير مكتوب:</b> ما لم يرد في نص الحالة فإجابته لا.</li>'].join('')+'</ul></div>'+
+   (admin?'<p class="note" style="margin-top:10px">بصفتك مديرًا يمكنك تعديل أسئلة أي شارة من هذه الشاشة مباشرةً بزر «تعديل الشارة».</p>':'')+
+   (bs.length?bs.map(b=>'<div class="bar" style="margin-top:22px;margin-bottom:0"><h2 class="sh" style="margin:0">'+esc(b.name)+(b.active===false?' <span class="pill p-na">معطّلة</span>':'')+'</h2><span class="sp"></span>'+(admin?'<button class="btn" data-ruleedit="'+esc(b.key)+'">تعديل الشارة</button>':'')+'</div><p class="note" style="margin:6px 0 8px">'+esc(b.def||'')+'</p><div class="panel tw"><table><thead><tr><th>الرمز</th><th>النوع</th><th>السؤال</th><th>نعم عندما</th><th>لا عندما</th></tr></thead><tbody>'+
+    (b.qs||[]).map(q=>'<tr'+(q.t==='disq'?' style="background:var(--bad-soft)"':q.t==='gate'?' style="background:var(--brand-soft)"':'')+'><td class="mono">'+esc(q.c)+'</td><td>'+QT[q.t]+'</td><td>'+esc(q.q)+'</td><td>'+esc(q.y||'—')+'</td><td>'+esc(q.n||'—')+'</td></tr>').join('')+'</tbody></table></div>').join(''):'<div class="panel empty" style="margin-top:14px"><b>لا توجد شارات</b></div>');
+}
+
+/* ---------- Log & settings ---------- */
+function mountUsers(){ $('#main').innerHTML=usersHtml(); }
+function mountLog(){
+  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
+}
+function updateLog(){
+  const ab=$('#aiBox');
+  if(ab){
+    const srcAr={backend:'متصل بـ Claude عبر الخادم',claude:'متصل بـ Claude (داخل Claude)',endpoint:'متصل عبر خادم القسم التقني',none:'غير متصل في هذه النسخة'}[S.settings.aiSource||'none'];
+    ab.innerHTML='<p class="note" style="margin:0 0 10px">يقترح إجابات أسئلة الشارات ومحتوى البوست من ملخص الحالة، ويبقى دور المقيّم المراجعة والتأكيد. نص الحالة يُرسل لمزوّد الذكاء الاصطناعي لتحليله، فتأكد أن ذلك يوافق سياسة الشركة.</p>'+
+    '<div class="grid"><label class="f">مصدر الذكاء الاصطناعي<b style="color:'+(S.settings.aiSource&&S.settings.aiSource!=='none'?'var(--good)':'var(--muted)')+'">'+srcAr+'</b></label><label class="f">الحالة<b style="color:'+(S.settings.aiEnabled?'var(--good)':'var(--muted)')+'">'+(S.settings.aiEnabled?'مُفعَّل للمقيّمين':'غير مُفعَّل')+'</b></label></div>'+
+    '<label class="toggle" style="padding:12px 0 0;border:0"><span>تفعيل الاقتراح للمقيّمين<small>إيقافه يخفي زر الاقتراح عن الجميع فورًا.</small></span><input type="checkbox" data-set="aiOn"'+(S.settings.aiOn!==false?' checked':'')+'></label>'+
+    (S.settings.aiSource&&S.settings.aiSource!=='none'?'<div class="actions" style="margin-top:10px"><button class="btn" id="aiKeyTest">اختبار الاتصال</button></div>':'')+
+    (S.aiKeyMsg?'<div class="banner" style="margin-top:10px;'+(S.aiKeyMsg.ok?'background:var(--good-soft);color:var(--good)':'')+'">'+esc(S.aiKeyMsg.text)+'</div>':'');
+  }
+  const box=$('#setBox'); if(!box) return; const dis=false;
+  const T=[['sep','فصل المقيّم عن المعتمد','يمنع اعتماد حالة يكون معتمدها هو مقيّمها.'],['reqBadge','اشتراط شارة واحدة على الأقل للاعتماد','لا تُعتمد حالة بلا أي شارة متحققة.']];
+  box.innerHTML=T.map(t=>'<label class="toggle"><span>'+t[1]+'<small>'+t[2]+'</small></span><input type="checkbox" data-set="'+t[0]+'"'+(S.settings[t[0]]?' checked':'')+(dis?' disabled':'')+'></label>').join('');
+  $('#setNote').textContent=dis?'تعديل الإعدادات متاح لمن يملك صلاحية التحرير فقط.':'أي تغيير في الإعدادات يُسجَّل في سجل التدقيق.';
+  const br=$('#brandBox'); if(br){
+    br.innerHTML='<div class="grid"><label class="f">لون خلفية البوست<input type="color" id="cPrimary" value="'+esc(S.settings.brandPrimary||'#1f4e78')+'"'+(dis?' disabled':'')+'></label><label class="f">لون التمييز (للبوست)<input type="color" id="cAccent" value="'+esc(S.settings.brandAccent||'#c9a86a')+'"'+(dis?' disabled':'')+'></label></div>'+
+    '<div style="margin-top:12px"><span class="note">شعار الشركة (يظهر أعلى المنصة وفي البوست، الأنسب صورة PNG بخلفية شفافة)</span><div class="lrow" style="margin-top:6px">'+(S.settings.brandLogo?'<img src="'+S.settings.brandLogo+'" style="height:40px" alt="">':'<span class="note">لا يوجد شعار</span>')+(dis?'':' <input type="file" id="brandLogoFile" accept="image/*"><button class="btn" id="brandLogoDel">إزالة</button>')+'</div></div>'+
+    (dis?'':'<div class="actions" style="margin-top:12px"><button class="btn" id="brandReset">إرجاع الألوان الافتراضية</button></div>');
+  }
+  $('#auditB').innerHTML=S.audit.length?S.audit.map(a=>'<tr><td class="mono">'+esc((a.ts||'').slice(0,16).replace('T',' '))+'</td><td class="mono">'+esc(a.caseId||'—')+'</td><td>'+esc(ACT_AR[a.action]||a.action)+'</td><td>'+esc(a.byName||'—')+'</td><td>'+esc(a.note||'')+'</td></tr>').join(''):'<tr><td colspan="5"><div class="empty"><b>السجل فارغ</b>تظهر هنا عمليات الإنشاء والاعتماد والرفض وإعادة الفتح وتعديل الشارات.</div></td></tr>';
+}
+
+/* ---------- Best of month ---------- */
+function completeness(c){ return (c.startPoint?1:0)+(c.outcome?1:0)+((c.situation||[]).length?1:0)+((c.products||[]).length?1:0); }
+function mountBest(){
+  $('#main').innerHTML='<div class="bar"><select id="bMonth" aria-label="الشهر"></select><span class="sp"></span></div><div id="pickBox"></div><div class="panel tw"><table><thead><tr><th>الترتيب</th><th>رقم الحالة</th><th>الصيدلي</th><th>المشرف / الفرع</th><th>الشارات</th><th>العدد</th><th>اكتمال البوست</th><th>سبق اختياره</th><th>القرار</th></tr></thead><tbody id="bB"></tbody></table></div><p class="note">الترتيب مبني على عدد الشارات المتحققة أولًا، ثم اكتمال محتوى البوست، ثم أقدم اعتماد. عند التعادل يظهر الترتيب نفسه لأكثر من حالة، والقرار النهائي للمدير ويُسجَّل سببه في سجل التدقيق. يمكن اختيار أكثر من حالة في الشهر.</p>';
+}
+function updateBest(){
+  const sel=$('#bMonth'); if(!sel) return;
+  const months=[...new Set([...S.cases.values()].filter(c=>statusOf(c.id)==='Approved').map(c=>c.month))].sort().reverse();
+  if(!S.bestMonth||!months.includes(S.bestMonth)) S.bestMonth=months[0]||'';
+  sel.innerHTML=months.length?months.map(m=>'<option value="'+m+'">'+esc(monthLabel(m))+'</option>').join(''):'<option value="">لا توجد حالات معتمدة</option>'; sel.value=S.bestMonth;
+  const rows=[...S.cases.entries()].filter(([id,c])=>c.month===S.bestMonth&&statusOf(id)==='Approved').map(([id,c])=>{ const r=resultsOf(id,c); const d=S.dec.get(id)||{}; return {id,c,r,d,n:metCount(r),q:completeness(c)}; });
+  rows.sort((a,b)=>b.n-a.n||b.q-a.q||String(a.d.approvedAt||'').localeCompare(String(b.d.approvedAt||''))||a.id.localeCompare(b.id));
+  let rank=0,prev=null; rows.forEach((x,i)=>{ const k=x.n+'/'+x.q; if(k!==prev){ rank=i+1; prev=k; } x.rank=rank; });
+  const past={}; [...S.cases.entries()].forEach(([id,c])=>{ const d=S.dec.get(id)||{}; if(d.featured&&c.month!==S.bestMonth&&c.pharmacist){ (past[c.pharmacist.trim()]=past[c.pharmacist.trim()]||[]).push(c.month); } });
+  $('#bB').innerHTML=rows.length?rows.map(x=>{
+    const pm=past[(x.c.pharmacist||'').trim()];
+    return '<tr'+(x.d.featured?' style="background:var(--good-soft)"':'')+'><td class="num"><b>'+x.rank+'</b></td><td class="mono"><a href="#" data-open="'+esc(x.id)+'" data-openbest="1">'+esc(x.id)+'</a></td><td>'+esc(x.c.pharmacist||'—')+'</td><td>'+esc(x.c.supervisor||'—')+' / '+esc(x.c.branch||'—')+'</td><td>'+dotsFor(x.id,x.c)+'</td><td class="num">'+x.n+'</td><td class="num">'+x.q+' / 4</td><td>'+(pm?'<span class="pill p-wait">'+pm.map(monthLabel).join('، ')+'</span>':'—')+'</td><td>'+(x.d.featured?'<span class="pill p-ok">★ مختارة</span> <button class="btn" data-unpick="'+esc(x.id)+'">إلغاء</button>':'<button class="btn primary" data-pick="'+esc(x.id)+'">اختيار</button>')+'</td></tr>';
+  }).join(''):'<tr><td colspan="9"><div class="empty"><b>لا توجد حالات معتمدة في هذا الشهر</b>اعتمد الحالات أولًا ثم ارجع لهذه الشاشة.</div></td></tr>';
+  const pb=$('#pickBox');
+  if(S.pick&&S.cases.get(S.pick.id)){ const c=S.cases.get(S.pick.id); pb.innerHTML='<div class="panel sec" style="margin-bottom:12px"><h3>اختيار الحالة '+esc(S.pick.id)+' ('+esc(c.pharmacist||'—')+') لبوست الشهر</h3><label class="f">سبب الاختيار (يُسجَّل في السجل)<textarea id="pickReason" rows="2">'+esc(S.pick.reason||'')+'</textarea></label>'+(S.pick.err?'<div class="banner" style="margin-top:8px">'+esc(S.pick.err)+'</div>':'')+'<div class="actions" style="margin-top:8px"><button class="btn primary" id="btnPickOk">تأكيد الاختيار</button><button class="btn" id="btnPickCancel">إلغاء</button></div></div>'; }
+  else pb.innerHTML='';
+}
+/* ---------- Posts of the month (approver) ---------- */
+const isBest=id=>statusOf(id)==='Approved'&&!!(S.dec.get(id)||{}).featured;
+function nominatedMonths(){ return [...new Set([...S.cases.values()].filter(c=>c.nominated&&statusOf(c.id)==='Approved').map(c=>c.month))].sort().reverse(); }
+function mountPosts(){
+  if(!adminMode()){ $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>'; S.postsSig=''; return; }
+  $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span><label class="f" style="flex-direction:row;align-items:center;gap:8px">عدد أفضل المشاركات<input type="number" id="bestCountIn" min="1" max="20" value="'+(S.settings.bestCount||3)+'" style="width:70px;border:1.5px solid var(--line);border-radius:7px;padding:6px 8px"></label><button class="btn" id="btnBestCount">حفظ العدد</button></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>';
+  S.postsSig='';
+}
+function updatePosts(){
+  const sel=$('#pMonth'); if(!sel) return; const ms=nominatedMonths();
+  if(!S.postsMonth||!ms.includes(S.postsMonth)) S.postsMonth=ms[0]||'';
+  const ro=!adminMode();
+  sel.innerHTML=ms.length?ms.map(m=>'<option value="'+m+'">'+esc(monthLabel(m))+'</option>').join(''):'<option value="">'+'لا توجد مشاركات مرشّحة ومعتمدة'+'</option>'; sel.value=S.postsMonth;
+  const ids=[...S.cases.values()].filter(c=>c.month===S.postsMonth&&c.nominated&&statusOf(c.id)==='Approved').map(c=>c.id).sort((a,b)=>{ if(ro&&isBest(a)!==isBest(b)) return isBest(a)?-1:1; const ra=metCount(resultsOf(a,S.cases.get(a))), rb=metCount(resultsOf(b,S.cases.get(b))); return rb-ra||a.localeCompare(b); });
+  const N=S.settings.bestCount||3; const picked=ids.filter(id=>(S.dec.get(id)||{}).featured).length;
+  if(ro){ const nb=ids.filter(isBest).length; $('#pSummary').innerHTML=ids.length?'<div class="kpis"><div class="panel kpi"><span>المشاركات المرشّحة والمعتمدة</span><b>'+ids.length+'</b></div><div class="panel kpi"><span>★ أفضل المشاركات</span><b>'+nb+'</b></div></div>'+(nb?'':'<div class="note" style="margin-bottom:12px">لم يختر المعتمد أفضل المشاركات لهذا الشهر بعد.</div>'):''; }
+  else $('#pSummary').innerHTML=ids.length?'<div class="kpis"><div class="panel kpi"><span>مرشّحة ومعتمدة</span><b>'+ids.length+'</b></div><div class="panel kpi"><span>أفضل المشاركات المختارة</span><b>'+picked+' / '+N+'</b></div></div>'+(picked>=N?'<div class="ok-msg" style="margin-bottom:12px">اكتمل العدد المحدد. لإضافة حالة أخرى ألغِ اختيار واحدة أو ارفع العدد.</div>':''):'';
+  const sig=(ro?'ro|':'')+S.postsMonth+'|'+N+'|'+ids.map(id=>{const c=S.cases.get(id),d=S.dec.get(id)||{}; return id+':'+(d.featured?1:0)+':'+(d.postStage||'')+':'+(c.updatedAt||'');}).join(',');
+  if(sig===S.postsSig) return; S.postsSig=sig;
+  const box=$('#pList');
+  if(!ids.length){ box.innerHTML=ro?'<div class="panel empty"><b>لا توجد مشاركات مرشّحة ومعتمدة بعد</b>تظهر هنا كل المشاركات المرشّحة لبوست الشهر بعد اعتمادها، وأفضل المشاركات أولًا.</div>':'<div class="panel empty"><b>لا توجد بوستات بعد</b>تظهر هنا الحالات التي رشّحها المقيّمون لبوست الشهر بعد اعتمادها، مع البوست المولَّد لكل منها.</div>'; return; }
+  box.innerHTML=ids.map((id,i)=>{ const c=S.cases.get(id), d=S.dec.get(id)||{}, r=resultsOf(id,c);
+    return '<section class="panel" style="display:grid;grid-template-columns:minmax(0,540px) minmax(0,1fr);gap:18px;padding:16px;'+(d.featured?'border:2px solid var(--good);':'')+'"><canvas data-cv="'+esc(id)+'" style="width:100%;height:auto;border-radius:10px;display:block"></canvas>'+
+      '<div style="display:flex;flex-direction:column;gap:10px;min-width:0"><h3 style="margin:0;color:var(--navy)">'+(d.featured?'<span class="pill p-ok" style="margin-inline-end:8px">★ أفضل مشاركة</span>':'')+(i+1)+'. '+esc(c.pharmacist||'—')+' <span class="mono" style="font-size:12px;color:var(--muted)">'+esc(id)+'</span></h3>'+
+      '<p class="note" style="margin:0">المشرف: '+esc(c.supervisor||'—')+' · الفرع: '+esc(c.branch||'—')+' · المقيّم: '+esc(c.reviewerName||'—')+'</p>'+
+      '<div class="rail-row"><span>الشارات المتحققة</span>'+dotsFor(id,c)+'<b class="num">'+metCount(r)+'</b></div>'+
+      (!ro&&pastPick(id,c)?'<span class="pill p-wait" style="width:fit-content">سبق اختيار الصيدلي: '+esc(pastPick(id,c))+'</span>':'')+
+      (ro&&c.reviewerId===S.me.id?'<span class="pill p-ok" style="width:fit-content">من حالاتك</span>':'')+
+      (ro&&d.featured?'<div class="ok-msg">★ ضمن أفضل المشاركات · '+STAGE_AR[d.postStage||'selected']+'</div>':'')+(ro&&!d.featured?'<span class="pill p-na" style="width:fit-content">مرشّحة ومعتمدة</span>':'')+
+      (!ro&&d.featured?'<div class="ok-msg">★ ضمن أفضل المشاركات</div><label class="f">مرحلة البوست<select data-stage="'+esc(id)+'" style="width:100%">'+STAGE_KEYS.map(k=>'<option value="'+k+'"'+((d.postStage||'selected')===k?' selected':'')+'>'+STAGE_AR[k]+'</option>').join('')+'</select></label>':'')+
+      '<div class="actions">'+(ro?'':d.featured?'<button class="btn bad" data-unpick="'+esc(id)+'">إلغاء الاختيار</button>':'<button class="btn primary" data-pick="'+esc(id)+'"'+(picked>=N?' disabled':'')+'>★ اختيار كأفضل مشاركة</button>')+'<button class="btn" data-dlpost="'+esc(id)+'">تحميل PNG</button>'+(!ro||c.reviewerId===S.me.id?'<button class="btn" data-open="'+esc(id)+'">فتح الحالة</button>':'')+'</div></div></section>';
+  }).join('');
+  call('getPostImages',{ids}).then(m=>{ ids.forEach(id=>{ const cv=document.querySelector('canvas[data-cv="'+id+'"]'); const imgs=(m&&m[id])||[]; const again=()=>{ const c2=document.querySelector('canvas[data-cv="'+id+'"]'); if(c2) drawPost(c2,id,imgs,null); }; drawPost(cv,id,imgs,again); }); }).catch(()=>{ ids.forEach(id=>drawPost(document.querySelector('canvas[data-cv="'+id+'"]'),id,[],null)); });
+}
+/* ---------- Post generator ---------- */
+// خط البوست الثابت
+const POST_FONT='Noto Sans Arabic';
+const pfont=()=>'"'+POST_FONT+'","Segoe UI",Tahoma,Arial,sans-serif';
+const imgCache=new Map();
+function getImg(src,cb){ if(!src) return null; let e=imgCache.get(src); if(!e){ e={im:new Image(),ok:false}; e.im.onload=()=>{e.ok=true; cb&&cb();}; e.im.src=src; imgCache.set(src,e); } return e.ok?e.im:null; }
+// يقصّ الهوامش البيضاء/الشفافة حول الصورة حتى تظهر المنتجات والشارات بأحجام متساوية فعليًا
+const trimCache=new Map();
+function trimmed(im){
+  const key=im.src; if(trimCache.has(key)) return trimCache.get(key);
+  let out=im;
+  try{
+    const sc=Math.min(1,900/Math.max(im.naturalWidth||im.width,im.naturalHeight||im.height));
+    const w=Math.max(1,Math.round((im.naturalWidth||im.width)*sc)), h=Math.max(1,Math.round((im.naturalHeight||im.height)*sc));
+    const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.drawImage(im,0,0,w,h);
+    const d=x.getImageData(0,0,w,h).data; let x0=w,y0=h,x1=-1,y1=-1;
+    for(let y=0;y<h;y++) for(let xx=0;xx<w;xx++){ const i=(y*w+xx)*4; if(d[i+3]>20&&!(d[i]>236&&d[i+1]>236&&d[i+2]>236)){ if(xx<x0)x0=xx; if(xx>x1)x1=xx; if(y<y0)y0=y; if(y>y1)y1=y; } }
+    if(x1>=x0&&y1>=y0){ const cw=x1-x0+1, ch=y1-y0+1; const t=document.createElement('canvas'); t.width=cw; t.height=ch; t.getContext('2d').drawImage(c,x0,y0,cw,ch,0,0,cw,ch); out=t; }
+  }catch(e){}
+  trimCache.set(key,out); return out;
+}
+function rrect(x,c,a,b,w,h,r){ x.beginPath(); x.moveTo(a+r,b); x.arcTo(a+w,b,a+w,b+h,r); x.arcTo(a+w,b+h,a,b+h,r); x.arcTo(a,b+h,a,b,r); x.arcTo(a,b,a+w,b,r); x.closePath(); }
+function wrapLines(x,text,maxW){ const words=String(text||'').split(/\s+/).filter(Boolean); const lines=[]; let cur=''; words.forEach(w=>{ const t=cur?cur+' '+w:w; if(x.measureText(t).width>maxW&&cur){lines.push(cur);cur=w;} else cur=t; }); if(cur) lines.push(cur); return lines; }
+function hexToRgb_(h){h=(h||'#1f4e78').replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function shade_(h,f){const[r,g,b]=hexToRgb_(h);const m=(v)=>Math.max(0,Math.min(255,Math.round(v*f)));return 'rgb('+m(r)+','+m(g)+','+m(b)+')';}
+function postData(id){
+  const c=S.cases.get(id); const r=resultsOf(id,c);
+  const met=allBadges().filter(b=>r[b.key]==='Met');
+  return {month:monthLabel(c.month),pharmacist:c.pharmacist||'',supervisor:c.supervisor||'',start:c.startPoint||'',outcome:c.outcome||'',situation:c.situation||[],products:c.products||[],badges:met,brand:S.settings.brandPrimary||'#1f4e78',accent:S.settings.brandAccent||'#c9a86a',logo:S.settings.brandLogo||''};
+}
+function layoutPost(cv,d,dry,redraw){
+  const W=1080, x=cv.getContext('2d'); const H0=dry?4000:cv.height;
+  x.direction='rtl'; x.textAlign='right'; x.textBaseline='alphabetic';
+  const T=(s,px,py,col,wt,sz,al)=>{ if(dry) return; x.font=wt+' '+sz+'px '+pfont(); x.fillStyle=col; x.textAlign=al||'right'; x.fillText(s,px,py); };
+  const F=(wt,sz)=>{ x.font=wt+' '+sz+'px '+pfont(); };
+  if(!dry){ const g=x.createLinearGradient(0,0,0,H0); g.addColorStop(0,shade_(d.brand,1)); g.addColorStop(1,shade_(d.brand,.72)); x.fillStyle=g; x.fillRect(0,0,W,H0); }
+  let y=78;
+  F('700',44); const tl=wrapLines(x,'أفضل مشاركات الصيدلة في USE Community',W-100);
+  tl.forEach(l=>{T(l,W/2,y,'#fff','700',44,'center'); y+=58;});
+  T(d.month,W/2,y-6,'#4fb3f6','400',30,'center'); y+=44;
+  // top: pills + products
+  const top=y; const P=d.products; const n=P.length; const cols=Math.min(Math.max(n,1),4), rows=Math.ceil(n/4)||0;
+  const slotW=Math.min(150,430/cols), slotH=rows>1?120:200;
+  const topH=Math.max(190, rows*(slotH+40));
+  [['الصيدلي',d.pharmacist,'#d9731a'],['المشرف',d.supervisor,'#0f9d8a']].forEach((p,i)=>{
+    if(!p[1]) return; const py=top+i*100+10;
+    if(!dry){ rrect(x,0,W-40-230,py,230,66,16); x.fillStyle=p[2]; x.fill(); }
+    T(p[0],W-40-24,py+45,'#fff','700',34);
+    F('500',32); const nm=wrapLines(x,p[1],260)[0]||''; T(nm,W-300-30,py+44,'#fff','500',32);
+  });
+  P.forEach((name,i)=>{
+    const col=i%4, row=Math.floor(i/4); const inRow=Math.min(4,n-row*4); const rowW=inRow*slotW; const sx=40+(430-rowW)/2+col*slotW; const sy=top+row*(slotH+40);
+    if(dry) return;
+    const im=getImg(d.pimgs&&d.pimgs[i],redraw);
+    if(im){ const t=trimmed(im); const r=Math.min((slotW-14)/t.width,slotH/t.height); const w=t.width*r,h=t.height*r; x.drawImage(t,sx+(slotW-w)/2,sy+(slotH-h),w,h); }
+    else { rrect(x,0,sx+6,sy+slotH*0.25,slotW-12,slotH*0.75,12); x.fillStyle='rgba(255,255,255,.10)'; x.fill(); }
+    F('500',20); const ln=wrapLines(x,name,slotW-10)[0]||''; x.textAlign='center'; x.fillStyle='#cfe6fb'; x.fillText(ln,sx+slotW/2,sy+slotH+26);
+  });
+  y=top+topH+30;
+  // participation box
+  const hasBox=d.start||d.outcome||d.situation.length;
+  if(hasBox){
+    const bx=30,bw=W-60; const by=y+30; let cy=by+30;
+    const colW=(bw-100)/2; const rightX=bx+bw-30, leftX=rightX-colW-40;
+    let blockH=0; const cols2=[['نقطة البداية',d.start,rightX],['النتيجة',d.outcome,leftX]];
+    F('400',27); const ls=cols2.map(c=>c[1]?wrapLines(x,c[1],colW-10):[]);
+    const rowsN=Math.max(0,...ls.map(l=>l.length)); if(d.start||d.outcome) blockH=44+rowsN*40+24;
+    let sitH=0; F('400',27); const sl=d.situation.map(s=>wrapLines(x,s,bw-130)); if(sl.length){ sitH=64+sl.reduce((a,l)=>a+l.length*46+8,0); }
+    const boxH=30+blockH+sitH+20;
+    if(!dry){ rrect(x,0,bx,by,bw,boxH,26); x.fillStyle='#2166a8'; x.fill(); x.lineWidth=3; x.strokeStyle='#7fc0f2'; x.stroke();
+      rrect(x,0,W-330,by-44,300,56,22); x.fillStyle='#0d2c52'; x.fill(); x.lineWidth=3; x.strokeStyle=d.accent; x.stroke(); }
+    T('مشاركة الصيدلي',W-180,by-6,'#fff','700',30,'center');
+    if(blockH){
+      cols2.forEach((c,i)=>{ if(!c[1]) return; T(c[0],c[2],cy+16,d.accent,'700',28); ls[i].forEach((l,k)=>T(l,c[2],cy+16+44+k*40-4,'#fff','400',27)); });
+      cy+=blockH;
+      if(!dry&&sl.length){ x.strokeStyle='rgba(255,255,255,.5)'; x.lineWidth=2; x.beginPath(); x.moveTo(bx+50,cy-8); x.lineTo(bx+bw-50,cy-8); x.stroke(); }
+    }
+    if(sl.length){
+      T('وصف الموقف',bx+bw-40,cy+30,d.accent,'700',36); cy+=64;
+      sl.forEach(lines=>{ if(!dry){ x.fillStyle='#fff'; x.beginPath(); x.arc(bx+bw-32,cy+2,7,0,7); x.fill(); } lines.forEach((l,k)=>{ T(l,bx+bw-62,cy+10+k*46,'#fff','400',27); }); cy+=lines.length*46+8; });
+    }
+    y=by+boxH+40;
+  }
+  // bottom: badges (full width, centered)
+  const B=d.badges;
+  let bottomH=0;
+  if(B.length){
+    const maxSize=B.length<=2?300:B.length===3?260:230, gap=B.length<=2?70:34, avail=W-80;
+    let size=Math.min(maxSize,Math.floor((avail-gap*(B.length-1))/B.length));
+    const totalW=size*B.length+gap*(B.length-1); const startX=(W-totalW)/2;
+    const labelH=size>=110?Math.round(Math.min(30,size*0.12))+34:0;
+    bottomH=size+labelH+50;
+    if(!dry){
+      T('الشارات المتحققة',W/2,y+34,'#fff','700',34,'center');
+    }
+    const by=y+64;
+    B.forEach((b,i)=>{ const bx=startX+i*(size+gap); if(dry) return;
+      const im=getImg(b.icon,redraw);
+      if(im){ const t=trimmed(im); const r=Math.min(size/t.width,size/t.height); x.drawImage(t,bx+(size-t.width*r)/2,by+(size-t.height*r)/2,t.width*r,t.height*r); }
+      else { const cx=bx+size/2,cy2=by+size/2,R=size/2; x.beginPath(); for(let k=0;k<6;k++){const a=Math.PI/3*k-Math.PI/2; x.lineTo(cx+R*Math.cos(a),cy2+R*Math.sin(a));} x.closePath(); x.fillStyle='#1f4e78'; x.fill(); x.lineWidth=4; x.strokeStyle=d.accent; x.stroke(); x.direction='ltr'; T((b.ab||'?').slice(0,2),cx,cy2+size*0.12,'#fff','700',Math.round(size*0.36),'center'); x.direction='rtl'; }
+      if(size>=110){ F('700',Math.max(16,Math.round(Math.min(30,size*0.12)))); x.direction='ltr'; x.textAlign='center'; x.fillStyle='#ffffff'; x.fillText(String(b.name).slice(0,22),bx+size/2,by+size+30); x.direction='rtl'; }
+    });
+  }
+  bottomH+=30;
+  y+=bottomH+40;
+  // footer
+  T('Talent Management Department',40,y+30,d.accent,'600',24,'left');
+  const im=d.logo?getImg(d.logo,redraw):null;
+  if(im){ if(!dry){ const lh=64,lr=lh/im.height,lw=im.width*lr; x.drawImage(im,W-40-lw,y+8,lw,lh); } }
+  else { T('صيدلية المتحدة',W-40,y+20,'#fff','600',26); T('United Pharmacy',W-40,y+52,'#cfe6fb','400',22); }
+  return y+90;
+}
+async function drawPost(cv,id,imgs,again){
+  if(!cv||!S.cases.get(id)) return; const d=postData(id); d.pimgs=imgs||[];
+  const fam=pfont().split(',')[0];
+  try{ await Promise.all(['700 30px ','600 30px ','500 30px ','400 27px '].map(w=>document.fonts.load(w+fam,'عربي'))); }catch(e){}
+  cv.width=1080; cv.height=4000; const H=layoutPost(cv,d,true,again);
+  cv.width=1080; cv.height=Math.ceil(H); layoutPost(cv,d,false,again);
+}
+function renderPost(){ return drawPost($('#postCv'),S.postId,S.pimgs,()=>{ if(S.view==='post') renderPost(); }); }
+function canEditImgs(id){ return adminMode()||(statusOf(id)==='Pending'&&(S.cases.get(id)||{}).reviewerId===S.me.id); }
+async function openPost(id){ S.postId=id; S.view='post'; S.pimgs=[]; S.postFrom=S.view; S.openId=null; S.draft=null; renderShell(); mount(); window.scrollTo(0,0);
+  try{ const r=await call('getPostImages',{ids:[id]}); if(S.view==='post'&&S.postId===id){ S.pimgs=(r[id]||[]).slice(); renderPost(); const pv=document.querySelectorAll('[data-pimgprev]'); pv.forEach(el=>{ const i=+el.dataset.pimgprev; el.innerHTML=S.pimgs[i]?'<img src="'+S.pimgs[i]+'" alt="" style="height:44px">':''; }); } }catch(e){} }
+function resizeProduct(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [h,type,q] of [[360,'image/webp',.85],[300,'image/webp',.8],[260,'image/jpeg',.8],[200,'image/jpeg',.75]]){ const r=Math.min(1,h/Math.max(im.width,im.height)); const cw=Math.round(im.width*r),ch=Math.round(im.height*r); const c=document.createElement('canvas'); c.width=cw;c.height=ch; const x=c.getContext('2d'); if(type==='image/jpeg'){x.fillStyle='#fff';x.fillRect(0,0,cw,ch);} x.drawImage(im,0,0,cw,ch); const u=c.toDataURL(type,q); if(u.length<44000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('صورة المنتج كبيرة جدًا.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
+function mountPost(){
+  const c=S.cases.get(S.postId); const d=postData(S.postId);
+  const miss=[]; if(!d.start) miss.push('نقطة البداية'); if(!d.outcome) miss.push('النتيجة'); if(!d.situation.length) miss.push('وصف الموقف'); if(!d.pharmacist) miss.push('الصيدلي'); if(!d.badges.length) miss.push('شارة متحققة');
+  $('#main').innerHTML='<div class="bar"><button class="btn" id="btnPostBack">← الحالة</button><b class="mono">'+esc(S.postId)+'</b><span class="sp"></span><button class="btn primary" id="btnPostDl">تحميل الصورة PNG</button></div>'+
+   (miss.length?'<div class="banner">ناقص في البوست: '+esc(miss.join('، '))+'. عدّل الحالة (زر إعادة الفتح للمدير) أو اترك هذه الأجزاء.</div>':'')+
+   '<div class="ed"><div class="ed-main"><canvas id="postCv" aria-label="معاينة البوست"></canvas></div><aside class="ed-rail"><div class="panel sec"><h3>صور المنتجات</h3><p class="note" style="margin:0 0 10px">'+(canEditImgs(S.postId)?'تُحفظ مع الحالة، وتظهر للمعتمد في صفحة بوستات الشهر.':'الصور محفوظة من المقيّم ولا يمكن تعديلها بعد الاعتماد.')+'</p>'+
+   (d.products.length?d.products.map((p,i)=>'<label class="f" style="margin-bottom:8px">'+esc(p)+'<span data-pimgprev="'+i+'"></span>'+(canEditImgs(S.postId)?'<input type="file" accept="image/*" data-pimg="'+i+'">':'')+'</label>').join(''):'<p class="note">لم تُذكر منتجات في الحالة.</p>')+
+   '</div><div class="panel sec"><h3>ملاحظة</h3><p class="note" style="margin:0">الشارات ونقاط القوة تُؤخذ من نتيجة الاعتماد تلقائيًا. هذه صورة أولية لفريق التصميم أو للنشر المباشر. إن لم يبدأ التنزيل، اضغط مطولًا على الصورة واحفظها.</p></div></aside></div>';
+  renderPost();
+}
+function dlPost(){ const cv=$('#postCv'); if(!cv) return; cv.toBlob(b=>{ if(!b) return; saveFile('USE_Post_'+S.postId+'.png',b).catch(e=>toast(e.message,true)); },'image/png'); }
+function resizeLogo(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [w,type,q] of [[420,'image/png'],[320,'image/png'],[320,'image/webp',.9],[240,'image/webp',.85]]){ const r=Math.min(1,w/im.width); const cw=Math.round(im.width*r),ch=Math.round(im.height*r); const c=document.createElement('canvas'); c.width=cw;c.height=ch; c.getContext('2d').drawImage(im,0,0,cw,ch); const u=c.toDataURL(type,q); if(u.length<58000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('الصورة معقدة جدًا، جرّب صورة أبسط أو أصغر.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
+function resizeIcon(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [sz,type,q] of [[160,'image/png'],[128,'image/png'],[128,'image/webp',.85],[96,'image/webp',.8]]){ const c=document.createElement('canvas'); c.width=c.height=sz; const x=c.getContext('2d'); const r=Math.min(sz/im.width,sz/im.height); x.drawImage(im,(sz-im.width*r)/2,(sz-im.height*r)/2,im.width*r,im.height*r); const u=c.toDataURL(type,q); if(u.length<38000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('الصورة معقدة جدًا، جرّب صورة أبسط.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
+function listHtml(name){ const arr=S.draft[name]||[]; const max=name==='situation'?5:8; const one=name==='situation'?'نقطة':'منتج';
+  return arr.map((v,i)=>'<div class="lrow"><input type="text" data-l="'+name+':'+i+'" value="'+esc(v)+'" placeholder="'+(name==='situation'?'نقطة قصيرة من الموقف':'اسم المنتج')+'"><button class="btn" data-ldel="'+name+':'+i+'" aria-label="حذف">×</button></div>').join('')+(arr.length<max?'<button class="btn" data-ladd="'+name+'">+ إضافة '+one+'</button>':''); }
+function relist(){ const a=$('#lSituation'),b=$('#lProducts'); if(a) a.innerHTML=listHtml('situation'); if(b) b.innerHTML=listHtml('products'); refreshEditor(); }
+
+/* ---------- Users (admin) ---------- */
+function usersHtml(){
+  return '<div class="panel sec"><h3>إضافة مستخدم</h3><div class="grid"><label class="f">الاسم الظاهر<input type="text" id="nuName"></label><label class="f">اسم الدخول (حروف أو أرقام بلا مسافات)<input type="text" id="nuUser" autocapitalize="none" spellcheck="false" style="direction:ltr"></label><label class="f">الدور<select id="nuRole" style="width:100%"><option value="reviewer">مقيّم (رقم سري 4 أرقام)</option><option value="admin">مدير (رقم سري 6 أرقام)</option></select></label><label class="f">الرقم السري (اتركه فارغًا ليُولَّد)<input type="text" id="nuPin" inputmode="numeric" maxlength="6" class="mono" style="direction:ltr"></label></div><div class="actions" style="margin-top:10px"><button class="btn primary" id="btnAddUser">إضافة</button></div><div id="codeBox"></div></div>'+
+  '<h2 class="sh">المستخدمون</h2><div class="panel tw"><table><thead><tr><th>الاسم</th><th>اسم الدخول</th><th>الدور</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="uB"></tbody></table></div><p class="note">الرقم السري يظهر مرة واحدة عند إنشائه أو إعادة توليده، ولا يمكن استرجاعه لاحقًا. عند نسيانه اضغط «رقم جديد». بعد 5 محاولات خاطئة يُقفل المستخدم 15 دقيقة. تعطيل المستخدم يمنعه من الدخول فورًا دون حذف سجلاته.</p>';
+}
+function updateUsers(){
+  const b=$('#uB'); if(!b) return;
+  const cb=$('#codeBox');
+  if(cb) cb.innerHTML=S.code?'<div class="codebox"><div>بيانات دخول <b>'+esc(S.code.name)+'</b> (تظهر الآن فقط، سلّمها له بشكل خاص):</div><div class="mono big">'+esc(S.code.username)+' / '+esc(S.code.pin)+'</div><button class="btn" id="btnCopy">نسخ</button> <button class="btn" id="btnCodeDone">تم الحفظ</button></div>':'';
+  b.innerHTML=S.users.map(u=>'<tr><td><b>'+esc(u.name)+'</b>'+(u.id===S.me.id?' <span class="pill p-na">أنت</span>':'')+'</td><td class="mono">'+esc(u.username||'—')+'</td><td>'+(u.role==='admin'?'مدير':'مقيّم')+'</td><td><span class="pill '+(u.active?'p-ok':'p-na')+'">'+(u.active?'مفعّل':'معطّل')+'</span></td><td><div class="actions"><button class="btn" data-ureset="'+esc(u.id)+'">رقم جديد</button><button class="btn" data-urole="'+esc(u.id)+'">'+(u.role==='admin'?'اجعله مقيّمًا':'اجعله مديرًا')+'</button><button class="btn '+(u.active?'bad':'')+'" data-uact="'+esc(u.id)+'">'+(u.active?'تعطيل':'تفعيل')+'</button></div></td></tr>').join('')||'<tr><td colspan="5"><div class="empty">لا مستخدمين</div></td></tr>';
+}
+async function userOp(fn){ if(S.busy) return; S.busy=true; try{ await fn(); await load(); }catch(e){ toast(e.message,true); } S.busy=false; onData(); }
+
+/* ---------- Events ---------- */
+function bqSet(el){
+  const [k,i,f]=el.dataset.bq.split(':'); if(k==='gate') S.bd.gate[f]=el.value; else S.bd[k][+i][f]=el.value;
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,tr[data-open],a[data-openbest]'); if(!t) return;
+  if(t.dataset.tab) return go(t.dataset.tab);
+  if(t.id==='btnPreview'){S.preview=!S.preview;S.view='cases';S.openId=null;S.draft=null;S.filters.status='all';renderShell();mount();return;}
+  if(t.dataset.st!==undefined){S.filters.status=t.dataset.st;return updateCases();}
+  if(t.dataset.open) return openCase(t.dataset.open);
+  if(t.id==='btnNew') return openCase(null);
+  if(t.id==='btnLogin') return doLogin();
+  if(t.id==='btnSetup') return doSetup();
+  if(t.id==='btnReloadPage'){ location.reload(); return; }
+  if(t.id==='btnAiSuggest') return runAiSuggest();
+  if(t.dataset.post) return openPost(t.dataset.post);
+  if(t.dataset.openbest){ e.preventDefault(); S.view='cases'; renderShell(); return openCase(t.dataset.open); }
+  if(t.dataset.pick){ if(S.busy) return; S.busy=true; t.disabled=true; return call('setFeatured',{id:t.dataset.pick,featured:true}).then(()=>{ toast('اختيرت الحالة '+t.dataset.pick+' ضمن أفضل المشاركات.'); return load(); }).catch(err=>toast(err.message,true)).then(()=>{S.busy=false; onData();}); }
+  if(t.id==='btnPickCancel'){ S.pick=null; return updateBest(); }
+  if(t.id==='btnPickOk'){ if(S.busy) return; S.busy=true; const id=S.pick.id; return call('setFeatured',{id,featured:true,reason:S.pick.reason}).then(()=>{S.pick=null; return load();}).catch(err=>{ if(S.pick) S.pick.err=err.message; }).then(()=>{S.busy=false; onData();}); }
+  if(t.dataset.unpick){ if(S.busy) return; S.busy=true; return call('setFeatured',{id:t.dataset.unpick,featured:false}).then(load).catch(err=>toast(err.message,true)).then(()=>{S.busy=false; onData();}); }
+  if(t.id==='btnPostBack'){ const id=S.postId; S.view='cases'; S.postId=null; renderShell(); return openCase(id); }
+  if(t.dataset.dlpost){ const cv=document.querySelector('canvas[data-cv="'+t.dataset.dlpost+'"]'); if(cv) cv.toBlob(b=>{ if(b) saveFile('USE_Post_'+t.dataset.dlpost+'.png',b).catch(e=>toast(e.message,true)); },'image/png'); return; }
+  if(t.id==='btnBestCount'){ const v=parseInt(($('#bestCountIn')||{}).value,10); if(S.busy) return; S.busy=true; return call('saveSettings',{bestCount:v}).then(()=>{toast('تم حفظ عدد أفضل المشاركات: '+v); return load();}).catch(e=>toast(e.message,true)).then(()=>{S.busy=false; S.postsSig=''; onData();}); }
+  if(t.id==='btnPostDl') return dlPost();
+  if(t.dataset.ladd&&S.draft&&!locked()){ S.draft[t.dataset.ladd].push(''); relist(); const ins=document.querySelectorAll('[data-l^="'+t.dataset.ladd+':"]'); if(ins.length) ins[ins.length-1].focus(); return; }
+  if(t.dataset.ldel&&S.draft&&!locked()){ const [k,i]=t.dataset.ldel.split(':'); S.draft[k].splice(+i,1); relist(); return touch(); }
+  if(t.id==='aiKeyTest'){ if(S.busy) return; S.busy=true; t.textContent='...جارٍ الاختبار'; return call('aiTest').then(r=>{ S.aiKeyMsg={ok:true,text:'الاتصال يعمل. ردّ تجريبي: '+r.sample}; }).catch(e=>{S.aiKeyMsg={ok:false,text:e.message};}).then(()=>{S.busy=false; updateLog();}); }
+  if(t.id==='brandLogoDel'){ const s=Object.assign({},S.settings); s.brandLogo=''; S.settings=s; applyBrand(); updateLog(); call('saveSettings',{brandLogo:''}).catch(e=>toast(e.message,true)); return; }
+  if(t.id==='brandReset'){ const s=Object.assign({},S.settings); s.brandPrimary='#1f4e78'; s.brandAccent='#c9a86a'; S.settings=s; applyBrand(); updateLog(); call('saveSettings',{brandPrimary:'#1f4e78',brandAccent:'#c9a86a'}).catch(e=>toast(e.message,true)); return; }
+  if(t.dataset.ruleedit){ S.view='badges'; renderShell(); return openBadge(t.dataset.ruleedit); }
+  if(t.id==='bIconDel'&&S.bd){ S.bd.icon=''; $('#bIconPrev').innerHTML=''; return; }
+  if(t.id==='btnLogout') return logout(false);
+  if(t.id==='btnReport'){ if(S.busy) return; S.busy=true; t.disabled=true; return call('exportReport').then(r=>{ const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"'; const csv='\ufeff'+[r.head].concat(r.rows).map(row=>row.map(q).join(',')).join('\r\n'); return saveFile('USE_Badges_Report_'+new Date().toISOString().slice(0,10)+'.csv',new Blob([csv],{type:'text/csv'})).then(()=>toast('تم تجهيز ملف التقرير ('+r.rows.length+' حالة).')); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;t.disabled=false;}); }
+  if(t.id==='btnAddUser'){ const n=$('#nuName').value.trim(); if(!n){$('#nuName').focus();return;} const role=$('#nuRole').value, un=$('#nuUser').value, pin=$('#nuPin').value.trim(); return userOp(async()=>{ const r=await call('addUser',{name:n,username:un,role,pin}); S.code={name:r.name,username:r.username,pin:r.pin}; $('#nuName').value=''; $('#nuUser').value=''; $('#nuPin').value=''; }); }
+  if(t.dataset.ureset){ const u=S.users.find(x=>x.id===t.dataset.ureset); return userOp(async()=>{ const r=await call('resetCode',{id:u.id}); S.code={name:r.name,username:r.username,pin:r.pin}; }); }
+  if(t.dataset.uact){ const u=S.users.find(x=>x.id===t.dataset.uact); return userOp(()=>call('setUser',{id:u.id,active:!u.active})); }
+  if(t.dataset.urole){ const u=S.users.find(x=>x.id===t.dataset.urole); return userOp(async()=>{ const r=await call('setUser',{id:u.id,role:u.role==='admin'?'reviewer':'admin'}); if(r.pin) S.code={name:r.name,username:r.username,pin:r.pin}; }); }
+  if(t.id==='btnCodeDone'){ S.code=null; return updateUsers(); }
+  if(t.id==='btnCopy'){ try{ navigator.clipboard.writeText(S.code.username+' / '+S.code.pin); t.textContent='تم النسخ'; }catch(e){} return; }
+  if(t.id==='btnBack'){ if(S.saveState==='saving'||S.saveState==='error') flush(); S.openId=null;S.draft=null; return mount(); }
+  if(t.dataset.q&&S.draft&&!locked()){ const a=S.draft.answers; S.aiCodes.delete(t.dataset.q); if(a[t.dataset.q]===t.dataset.v) delete a[t.dataset.q]; else a[t.dataset.q]=t.dataset.v; refreshEditor(); return touch(); }
+  if(t.id==='btnApprove') return decide('approve');
+  if(t.id==='btnReject'){S.rail.mode='reject';return refreshEditor();}
+  if(t.id==='btnRejectOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return decide('reject'); }
+  if(t.id==='btnReopen'){S.rail.mode='reopen';return refreshEditor();}
+  if(t.id==='btnReopenOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return reopen(); }
+  if(t.id==='btnRailCancel'){S.rail={reason:'',mode:''};return refreshEditor();}
+  if(t.id==='btnNewBadge') return openBadge(null);
+  if(t.dataset.bedit) return openBadge(t.dataset.bedit);
+  if(t.dataset.btoggle) return toggleBadge(t.dataset.btoggle);
+  if(t.dataset.bmove) return moveBadge(t.dataset.bmove,+t.dataset.dir);
+  if(t.id==='btnBadgeBack'||t.id==='btnBadgeCancel'){S.bd=null;mountBadges();return update();}
+  if(t.id==='btnBadgeSave') return saveBadge();
+  if(t.dataset.badd&&S.bd){S.bd[t.dataset.badd==='must'?'musts':'disqs'].push(blankQ(t.dataset.badd));return mountBadgeEditor();}
+  if(t.dataset.bqdel&&S.bd){const [k,i]=t.dataset.bqdel.split(':'); S.bd[k].splice(+i,1); return mountBadgeEditor();}
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.target.id==='loginPin'||e.target.id==='loginUser')) return doLogin(); if(e.key==='Enter'&&e.target.id==='suPin') return doSetup(); if(e.key==='Enter'&&e.target.matches&&e.target.matches('tr[data-open]')) openCase(e.target.dataset.open); });
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.id==='suPin'){ el.value=el.value.replace(/\D/g,'').slice(0,6); return; }
+  if(el.id==='loginPin'){ el.value=el.value.replace(/\D/g,'').slice(0,6); return; }
+  if(el.id==='fQ'){S.filters.q=el.value;return updateCases();}
+  if(el.id==='railReason'){S.rail.reason=el.value;return;}
+  if(el.id==='pickReason'&&S.pick){S.pick.reason=el.value;return;}
+  if(el.dataset.bq&&S.bd) return bqSet(el);
+  if(el.dataset.bf&&S.bd&&el.type!=='checkbox'&&el.tagName!=='SELECT'){S.bd[el.dataset.bf]=el.value;return;}
+  if(!S.draft||locked()) return;
+  if(el.dataset.l){ const [k,i]=el.dataset.l.split(':'); S.draft[k][+i]=el.value; return touch(); }
+  if(el.dataset.f){ S.draft[el.dataset.f]=el.value; refreshEditor(); return touch(); }
+  if(el.dataset.reason){ S.draft.reasons[el.dataset.reason]=el.value; refreshEditor(); return touch(); }
+});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.id==='stageSel'){ call('setPostStage',{id:S.draft.id,stage:el.value}).then(load).then(onData).catch(e=>{toast(e.message,true);}); return; }
+  if(el.dataset&&el.dataset.pimg!==undefined&&el.files&&el.files[0]){ const i=+el.dataset.pimg, id=S.postId; resizeProduct(el.files[0]).then(u=>{ S.pimgs[i]=u; const pv=$('[data-pimgprev="'+i+'"]'); if(pv) pv.innerHTML='<img src="'+u+'" alt="" style="height:44px">'; renderPost(); const arr=[]; for(let k=0;k<8;k++) arr.push(S.pimgs[k]||''); return call('savePostImages',{id,imgs:arr}).then(()=>toast('حُفظت صورة المنتج.')); }).catch(e=>toast(e.message,true)); return; }
+  if(el.id==='nomToggle'&&S.draft&&!locked()){ S.draft.nominated=el.checked; refreshEditor(); return touch(); }
+  if(el.dataset&&el.dataset.stage){ call('setPostStage',{id:el.dataset.stage,stage:el.value}).then(load).then(onData).catch(e=>toast(e.message,true)); return; }
+  if(el.id==='bIcon'&&S.bd&&el.files&&el.files[0]){ resizeIcon(el.files[0]).then(u=>{ S.bd.icon=u; $('#bIconPrev').innerHTML='<img src="'+u+'" width="56" height="56" alt="">'; }).catch(e=>toast(e.message,true)); return; }
+  if(el.id==='pMonth'){ S.postsMonth=el.value; return updatePosts(); }
+  if(el.id==='bMonth'){ S.bestMonth=el.value; return updateBest(); }
+  if(el.id==='fMonth'){S.filters.month=el.value;return updateCases();}
+  if(el.id==='fStatus'){S.filters.status=el.value;return updateCases();}
+  if(el.id==='dMonth'){S.dashMonth=el.value;return updateDash();}
+  if(el.dataset&&el.dataset.bf&&S.bd){ if(el.type==='checkbox') S.bd[el.dataset.bf]=el.checked; else S.bd[el.dataset.bf]=el.value; if(el.dataset.bf==='gateOn') mountBadgeEditor(); return; }
+  if(el.id==='cPrimary'||el.id==='cAccent'){ const k=el.id==='cPrimary'?'brandPrimary':'brandAccent'; const s=Object.assign({},S.settings); s[k]=el.value; S.settings=s; applyBrand(); call('saveSettings',{[k]:el.value}).catch(e=>{toast(e.message,true); load().then(()=>{onData();applyBrand();});}); return; }
+  if(el.id==='brandLogoFile'&&el.files&&el.files[0]){ resizeLogo(el.files[0]).then(u=>{ const s=Object.assign({},S.settings); s.brandLogo=u; S.settings=s; applyBrand(); updateLog(); return call('saveSettings',{brandLogo:u}); }).catch(e=>toast(e.message,true)); return; }
+  if(el.dataset&&el.dataset.set){ const s=Object.assign({},S.settings); s[el.dataset.set]=el.checked; S.settings=s; call('saveSettings',s).catch(e=>{toast(e.message,true); load().then(onData);}); }
+});
+init();
+})();
+</script>
+</body>
+</html>
