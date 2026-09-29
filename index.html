@@ -274,18 +274,25 @@ const abOf=b=>(b.ab||b.name||'?').slice(0,2);
 /* ---------- (0) Backend URL (تجربة GitHub + Google Apps Script) ---------- */
 // ضع هنا رابط تطبيق الويب لخادم Apps Script (ينتهي بـ /exec). يُستخدم للتخزين المشترك ولاستدعاء Claude.
 const BACKEND_URL='https://script.google.com/macros/s/AKfycbw-y9CeJ9n7gwwqrr-3ENUi1iTegXMrq5HY2YLvKNvyCdvPU9WpsWmzTzLkOEEn0W-Z/exec';
-async function bk(op,body){
-  let r; try{ r=await fetch(BACKEND_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({op},body||{}))}); }
-  catch(e){ throw Object.assign(new Error('تعذر الاتصال بالخادم. تحقق من الإنترنت.'),{code:'unavailable'}); }
-  if(!r.ok) throw Object.assign(new Error('الخادم أعاد خطأ ('+r.status+').'),{code:'unavailable'});
-  const j=await r.json(); if(!j||!j.ok) throw new Error((j&&j.error)||'خطأ في الخادم.'); return j.data;
+// الكتابة في الخادم آمنة للتكرار (نفس المفتاح يُستبدل)، لذلك نعيد المحاولة تلقائيًا إذا تعثّر رجوع الرد من Google.
+async function bk(op,body,tries){
+  tries=tries||(op==='ai'?2:4); let last;
+  for(let i=0;i<tries;i++){
+    if(i) await new Promise(r=>setTimeout(r,600*i+Math.random()*400));
+    let r; try{ r=await fetch(BACKEND_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({op},body||{}))}); }
+    catch(e){ last=Object.assign(new Error('تعذر الاتصال بالخادم. تحقق من الإنترنت.'),{code:'unavailable'}); continue; }
+    if(!r.ok){ last=Object.assign(new Error('الخادم أعاد خطأ ('+r.status+').'),{code:'unavailable'}); continue; }
+    let j; try{ j=await r.json(); }catch(e){ last=Object.assign(new Error('ردّ غير صالح من الخادم.'),{code:'unavailable'}); continue; }
+    if(!j||!j.ok) throw new Error((j&&j.error)||'خطأ في الخادم.'); return j.data;
+  }
+  throw last;
 }
 
 /* ---------- (1) Storage adapter ---------- */
 // الأولوية: قاعدة بيانات Claude (عند التشغيل داخل Claude) ← window.storage (نمط V17) ← متصفح محلي (للتجربة فقط).
 const Store=(()=>{
-  let kind=null, db=null, mem=new Map(), snap=null, snapAt=0, snapP=null;
-  async function remoteAll(){ if(snap&&Date.now()-snapAt<2500) return snap; if(!snapP) snapP=bk('all').then(d=>{ snap=d||{}; snapAt=Date.now(); snapP=null; return snap; }).catch(e=>{ snapP=null; throw e; }); return snapP; }
+  let kind=null, db=null, mem=new Map(), snap=null, snapAt=0, snapP=null, batch=null;
+  async function remoteAll(){ if(snap&&(batch||Date.now()-snapAt<2500)) return snap; if(!snapP) snapP=bk('all').then(d=>{ snap=d||{}; snapAt=Date.now(); snapP=null; return snap; }).catch(e=>{ snapP=null; throw e; }); return snapP; }
   const clone=o=>o==null?o:JSON.parse(JSON.stringify(o));
   const k=(c,id)=>'useb:'+c+':'+id;
   async function init(){
@@ -307,6 +314,8 @@ const Store=(()=>{
   async function wsSet(key,v){ const r=await window.storage.set(key,JSON.stringify(v),true); if(!r) throw new Error('storage save failed'); }
   return {
     init, kind:()=>kind,
+    // يجمع كل عمليات الحفظ داخل إجراء واحد ويرسلها للخادم في طلب واحد (وضع الخادم فقط)
+    async tx(fn){ if(kind!=='remote'||batch) return fn(); batch=[]; try{ const out=await fn(); const w=batch; batch=null; if(w.length) await bk('batch',{writes:w}); return out; } catch(e){ batch=null; snap=null; throw e; } },
     async list(c){
       await init(); if(kind==='unavailable') throw Object.assign(new Error('storage_unavailable'),{code:'storage_unavailable'});
       if(kind==='remote') return Object.values((await remoteAll())[c]||{}).map(clone);
@@ -323,7 +332,7 @@ const Store=(()=>{
     },
     async put(c,id,obj){
       await init(); if(kind==='unavailable') throw Object.assign(new Error('storage_unavailable'),{code:'storage_unavailable'});
-      if(kind==='remote'){ await bk('put',{col:c,id,obj}); if(snap){ (snap[c]=snap[c]||{})[id]=clone(obj); } return; }
+      if(kind==='remote'){ if(snap){ (snap[c]=snap[c]||{})[id]=clone(obj); } if(batch){ batch.push({col:c,id,obj:clone(obj)}); return; } await bk('put',{col:c,id,obj}); return; }
       if(kind==='db') return retry(()=>db.doc(c+'/'+id).set(clone(obj)));
       if(kind==='wstorage'){ await wsSet(k(c,id),obj); const idx=(await wsGet(k(c,'__index')))||[]; if(idx.indexOf(id)<0){ idx.push(id); await wsSet(k(c,'__index'),idx); } return; }
       lsSet(k(c,id),obj);
@@ -604,7 +613,7 @@ const clean_=(a,max,len)=>(Array.isArray(a)?a:[]).map(x=>String(x||'').trim().sl
 const isHex_=v=>/^#[0-9a-fA-F]{6}$/.test(String(v||''));
 function err(m){ return new Error(m); }
 let chain=Promise.resolve();
-function withLock_(fn){ const p=chain.then(fn,fn); chain=p.catch(()=>{}); return p; }
+function withLock_(fn){ const run=()=>Store.tx(fn); const p=chain.then(run,run); chain=p.catch(()=>{}); return p; }
 
 async function meta_(){ return (await Store.get('meta','main'))||{}; }
 async function hash_(pin){
