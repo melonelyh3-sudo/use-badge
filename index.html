@@ -222,9 +222,9 @@ document.documentElement.lang='ar';
 
 const RES_AR={'Met':'متحققة','Not Met':'غير متحققة','N/A':'لا تنطبق','Incomplete':'غير مكتملة'};
 const RES_CLS={'Met':'Met','Not Met':'NotMet','N/A':'NA','Incomplete':'Incomplete'};
-const STATUS={Pending:['قيد المراجعة','p-wait'],Approved:['معتمدة','p-ok'],Rejected:['مرفوضة','p-no']};
+const STATUS={Returned:['معادة للتصحيح','p-no'],Pending:['بانتظار الاعتماد','p-wait'],Approved:['معتمدة','p-ok'],Rejected:['مرفوضة','p-no']};
 const CYCLE=[['25 → 1','الاختيار','EGY Team'],['2','المراجعة الأولية','KSA Team'],['4','الاعتماد','KSA Team'],['4 → 8','التصميم','EGY Team'],['8','المراجعة النهائية','KSA Team'],['10','الإرسال للنشر','KSA Team']];
-const ACT_AR={nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار'};
+const ACT_AR={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار'};
 const STAGE_KEYS=['selected','design','final','sent','published'];
 const STAGE_AR={selected:'مختارة',design:'قيد التصميم',final:'مراجعة نهائية',sent:'أُرسلت للنشر',published:'نُشرت'};
 const QT={gate:'سؤال أولي',must:'شرط',disq:'استبعاد'};
@@ -683,7 +683,7 @@ function issues_(c,r,badges,set,approver){
     if(set.reqBadge&&metCount_(r)===0&&!inc.length) out.push('لا توجد شارة متحققة، والإعداد الحالي لا يسمح باعتماد حالة بلا شارات.');
     if(set.sep&&approver.id===c.reviewerId) out.push('لا يمكنك اعتماد حالة قيّمتها بنفسك. يعتمدها معتمد آخر.');
   }
-  if(c.nominated&&(!String(c.startPoint||'').trim()||!String(c.outcome||'').trim())) out.push('الحالة مرشّحة لبوست الشهر: أكمل نقطة البداية والنتيجة في محتوى البوست.');
+  if(!String(c.startPoint||'').trim()||!String(c.outcome||'').trim()) out.push('أكمل نقطة البداية والنتيجة في محتوى البوست.');
   return out;
 }
 
@@ -691,30 +691,59 @@ function issues_(c,r,badges,set,approver){
 function aiSchema_(){
   // الترتيب مقصود: الملخص السردي أولًا كأرضية، ثم الاقتباس (quote) قبل القرار (answer) لكل سؤال.
   return {type:'object',properties:{
-    startPoint:{type:'string'},outcome:{type:'string'},situation:{type:'array',items:{type:'string'}},
+    startPoint:{type:'string'},outcome:{type:'string'},situation:{type:'array',items:{type:'string'}},products:{type:'array',items:{type:'string'}},
     suggestions:{type:'array',items:{type:'object',properties:{code:{type:'string'},quote:{type:'string'},answer:{type:'string',enum:['Y','N','unclear']}},required:['code','quote','answer']}}
-  },required:['startPoint','outcome','situation','suggestions']};
+  },required:['startPoint','outcome','situation','products','suggestions']};
 }
+// أمثلة حقيقية من بوستات «أفضل مشاركات الصيادلة» المنشورة، تُعطى للنموذج كمرجع للأسلوب فقط (لا للمحتوى).
+const STYLE_EXAMPLES=[
+ {startPoint:'عميلة تسأل عن صورة كريم للتفتيح',outcome:'روتين متكامل للتصبغات مناسب لاحتياج العميلة',situation:[
+  'خلال الحوار اتضح أنها تعاني من تصبغات بعد الحمل والولادة.',
+  'بعد الاستفسار عن روتين البشرة، اتضح أنها تستخدم غسول ومرطب وتم توضيح أن الروتين جيد ويحتاج فقط لإضافة منتجات تساعد على التفتيح.',
+  'تم اختيار Eucerin Even Pigment Perfector Day & Night Creams لترطيب البشرة وعلاج التصبغات.',
+  'ولتعزيز النتائج، تم إضافة Eucerin Even Pigment Perfector Dual Serum قبل كريم الليل.',
+  'تم شرح طريقة الاستخدام والتأكيد على أهمية الاستمرارية للحصول على أفضل النتائج.']},
+ {startPoint:'عميل يعاني من جفاف في الوجه ويبحث عن منتج مناسب',outcome:'روتين متكامل للعناية بالبشرة مناسب لاحتياج العميل',situation:[
+  'تم توضيح أهمية الترطيب واستخدام غسول مناسب لطبيعة بشرته.',
+  'تم اختيار CeraVe SA Smoothing Cleanser لتنظيف البشرة بلطف دون زيادة الجفاف.',
+  'تم إضافة مرطب وواقي شمس للاستخدام اليومي والحفاظ على ترطيب وحماية البشرة.',
+  'وأثناء الحوار، لوحظ وجود تصبغ بالخد، فتم إضافة Alpha plus Cream لتحسين التصبغات.']},
+ {startPoint:'عميلة حضرت لصرف وصفة تأمين لعلاج حب الشباب',outcome:'روتين متكامل للعناية بحب الشباب والتصبغات',situation:[
+  'أثناء انتظار موافقة التأمين، تم استغلال الوقت لمناقشة الحالة، واتضح أنها تعاني أيضًا من التصبغات.',
+  'تم توضيح أهمية استكمال العلاج بروتين يومي مناسب لدعم النتائج وتقليل ظهور الحبوب.',
+  'تم شرح طريقة استخدام المنتجات والتأكد من فهم العميلة للروتين، مع الاتفاق على متابعة النتائج.']}
+];
 function aiPrompt_(text,badges){
-  const lines=['أنت مساعد يحلّل نصًا كتبه صيدلي عن تعامله مع عميل، وتجيب فقط بناءً على ما ورد صراحةً في هذا النص، ولا تفترض أي معلومة غير مكتوبة.','',
-    'المطلوب أولًا — لملخص بوست الحالة، استخرج دائمًا من النص (لا تتركها فارغة إلا إذا كان النص لا يصف أي تفاعل مع عميل إطلاقًا):',
-    'startPoint: جملة قصيرة جدًا تصف ما احتاجه/طلبه العميل في البداية.',
-    'outcome: جملة قصيرة جدًا تصف ما انتهى إليه الموقف أو ما أوصى به الصيدلي في النهاية.',
-    'situation: حتى 5 نقاط قصيرة جدًا (كل نقطة أقل من سطر) تلخّص أهم ما حدث بالترتيب الزمني.',
-    'لا تخترع تفاصيل غير موجودة في النص، ولا تذكر أسماء منتجات في startPoint أو outcome أو situation.','',
-    'المطلوب ثانيًا — لكل سؤال أدناه أعد: code، وquote (اقتباس حرفي قصير من النص نفسه يدعم إجابتك، أو نص فارغ إن لم يوجد)، وanswer (Y أو N بناءً على الاقتباس، أو unclear إن لم يذكر النص إجابة واضحة).','',
-    'نص الصيدلي:','"""'+text+'"""','','الأسئلة:'];
+  const ex=STYLE_EXAMPLES.map((e,i)=>'مثال '+(i+1)+':\nstartPoint: '+e.startPoint+'\noutcome: '+e.outcome+'\nsituation:\n- '+e.situation.join('\n- ')).join('\n\n');
+  const lines=['أنت تساعد فريق إدارة المواهب في صيدلية المتحدة على تجهيز بوست «أفضل مشاركات الصيادلة» من نص كتبه صيدلي عن حالة حقيقية مع عميل، وعلى تقييم الحالة.',
+    'اعتمد فقط على ما ورد صراحةً في نص الصيدلي. لا تخترع أي معلومة أو منتج أو تفصيلة غير مكتوبة.','',
+    'أولًا — محتوى البوست، بنفس أسلوب البوستات المنشورة في الأمثلة أدناه (الأسلوب فقط، لا تنسخ محتواها):',
+    'startPoint: جملة قصيرة تبدأ بـ «عميل» أو «عميلة» تصف ما طلبه أو ما يعاني منه في البداية.',
+    'outcome: جملة قصيرة بصيغة مثل «روتين متكامل لـ… مناسب لاحتياج العميل/العميلة» تصف ما انتهى إليه الموقف.',
+    'situation: من 3 إلى 6 نقاط بالترتيب الزمني للحوار، بصيغة الغائب المهنية («خلال الحوار اتضح…»، «تم توضيح…»، «تم اختيار … لـ…»، «لوحظ…»، «تم شرح…»).',
+    '  - كل نقطة يجب أن تحمل معلومة محددة من هذه الحالة بالذات: ما اكتُشف، أو ما نُصح به ولماذا، أو منتج وسبب اختياره، أو إجراء ختامي ملموس (طريقة الاستخدام، عرض، أونلاين، متابعة…).',
+    '  - ممنوع الجمل العامة التي تصلح لأي حالة، مثل: «استقبال العميل بترحيب حار»، «أخذ الصيدلي تفاصيل الحالة كاملة»، «إنهاء البيع بجو لطيف»، «تمنى له الشفاء».',
+    '  - إذا ذُكر منتج باسمه، اكتبه في النقطة كما ورد في النص بالضبط ومعه سبب اختياره.',
+    '  - إذا كان النص فقيرًا بالتفاصيل فاكتب نقاطًا أقل؛ لا تملأ بكلام عام.',
+    'products: قائمة بأسماء المنتجات المذكورة بوضوح في النص (ماركة واسم منتج)، منسوخة حرفيًا كما وردت في النص. لا تضف منتجًا غير مذكور، ولا تخمّن اسمًا ناقصًا (مثل «كريم ترطيب» بلا ماركة)؛ اتركه خارج القائمة.','',
+    'أمثلة من البوستات المنشورة (للأسلوب):',ex,'',
+    'ثانيًا — لكل سؤال أدناه أعد: code، وquote (اقتباس حرفي قصير من النص نفسه يدعم إجابتك، أو نص فارغ إن لم يوجد)، وanswer (Y أو N بناءً على الاقتباس، أو unclear إن لم يذكر النص إجابة واضحة).','',
+    'نص الصيدلي:','+text+','','الأسئلة:'];
   badges.forEach(b=>{ lines.push('# '+b.name); (b.qs||[]).forEach(q=>lines.push(q.c+': '+q.q+' (نعم عندما: '+(q.y||'—')+' | لا عندما: '+(q.n||'—')+')')); });
-  lines.push('','أعد النتيجة ككائن JSON واحد فقط بالمفاتيح startPoint وoutcome وsituation وsuggestions.');
+  lines.push('','أعد النتيجة ككائن JSON واحد فقط بالمفاتيح startPoint وoutcome وsituation وproducts وsuggestions.');
   return lines.join('\n');
 }
-function aiApply_(obj,badges){
+const normTxt_=x=>String(x||'').toLowerCase().replace(/[ً-ْ]/g,'').replace(/\s+/g,' ').trim();
+function aiApply_(obj,badges,text){
   const byCode={}; badges.forEach(b=>(b.qs||[]).forEach(q=>{byCode[q.c]=1;}));
   if(typeof obj==='string'){ try{ obj=JSON.parse(obj); }catch(e){ throw err('تعذّر فهم ردّ الذكاء الاصطناعي.'); } }
   if(!obj||typeof obj!=='object'||Array.isArray(obj)||!Array.isArray(obj.suggestions)) throw err('تعذّر فهم ردّ الذكاء الاصطناعي.');
   const out=[];
   obj.suggestions.forEach(it=>{ if(!it||!byCode[it.code]) return; if(it.answer!=='Y'&&it.answer!=='N') return; out.push({code:it.code,answer:it.answer,quote:String(it.quote||'').trim().slice(0,300)}); });
-  return {suggestions:out,startPoint:String(obj.startPoint||'').trim().slice(0,400),outcome:String(obj.outcome||'').trim().slice(0,400),situation:clean_(obj.situation,5,160)};
+  // حماية: لا يُقبل منتج إلا إذا كان اسمه موجودًا فعلًا في نص الصيدلي
+  const src=normTxt_(text); const seen={};
+  const products=clean_(obj.products,8,80).filter(p=>{ const k=normTxt_(p); if(k.length<3||seen[k]||src.indexOf(k)<0) return false; seen[k]=1; return true; });
+  return {suggestions:out,startPoint:String(obj.startPoint||'').trim().slice(0,400),outcome:String(obj.outcome||'').trim().slice(0,400),situation:clean_(obj.situation,6,260),products};
 }
 const aiUse={};
 function aiThrottle_(u){ const h=Math.floor(Date.now()/3600000), k=u.id+':'+h; aiUse[k]=(aiUse[k]||0)+1; if(aiUse[k]>20) throw err('تجاوزت الحد المسموح (20 اقتراحًا كل ساعة). حاول لاحقًا.'); }
@@ -726,7 +755,7 @@ async function audit_(u,caseId,action,note){
   await Store.put('audit',m,doc);
 }
 async function decOf_(id){ return Store.get('decisions',id); }
-function decOut_(d){ return {postStage:d.postStage||'',featured:d.featured===true,featuredNote:d.featuredNote||'',status:d.status,approverId:d.approverId,approverName:d.approverName,approvedAt:d.approvedAt,rejectReason:d.rejectReason,results:d.results||null,metCount:d.metCount}; }
+function decOut_(d){ return {returnReason:d.returnReason||'',returnedBy:d.returnedBy||'',postStage:d.postStage||'',featured:d.featured===true,featuredNote:d.featuredNote||'',status:d.status,approverId:d.approverId,approverName:d.approverName,approvedAt:d.approvedAt,rejectReason:d.rejectReason,results:d.results||null,metCount:d.metCount}; }
 function needAdmin_(u){ if(u.role!=='admin') throw err('هذه العملية للمدير فقط.'); }
 
 /* عمليات بدون تسجيل دخول: حالة التهيئة والإعداد الأول */
@@ -750,7 +779,7 @@ const ACTIONS={
   bootstrap: async(u)=>{
     const admin=u.role==='admin';
     const allDec=await Store.list('decisions'); const appr={}; allDec.forEach(d=>{ if(d.status==='Approved') appr[d.caseId]=1; });
-    const cases=(await Store.list('cases')).filter(c=>admin||c.reviewerId===u.id||(c.nominated&&appr[c.id]));
+    const cases=(await Store.list('cases')).filter(c=>admin||c.reviewerId===u.id||appr[c.id]);
     const ids={}; cases.forEach(c=>{ids[c.id]=1;});
     const decisions={}; allDec.forEach(d=>{ if(ids[d.caseId]) decisions[d.caseId]=decOut_(d); });
     const out={user:{id:u.id,name:u.name,role:u.role},badges:await allBadges_(),cases,decisions,settings:await settings_()};
@@ -767,8 +796,8 @@ const ACTIONS={
     if(id&&!old) throw err('الحالة غير موجودة.');
     const month=/^\d{4}-\d{2}$/.test(String(p.month||''))?p.month:(old?old.month:today_().slice(0,7));
     if(old){
-      if(u.role!=='admin'&&old.reviewerId!==u.id) throw err('ليس لك صلاحية تعديل هذه الحالة.');
-      const d=await decOf_(id); if(d&&d.status!=='Pending') throw err('الحالة مغلقة بعد اتخاذ القرار.');
+      if(old.reviewerId!==u.id) throw err('ليس لك صلاحية تعديل هذه الحالة.');
+      const d=await decOf_(id); if(!d||d.status!=='Returned') throw err('الحالة مُرسلة للاعتماد، ولا يمكن تعديلها إلا إذا أعادها المعتمد للتصحيح.');
     } else {
       let n=all.filter(c=>c.id.indexOf(month+'-')===0).length+1;
       do{ id=month+'-'+String(n).padStart(3,'0'); n++; } while(all.some(c=>c.id===id)||(await Store.get('cases',id)));
@@ -779,16 +808,17 @@ const ACTIONS={
     const rec={id,month,pharmacist:String(p.pharmacist||'').slice(0,120),branch:String(p.branch||'').slice(0,120),supervisor:String(p.supervisor||'').slice(0,120),
       reviewerId:old?old.reviewerId:u.id,reviewerName:old?old.reviewerName:u.name,summary:String(p.summary||'').slice(0,5000),
       startPoint:String(p.startPoint||'').slice(0,400),outcome:String(p.outcome||'').slice(0,400),situation:clean_(p.situation,6,400),products:clean_(p.products,8,80),
-      answers,reasons,results:r,metCount:metCount_(r),nominated:!!p.nominated,createdAt:old?old.createdAt:now_(),updatedAt:now_(),example:old?!!old.example:false};
-    if(!!p.nominated!==!!(old&&old.nominated)&&(old||p.nominated)) await audit_(u,id,p.nominated?'nominated':'unnominated','');
+      answers,reasons,results:r,metCount:metCount_(r),nominated:true,submittedAt:now_(),createdAt:old?old.createdAt:now_(),updatedAt:now_(),example:old?!!old.example:false};
+    const miss=issues_(rec,r,badges,await settings_(),null); if(miss.length) throw err(miss[0]);
     await Store.put('cases',id,rec);
-    if(!old) await audit_(u,id,'created','');
-    return {id,results:r,metCount:rec.metCount,updatedAt:rec.updatedAt};
+    await Store.put('decisions',id,{caseId:id,status:'Pending',approverId:'',approverName:'',approvedAt:'',rejectReason:'',returnReason:'',results:null,metCount:0,updatedAt:now_(),postStage:'',featured:false,featuredNote:''});
+    await audit_(u,id,old?'resubmitted':'submitted','');
+    return {id,results:r,metCount:rec.metCount,updatedAt:rec.updatedAt,status:'Pending'};
   }),
   decide:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
     const badges=await activeBadges_(), set=await settings_(); const c=await Store.get('cases',p.id);
     if(!c) throw err('الحالة غير موجودة.');
-    const d0=await decOf_(c.id); if(d0&&d0.status!=='Pending') throw err('تم اتخاذ قرار في هذه الحالة مسبقًا.');
+    const d0=await decOf_(c.id); if(d0&&d0.status!=='Pending') throw err(d0.status==='Returned'?'الحالة معادة للمقيّم للتصحيح ولم تُرسل من جديد بعد.':'تم اتخاذ قرار في هذه الحالة مسبقًا.');
     const r=resultsLive_(c.answers||{},badges); const approve=p.kind==='approve';
     if(approve){ const is=issues_(c,r,badges,set,u); if(is.length) throw err(is[0]); }
     else if(!String(p.reason||'').trim()) throw err('اكتب سبب الرفض.');
@@ -796,11 +826,11 @@ const ACTIONS={
     await Store.put('decisions',c.id,dec); await audit_(u,c.id,approve?'approved':'rejected',approve?'':dec.rejectReason);
     return decOut_(dec);
   }); },
-  reopen:(u,p)=>{ needAdmin_(u); if(!String(p.reason||'').trim()) throw err('اكتب سبب إعادة الفتح.'); return withLock_(async()=>{
+  reopen:(u,p)=>{ needAdmin_(u); if(!String(p.reason||'').trim()) throw err('اكتب سبب الإعادة للتصحيح.'); return withLock_(async()=>{
     const d0=await decOf_(p.id); const before=(d0&&d0.status)||'Pending';
-    await Store.put('decisions',p.id,{caseId:p.id,status:'Pending',approverId:'',approverName:'',approvedAt:'',rejectReason:'',results:null,metCount:0,updatedAt:now_(),postStage:'',featured:false,featuredNote:''});
-    await audit_(u,p.id,'reopened',String(p.reason).trim()+' (كانت: '+before+')');
-    return {status:'Pending'};
+    await Store.put('decisions',p.id,{caseId:p.id,status:'Returned',approverId:'',approverName:'',approvedAt:'',rejectReason:'',returnReason:String(p.reason).trim().slice(0,1000),returnedBy:u.name,results:null,metCount:0,updatedAt:now_(),postStage:'',featured:false,featuredNote:''});
+    await audit_(u,p.id,'returned',String(p.reason).trim()+' (كانت: '+before+')');
+    return {status:'Returned'};
   }); },
   saveBadge:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
     const name=String(p.name||'').trim(), ab=String(p.ab||'').toUpperCase();
@@ -820,7 +850,7 @@ const ACTIONS={
   }); },
   setFeatured:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
     const d=await decOf_(p.id); if(!d||d.status!=='Approved') throw err('الاختيار للحالات المعتمدة فقط.');
-    const c=await Store.get('cases',p.id); if(!c||!c.nominated) throw err('يُختار أفضل المشاركات من الحالات التي رشّحها المقيّم لبوست الشهر فقط.');
+    const c=await Store.get('cases',p.id); if(!c) throw err('الحالة غير موجودة.');
     const on=!!p.featured, note=String(p.reason||'').trim().slice(0,500);
     if(on===!!d.featured) return {featured:on};
     if(on){
@@ -878,14 +908,14 @@ const ACTIONS={
   }); },
   savePostImages:(u,p)=>withLock_(async()=>{
     const c=await Store.get('cases',p.id); if(!c) throw err('الحالة غير موجودة.');
-    if(u.role!=='admin'){ if(c.reviewerId!==u.id) throw err('ليس لك صلاحية على هذه الحالة.'); const d=await decOf_(c.id); if(d&&d.status!=='Pending') throw err('الحالة مغلقة بعد اتخاذ القرار.'); }
+    if(u.role!=='admin'){ if(c.reviewerId!==u.id) throw err('ليس لك صلاحية على هذه الحالة.'); const d=await decOf_(c.id); if(!(d&&d.status==='Approved')) throw err('تُضاف صور المنتجات بعد اعتماد الحالة.'); }
     const imgs=(Array.isArray(p.imgs)?p.imgs:[]).slice(0,8).map(x=>{ x=String(x||''); if(x&&(x.indexOf('data:image/')!==0||x.length>45000)) throw err('صورة منتج غير صالحة أو كبيرة.'); return x; });
     await Store.put('postimgs',c.id,{caseId:c.id,imgs,updatedAt:now_()});
     return {ok:true};
   }),
   getPostImages: async(u,p)=>{
     const out={}; for(const id of (Array.isArray(p.ids)?p.ids:[]).slice(0,60)){
-      if(u.role!=='admin'){ const c=await Store.get('cases',id); if(!c) continue; if(c.reviewerId!==u.id){ const dd=await decOf_(id); if(!(c.nominated&&dd&&dd.status==='Approved')) continue; } }
+      if(u.role!=='admin'){ const c=await Store.get('cases',id); if(!c) continue; if(c.reviewerId!==u.id){ const dd=await decOf_(id); if(!(dd&&dd.status==='Approved')) continue; } }
       const d=await Store.get('postimgs',String(id)); out[id]=(d&&d.imgs)||[];
     } return out;
   },
@@ -897,7 +927,7 @@ const ACTIONS={
     if(text.length>8000) throw err('النص طويل جدًا (الحد 8000 حرف). اختصره ثم أعد المحاولة.');
     const all=await activeBadges_(); const badges=(p.badgeKeys&&p.badgeKeys.length)?all.filter(b=>p.badgeKeys.indexOf(b.key)>=0):all;
     if(!badges.length) throw err('لا توجد شارات مفعّلة لتحليلها.');
-    const result=aiApply_(await AI.analyze(aiPrompt_(text,badges),aiSchema_()),badges);
+    const result=aiApply_(await AI.analyze(aiPrompt_(text,badges),aiSchema_()),badges,text);
     await audit_(u,p.caseId||'','ai_suggest','اقتراحات AI: '+result.suggestions.length+' إجابة');
     return result;
   },
@@ -1002,7 +1032,7 @@ function enter(){
 }
 async function poll(){
   if(document.hidden||!S.me.id||S.bd||S.busy) return;
-  if(S.saveState==='saving'||S.saveState==='error') return;
+  if(S.saveState==='sending') return;
   try{ await load(); onData(); }catch(e){ if(e.code==='auth'){ logout(true); } }
 }
 function logout(expired){ clearInterval(enter.t); lsSet('use_code',''); S.token=''; showLogin(expired?'انتهت الجلسة أو عُطّل الحساب. أدخل الكود من جديد.':''); }
@@ -1017,7 +1047,7 @@ function issuesFor(id,c,forApproval){
   const inc=badgesIn(r).filter(b=>r[b.key]==='Incomplete').map(b=>b.name);
   if(!Object.keys(r).length) out.push('لا توجد شارات مفعّلة لتقييم الحالة.');
   if(inc.length) out.push('أسئلة غير مجابة في: '+inc.join('، ')+'.');
-  if(c.nominated&&(!(c.startPoint||'').trim()||!(c.outcome||'').trim())) out.push('الحالة مرشّحة لبوست الشهر: أكمل نقطة البداية والنتيجة في محتوى البوست.');
+  if(!(c.startPoint||'').trim()||!(c.outcome||'').trim()) out.push('أكمل نقطة البداية والنتيجة في محتوى البوست.');
   if(forApproval){
     if(S.settings.reqBadge&&metCount(r)===0&&!inc.length) out.push('لا توجد شارة متحققة، والإعداد الحالي لا يسمح باعتماد حالة بلا شارات.');
     if(S.settings.sep&&(!S.me.id||S.me.id===c.reviewerId)) out.push(S.me.id?'لا يمكنك اعتماد حالة قيّمتها بنفسك. يعتمدها معتمد آخر.':'تعذر تحديد هويتك، فلا يمكن التحقق من فصل المقيّم عن المعتمد.');
@@ -1081,7 +1111,7 @@ function mountCases(){
   $('#main').innerHTML=
   '<div class="kpis" id="cKpis"></div>'+
   '<div class="bar"><select id="fMonth" aria-label="الشهر"></select>'+
-  '<select id="fStatus" aria-label="الحالة"><option value="all">كل الحالات</option><option value="Pending">قيد المراجعة</option>'+(admin?'<option value="Ready">جاهزة للاعتماد</option>':'')+'<option value="Approved">معتمدة</option>'+(admin?'<option value="Nominated">مرشّحة لبوست الشهر</option><option value="Featured">أفضل المشاركات</option>':'')+'<option value="Rejected">مرفوضة</option></select>'+
+  '<select id="fStatus" aria-label="الحالة"><option value="all">كل الحالات</option><option value="Returned">معادة للتصحيح</option><option value="Pending">بانتظار الاعتماد</option>'+(admin?'<option value="Ready">جاهزة للاعتماد</option>':'')+'<option value="Approved">معتمدة</option>'+(admin?'<option value="Featured">أفضل المشاركات</option>':'')+'<option value="Rejected">مرفوضة</option></select>'+
   '<input type="text" id="fQ" placeholder="بحث باسم الصيدلي أو المشرف أو الفرع أو رقم الحالة" style="max-width:320px" aria-label="بحث">'+
   '<span class="sp"></span>'+(admin?'<button class="btn" id="btnReport">تصدير التقرير (Excel)</button>':'')+
   '<button class="btn primary" id="btnNew"'+(S.me.canWrite?'':' disabled')+'>+ حالة جديدة</button></div>'+
@@ -1103,43 +1133,52 @@ function updateCases(){
   const sel=$('#fMonth'); if(!sel) return; const admin=adminMode();
   const ms=allMonths(); if(S.filters.month!=='all'&&!ms.includes(S.filters.month)) S.filters.month='all';
   sel.innerHTML='<option value="all">كل الأشهر</option>'+ms.map(m=>'<option value="'+m+'">'+esc(monthLabel(m))+'</option>').join(''); sel.value=S.filters.month;
-  const vis=visibleCases(); const cnt={all:vis.length,Pending:0,Ready:0,Approved:0,Rejected:0,Featured:0,Nominated:0};
+  const vis=visibleCases(); const cnt={all:vis.length,Pending:0,Ready:0,Approved:0,Rejected:0,Featured:0,Nominated:0,Returned:0};
   vis.forEach(([id,c])=>{const st=statusOf(id); cnt[st]++; if(st==='Pending'&&isReady(id,c)) cnt.Ready++; if(st==='Approved'&&(S.dec.get(id)||{}).featured) cnt.Featured++; if(c.nominated) cnt.Nominated++;});
-  const K=admin?[['Pending','بانتظار الاعتماد',cnt.Pending],['Ready','جاهزة للاعتماد',cnt.Ready],['Approved','معتمدة',cnt.Approved],['Nominated','مرشّحة لبوست الشهر',cnt.Nominated],['Rejected','مرفوضة',cnt.Rejected]]:[['all','كل حالاتي',cnt.all],['Pending','قيد المراجعة',cnt.Pending],['Approved','معتمدة',cnt.Approved],['Rejected','مرفوضة',cnt.Rejected]];
+  const K=admin?[['Pending','بانتظار الاعتماد',cnt.Pending],['Ready','جاهزة للاعتماد',cnt.Ready],['Approved','معتمدة',cnt.Approved],['Returned','معادة للتصحيح',cnt.Returned],['Rejected','مرفوضة',cnt.Rejected]]:[['all','كل حالاتي',cnt.all],['Returned','معادة للتصحيح',cnt.Returned],['Pending','بانتظار الاعتماد',cnt.Pending],['Approved','معتمدة',cnt.Approved],['Rejected','مرفوضة',cnt.Rejected]];
   $('#cKpis').innerHTML=K.map(k=>'<button class="panel kpi" data-st="'+k[0]+'" aria-pressed="'+(S.filters.status===k[0])+'"><span>'+k[1]+'</span><b>'+k[2]+'</b></button>').join('');
   $('#fStatus').value=S.filters.status;
   const bs=activeBadges();
   $('#legend').innerHTML='<span><i class="dot d-Met">U</i> متحققة</span><span><i class="dot d-NotMet">U</i> غير متحققة</span><span><i class="dot d-NA">U</i> لا تنطبق</span><span><i class="dot d-Incomplete">U</i> غير مكتملة</span><span style="margin-inline-start:auto">'+bs.map(b=>esc(abOf(b))+'='+esc(b.name)).join('، ')+'</span>';
   const rows=filteredCases(); const cols=admin?9:8;
-  if(!rows.length){
+  if(!rows.length&&!Object.values(getDrafts()).some(d=>!d.id)){
     $('#tb').innerHTML='<tr><td colspan="'+cols+'"><div class="empty"><b>'+(vis.length?'لا نتائج مطابقة':'لا توجد حالات بعد')+'</b>'+(vis.length?'غيّر الفلاتر أو البحث.':(admin?'تظهر هنا الحالات التي يدخلها المقيّمون.':'ابدأ بإدخال حالتك الأولى.'))+'</div></td></tr>'; return;
   }
-  $('#tb').innerHTML=rows.map(([id,c])=>{ const nomTag=c.nominated?' <span class="pill p-wait">مرشّحة لبوست الشهر</span>':'';
+  const drafts=(S.filters.status==='all'&&!S.preview)?Object.entries(getDrafts()).filter(([k,d])=>!d.id):[];
+  const draftRows=drafts.map(([k,d])=>'<tr class="row" data-draft="'+esc(k)+'" tabindex="0" style="background:var(--row-alt)"><td><span class="pill p-na">مسودة</span></td><td>'+esc(monthLabel(d.month))+'</td><td>'+esc(d.pharmacist||'—')+'</td><td>'+esc(d.branch||'—')+'</td><td>'+esc(d.supervisor||'—')+'</td>'+(admin?'<td>'+esc(S.me.name)+'</td>':'')+'<td>—</td><td><span class="pill p-na">لم تُرسل</span></td><td class="note">محفوظة على هذا الجهاز فقط. افتحها لإكمالها وإرسالها.</td></tr>').join('');
+  $('#tb').innerHTML=draftRows+rows.map(([id,c])=>{ const nomTag='';
     const st=statusOf(id); const stp=STATUS[st]; const dec=S.dec.get(id)||{};
     let last;
-    if(admin){ const is=issuesFor(id,c,false); last=st==='Pending'?(is.length?'<span class="pill p-wait">ناقصة ('+is.length+')</span>':'<span class="pill p-ok">جاهزة للاعتماد</span>'):(st==='Approved'?(dec.featured?'<span class="pill p-ok">★ أفضل مشاركة</span>':c.nominated?'<span class="pill p-wait">مرشّحة لبوست الشهر</span>':'<span class="pill p-na">—</span>'):'<span class="pill p-na">—</span>'); if(st==='Pending'&&c.nominated) last+=' <span class="pill p-wait">مرشّحة</span>'; }
-    else { last=nomTag+' '+(st==='Rejected'?esc(dec.rejectReason||'—'):st==='Approved'?'اعتُمدت في <span class="mono">'+esc(dec.approvedAt||'')+'</span>'+(dec.featured?' · اختيرت ضمن أفضل المشاركات ('+STAGE_AR[dec.postStage||'selected']+')':''):(issuesFor(id,c,false).length?'<span class="pill p-wait">ينقصها إكمال</span>':'مكتملة وبانتظار الاعتماد')); }
+    if(admin){ const is=issuesFor(id,c,false); last=st==='Pending'?(is.length?'<span class="pill p-wait">ناقصة ('+is.length+')</span>':'<span class="pill p-ok">جاهزة للاعتماد</span>'):(st==='Approved'&&dec.featured?'<span class="pill p-ok">★ أفضل مشاركة</span>':st==='Returned'?'<span class="pill p-na">بانتظار تصحيح المقيّم</span>':'<span class="pill p-na">—</span>'); }
+    else { last=st==='Returned'?'<b>أعادها المعتمد للتصحيح:</b> '+esc(dec.returnReason||'—'):(st==='Rejected'?esc(dec.rejectReason||'—'):st==='Approved'?'اعتُمدت في <span class="mono">'+esc(dec.approvedAt||'')+'</span>'+(dec.featured?' · اختيرت ضمن أفضل المشاركات ('+STAGE_AR[dec.postStage||'selected']+')':''):(issuesFor(id,c,false).length?'<span class="pill p-wait">ينقصها إكمال</span>':'مكتملة وبانتظار الاعتماد')); }
     return '<tr class="row" data-open="'+esc(id)+'" tabindex="0"><td class="mono">'+esc(id)+(c.example?' <span class="pill p-na">مثال</span>':'')+'</td><td>'+esc(monthLabel(c.month))+'</td><td>'+esc(c.pharmacist||'—')+'</td><td>'+esc(c.branch||'—')+'</td><td>'+esc(c.supervisor||'—')+'</td>'+(admin?'<td>'+esc(c.reviewerName||'—')+'</td>':'')+'<td>'+dotsFor(id,c)+'</td><td><span class="pill '+stp[1]+'">'+stp[0]+'</span></td><td>'+last+'</td></tr>';
   }).join('');
 }
 
 /* ---------- Editor ---------- */
+/* ---------- مسودات على هذا الجهاز فقط ---------- */
+function draftsKey(){ return 'useb_drafts_'+(S.me.id||'x'); }
+function getDrafts(){ try{ return JSON.parse(localStorage.getItem(draftsKey())||'{}')||{}; }catch(e){ return {}; } }
+function putDraft(d){ try{ const all=getDrafts(); all[d.id||d.localKey]=Object.assign({},d,{savedAt:new Date().toISOString()}); localStorage.setItem(draftsKey(),JSON.stringify(all)); return true; }catch(e){ return false; } }
+function dropDraft(key){ try{ const all=getDrafts(); delete all[key]; localStorage.setItem(draftsKey(),JSON.stringify(all)); }catch(e){} }
+function openDraft(key){ const d=getDrafts()[key]; if(!d) return; if(S.view!=='cases'){S.view='cases';renderShell();} S.rail={reason:'',mode:''}; S.draft=JSON.parse(JSON.stringify(d)); S.isNew=!d.id; S.openId=d.id||key; S.saveState='local'; S.saveErr=''; S.railErr=''; S.aiCodes=new Set(); S.aiErr=''; mount(); window.scrollTo(0,0); }
 function newDraft(){
   const d=new Date(); const pm=new Date(d.getFullYear(),d.getMonth()-1,1); const month=pm.getFullYear()+'-'+String(pm.getMonth()+1).padStart(2,'0');
-  return {nominated:false,id:'',month,pharmacist:'',branch:'',supervisor:'',summary:'',answers:{},reasons:{},startPoint:'',outcome:'',situation:[],products:[],reviewerId:S.me.id,reviewerName:S.me.name||''};
+  return {localKey:'n'+Date.now().toString(36),id:'',month,pharmacist:'',branch:'',supervisor:'',summary:'',answers:{},reasons:{},startPoint:'',outcome:'',situation:[],products:[],reviewerId:S.me.id,reviewerName:S.me.name||''};
 }
 function openCase(id){
   if(S.view!=='cases'){S.view='cases';renderShell();}
   S.rail={reason:'',mode:''};
-  if(id){S.draft=JSON.parse(JSON.stringify(S.cases.get(id)));S.draft.id=id;S.draft.answers=S.draft.answers||{};S.draft.reasons=S.draft.reasons||{};S.draft.situation=S.draft.situation||[];S.draft.products=S.draft.products||[];S.isNew=false;}
+  const local=id&&statusOf(id)==='Returned'&&getDrafts()[id];
+  if(local){S.draft=JSON.parse(JSON.stringify(local));S.isNew=false;}
+  else if(id){S.draft=JSON.parse(JSON.stringify(S.cases.get(id)));S.draft.id=id;S.draft.answers=S.draft.answers||{};S.draft.reasons=S.draft.reasons||{};S.draft.situation=S.draft.situation||[];S.draft.products=S.draft.products||[];S.isNew=false;}
   else{S.draft=newDraft();S.isNew=true;}
   S.openId=S.draft.id||'new'; S.saveState=''; S.saveErr=''; S.railErr=''; S.aiCodes=new Set(); S.aiErr=''; mount(); window.scrollTo(0,0);
 }
 function locked(){
   const d=S.draft; if(!S.me.canWrite) return true;
-  if(!S.isNew&&statusOf(d.id)!=='Pending') return true;
-  if(!adminMode()&&!S.isNew&&S.me.id&&d.reviewerId!==S.me.id) return true;
-  return false;
+  if(S.isNew) return false;
+  return !(statusOf(d.id)==='Returned'&&d.reviewerId===S.me.id);
 }
 function qHtml(q){
   return '<div class="q '+q.t+'" data-row="'+esc(q.c)+'"><span class="code">'+esc(q.c)+'<span class="tagt">'+QT[q.t]+'</span><span class="aichip" data-aichip="'+esc(q.c)+'" hidden title="مقترح من الذكاء الاصطناعي، راجعه">AI</span></span><div class="qt"><span class="qtext">'+esc(q.q)+'</span>'+
@@ -1165,7 +1204,7 @@ function mountEditor(){
   '<label class="f" style="margin-top:12px">ملخص الحالة (كما كتبه الصيدلي)<textarea data-f="summary" rows="4">'+esc(d.summary)+'</textarea></label>'+
   (S.settings.aiEnabled?'<div class="actions" style="margin-top:10px"><button class="btn" id="btnAiSuggest"'+(locked()?' disabled':'')+'>✨ اقترح الإجابات من النص أعلاه</button><span class="note" id="aiStatus" style="margin-inline-start:8px"></span></div><div id="aiErrBox"></div><p class="note" style="margin-top:6px">يقترح الذكاء الاصطناعي إجابات الأسئلة، ونقطة البداية والنتيجة ووصف الموقف في محتوى البوست أدناه — كل ذلك من نص ملخص الحالة، ويملأ فقط ما هو فارغ. راجع كل شيء قبل الحفظ.</p>':(adminMode()?'<p class="note" style="margin-top:10px">اقتراح الإجابات بالذكاء الاصطناعي غير متاح حاليًا. راجع تبويب «السجل والإعدادات».</p>':''))+
   '<p class="note">المقيّم: <b>'+esc(d.reviewerName||S.me.name)+'</b></p></section>'+
-  '<section class="panel sec"><label class="toggle" style="padding:0 0 12px;border:0;border-bottom:1px solid var(--line);margin-bottom:12px"><span><b>ترشيح الحالة لبوست الشهر</b><small>يرشّحها المقيّم، ويعتمد المعتمد الحالة كاملة مع الترشيح، ثم يختار أفضل المشاركات من المرشّحة.</small></span><input type="checkbox" id="nomToggle"'+(d.nominated?' checked':'')+'></label><h3>محتوى البوست</h3><p class="note" style="margin:0 0 10px">يُستخدم لتوليد بوست الشهر بعد الاعتماد. اكتب ما حدث فعلًا كما في نص الحالة.</p><div class="grid"><label class="f">نقطة البداية<textarea data-f="startPoint" rows="2">'+esc(d.startPoint||'')+'</textarea></label><label class="f">النتيجة<textarea data-f="outcome" rows="2">'+esc(d.outcome||'')+'</textarea></label></div><h3 style="margin-top:14px">وصف الموقف (نقاط قصيرة، حتى 5)</h3><div id="lSituation">'+listHtml('situation')+'</div><h3 style="margin-top:14px">المنتجات المذكورة (حتى 8)</h3><div id="lProducts">'+listHtml('products')+'</div></section>'+cards+'</div>'+
+  '<section class="panel sec"><h3>محتوى البوست</h3><p class="note" style="margin:0 0 10px">يُستخدم لتوليد بوست الشهر بعد الاعتماد. اكتب ما حدث فعلًا كما في نص الحالة.</p><div class="grid"><label class="f">نقطة البداية<textarea data-f="startPoint" rows="2">'+esc(d.startPoint||'')+'</textarea></label><label class="f">النتيجة<textarea data-f="outcome" rows="2">'+esc(d.outcome||'')+'</textarea></label></div><h3 style="margin-top:14px">وصف الموقف (نقاط محددة من الحالة، حتى 6)</h3><div id="lSituation">'+listHtml('situation')+'</div><h3 style="margin-top:14px">المنتجات المذكورة (حتى 8)</h3><div id="lProducts">'+listHtml('products')+'</div></section>'+cards+'</div>'+
   '<aside class="ed-rail" id="rail"></aside></div>';
   $('#main').querySelectorAll('[data-reason]').forEach(t=>{t.value=(d.reasons||{})[t.dataset.reason]||'';});
 }
@@ -1192,30 +1231,41 @@ function refreshEditor(){
     '<div class="rail-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:10px"><b>عدد الشارات</b><b class="num">'+metCount(r)+' من '+bs.length+'</b></div>'+
     '<p class="note">النتيجة تُحسب من إجاباتك تلقائيًا ولا تُعدَّل يدويًا.</p></div>';
   h+='<div class="panel sec"><h3>'+(admin?'الاعتماد':'حالة الاعتماد')+' <span class="pill '+stp[1]+'" style="margin-inline-start:6px">'+stp[0]+'</span></h3>';
-  if(S.isNew) h+='<p class="note" style="margin:0">تُحفظ الحالة تلقائيًا عند أول تعديل وتصل إلى المعتمد.</p>';
+  if(!L){
+    if(st==='Returned'&&dec.returnReason) h+='<div class="banner" style="margin:0 0 10px">أعادها المعتمد للتصحيح: '+esc(dec.returnReason)+'</div>';
+    const miss=issuesFor(d.id,d,false);
+    h+=miss.length?'<ul class="issues">'+miss.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>':'<div class="ok-msg">الحالة مكتملة وجاهزة للإرسال.</div>';
+    if(S.railErr) h+='<div class="banner" style="margin-top:10px">'+esc(S.railErr)+'</div>';
+    h+='<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnSubmit" style="width:100%"'+((miss.length||S.busy)?' disabled':'')+'>'+(S.saveState==='sending'?'جارٍ الإرسال…':(st==='Returned'?'إعادة الإرسال للاعتماد':'إرسال للاعتماد'))+'</button></div>';
+    h+='<p class="note">قبل الإرسال تبقى الحالة مسودة على هذا الجهاز فقط ولا يراها المعتمد. بعد الإرسال لا يمكن تعديلها إلا إذا أعادها المعتمد للتصحيح.</p>';
+    if(S.isNew) h+='<div class="actions"><button class="btn bad" id="btnDropDraft">حذف المسودة</button></div>';
+  }
+  else if(st==='Returned'){ h+='<p class="note" style="margin:0">أُعيدت للمقيّم للتصحيح'+(dec.returnedBy?' من '+esc(dec.returnedBy):'')+'. السبب: '+esc(dec.returnReason||'—')+'</p>'; }
   else if(st==='Pending'){
     const own=is.filter(x=>true);
-    if(own.length) h+='<ul class="issues">'+own.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'; else h+='<div class="ok-msg">'+(admin?'مستوفية شروط الاعتماد.':'الحالة مكتملة وبانتظار اعتماد المسؤول.')+'</div>';
+    if(!admin) h+='<div class="ok-msg">أُرسلت للاعتماد، ولا يمكن تعديلها الآن.</div>';
+    else if(own.length) h+='<ul class="issues">'+own.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'; else h+='<div class="ok-msg">مستوفية شروط الاعتماد.</div>';
     if(admin&&S.railErr) h+='<div class="banner" style="margin-top:10px">'+esc(S.railErr)+'</div>';
     if(admin){
-      if(S.rail.mode==='reject') h+='<label class="f" style="margin-top:10px">سبب الرفض<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn bad" id="btnRejectOk">تأكيد الرفض</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
-      else h+='<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnApprove"'+((is.length||!S.me.canWrite)?' disabled':'')+'>اعتماد</button><button class="btn bad" id="btnReject"'+(S.me.canWrite?'':' disabled')+'>رفض</button></div>';
+      if(S.rail.mode==='reject') h+='<label class="f" style="margin-top:10px">سبب الرفض (الرفض نهائي)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn bad" id="btnRejectOk">تأكيد الرفض</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
+      else if(S.rail.mode==='reopen') h+='<label class="f" style="margin-top:10px">ما الذي يحتاج تصحيحًا؟ (يظهر للمقيّم)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn primary" id="btnReopenOk">إعادة للمقيّم</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
+      else h+='<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnApprove"'+((is.length||!S.me.canWrite)?' disabled':'')+'>اعتماد</button><button class="btn" id="btnReopen">إعادة للتصحيح</button><button class="btn bad" id="btnReject"'+(S.me.canWrite?'':' disabled')+'>رفض</button></div>';
     }
   } else {
     h+='<p class="note" style="margin:0">'+(st==='Approved'?'اعتمدها <b>'+esc(dec.approverName||'—')+'</b> بتاريخ <span class="mono">'+esc(dec.approvedAt||'')+'</span>.':'رُفضت. السبب: '+esc(dec.rejectReason||'—'))+'</p>';
     if(admin&&S.railErr) h+='<div class="banner" style="margin-top:10px">'+esc(S.railErr)+'</div>';
     if(admin&&S.me.canWrite){
-      if(S.rail.mode==='reopen') h+='<label class="f" style="margin-top:10px">سبب إعادة الفتح (يُسجَّل في السجل)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn primary" id="btnReopenOk">إعادة فتح</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
-      else h+='<div class="actions" style="margin-top:10px"><button class="btn" id="btnReopen">إعادة فتح للتعديل</button></div>';
-    } else if(st==='Rejected') h+='<p class="note">للتعديل أو إعادة التقديم تواصل مع المعتمد.</p>';
+      if(S.rail.mode==='reopen') h+='<label class="f" style="margin-top:10px">ما الذي يحتاج تصحيحًا؟ (يظهر للمقيّم)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn primary" id="btnReopenOk">إعادة للمقيّم</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
+      else h+='<div class="actions" style="margin-top:10px"><button class="btn" id="btnReopen">إعادة للمقيّم للتصحيح</button></div>';
+    } else if(st==='Rejected') h+='<p class="note">الرفض نهائي.</p>';
   }
   h+='</div>';
   h+='<div class="panel sec"><h3>بوست الشهر</h3>';
-  if(!d.nominated) h+='<p class="note" style="margin:0">غير مرشّحة. '+(L?'':'فعّل «ترشيح الحالة لبوست الشهر» في محتوى البوست لترشيحها.')+'</p>';
+  if(st!=='Approved') h+='<p class="note" style="margin:0">يُولَّد البوست وتُضاف صور المنتجات بعد اعتماد الحالة.</p>';
   else {
-    h+=dec.featured?'<div class="ok-msg">★ اختيرت ضمن أفضل المشاركات</div>':'<div class="ok-msg" style="background:var(--warn-soft);color:var(--warn)">مرشّحة لبوست الشهر'+(st==='Approved'?' وبانتظار اختيار المعتمد':'')+'</div>';
+    h+=dec.featured?'<div class="ok-msg">★ اختيرت ضمن أفضل المشاركات</div>':'<div class="ok-msg" style="background:var(--warn-soft);color:var(--warn)">معتمدة وبانتظار اختيار أفضل المشاركات</div>';
     if(dec.featured) h+='<label class="f" style="margin-top:8px">مرحلة البوست'+(admin?'<select data-stage="'+esc(d.id)+'" style="width:100%">'+STAGE_KEYS.map(k=>'<option value="'+k+'"'+((dec.postStage||'selected')===k?' selected':'')+'>'+STAGE_AR[k]+'</option>').join('')+'</select>':'<b style="color:var(--ink)">'+STAGE_AR[dec.postStage||'selected']+'</b>')+'</label>';
-    h+=d.id?'<div class="actions" style="margin-top:10px"><button class="btn primary" data-post="'+esc(d.id)+'">توليد البوست وإضافة صور المنتجات</button></div>':'<p class="note">احفظ الحالة أولًا (تُحفظ تلقائيًا عند التعديل).</p>';
+    if(admin||d.reviewerId===S.me.id) h+='<div class="actions" style="margin-top:10px"><button class="btn primary" data-post="'+esc(d.id)+'">توليد البوست وإضافة صور المنتجات</button></div>';
   }
   h+='</div>';
   $('#rail').innerHTML=h;
@@ -1244,13 +1294,14 @@ async function runAiSuggest(){
       const filledLabels=[];
       if(r.startPoint&&!(d.startPoint||'').trim()){ d.startPoint=r.startPoint; filledLabels.push('نقطة البداية'); const el=$('[data-f="startPoint"]'); if(el) el.value=d.startPoint; }
       if(r.outcome&&!(d.outcome||'').trim()){ d.outcome=r.outcome; filledLabels.push('النتيجة'); const el=$('[data-f="outcome"]'); if(el) el.value=d.outcome; }
-      if(r.situation&&r.situation.length&&!(d.situation||[]).filter(Boolean).length){ d.situation=r.situation.slice(0,5); filledLabels.push('وصف الموقف'); }
+      if(r.situation&&r.situation.length&&!(d.situation||[]).filter(Boolean).length){ d.situation=r.situation.slice(0,6); filledLabels.push('وصف الموقف'); }
+      if(r.products&&r.products.length&&!(d.products||[]).filter(Boolean).length){ d.products=r.products.slice(0,8); filledLabels.push('المنتجات'); }
       const total=(r.suggestions||[]).length;
       let msg=total===0?'لم يجد الذكاء الاصطناعي إجابات واضحة في النص.':(applied?('تم اقتراح '+applied+' إجابة جديدة، راجعها أدناه.'+(skipped?(' (تجاهل '+skipped+' سؤالًا مُجابًا مسبقًا.)'):'')):'كل الأسئلة التي فهمها الذكاء الاصطناعي من النص مُجابة مسبقًا.');
       if(filledLabels.length) msg+=' كما اقترح محتوى: '+filledLabels.join('، ')+'.';
       if(st) st.textContent=msg;
       if(applied||filledLabels.length){ touch(); }
-      if(filledLabels.indexOf('وصف الموقف')>=0) relist(); // يعيد رسم قائمة نقاط الموقف مع القيم الجديدة
+      if(filledLabels.indexOf('وصف الموقف')>=0||filledLabels.indexOf('المنتجات')>=0) relist(); // يعيد رسم قائمة نقاط الموقف مع القيم الجديدة
       document.querySelectorAll('#main [data-reason]').forEach(t=>{ if(d.reasons[t.dataset.reason]!==undefined) t.value=d.reasons[t.dataset.reason]||''; });
     }catch(e){ S.aiErr=e.message||'تعذر الاتصال بالذكاء الاصطناعي.'; }
   }
@@ -1259,44 +1310,35 @@ async function runAiSuggest(){
 }
 let saveTimer=null, chain=Promise.resolve();
 function payload(d){
-  return {id:d.id||'',month:d.month,pharmacist:d.pharmacist,branch:d.branch,supervisor:d.supervisor||'',summary:d.summary,answers:d.answers,reasons:d.reasons,startPoint:d.startPoint||'',outcome:d.outcome||'',situation:d.situation||[],products:d.products||[],nominated:!!d.nominated};
+  return {id:d.id||'',month:d.month,pharmacist:d.pharmacist,branch:d.branch,supervisor:d.supervisor||'',summary:d.summary,answers:d.answers,reasons:d.reasons,startPoint:d.startPoint||'',outcome:d.outcome||'',situation:d.situation||[],products:d.products||[]};
 }
 function touch(){
-  if(locked()) return; S.saveState='saving'; const ss=$('#saveState'); if(ss) ss.textContent='جارٍ الحفظ…';
-  clearTimeout(saveTimer); saveTimer=setTimeout(flush,700);
+  if(locked()||!S.draft) return; clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{ S.saveState=putDraft(S.draft)?'local':'localerr'; const ss=$('#saveState'); if(ss) ss.textContent=saveMsg(); },400);
 }
 let saveTry=0;
 function saveMsg(){
-  if(S.saveState==='saving') return 'جارٍ الحفظ…'; if(S.saveState==='saved') return 'حُفظ تلقائيًا';
-  if(S.saveState==='error') return 'تعذر الحفظ: '+(S.saveErr||'')+(saveTry&&saveTry<4?' (تتم إعادة المحاولة)':'');
+  if(S.saveState==='local') return 'محفوظة كمسودة على هذا الجهاز فقط (لم تُرسل بعد)';
+  if(S.saveState==='localerr') return 'تعذر حفظ المسودة على هذا الجهاز';
+  if(S.saveState==='sending') return 'جارٍ الإرسال…';
+  if(S.saveState==='error') return 'تعذر الإرسال: '+(S.saveErr||'');
   return '';
 }
-function flush(){
-  clearTimeout(saveTimer);
-  const d0=S.draft;
-  chain=chain.then(async()=>{
-    const d=d0; if(!d) return;
-    try{
-      const res=await call('saveCase',payload(d));
-      if(S.draft===d){
-        if(!d.id){ d.id=res.id; S.openId=res.id; S.isNew=false; const c=$('#cid'); if(c) c.textContent=res.id; setTimeout(refreshEditor,0); }
-        d.updatedAt=res.updatedAt;
-      }
-      S.cases.set(res.id,Object.assign({},d,{id:res.id,results:res.results,metCount:res.metCount,reviewerId:d.reviewerId||S.me.id,reviewerName:d.reviewerName||S.me.name,answers:JSON.parse(JSON.stringify(d.answers)),reasons:JSON.parse(JSON.stringify(d.reasons))}));
-      S.saveState='saved'; S.saveErr=''; saveTry=0;
-    }catch(e){
-      S.saveState='error'; S.saveErr=e.message||'';
-      if(e.code==='auth'){ logout(true); return; }
-      const transient=e.code==='network'||/lock|timed out|Service|Exception/i.test(e.message||'');
-      if(transient&&saveTry<4){saveTry++; clearTimeout(saveTimer); saveTimer=setTimeout(flush,1500*saveTry);}
-    }
-    const ss=$('#saveState'); if(ss) ss.textContent=saveMsg();
-  });
-  return chain;
+async function submitCase(){
+  const d=S.draft; if(!d||locked()||S.busy) return;
+  const is=issuesFor(d.id,d,false); if(is.length){ S.railErr=is[0]; refreshEditor(); return; }
+  S.busy=true; S.saveState='sending'; S.railErr=''; refreshEditor();
+  try{
+    const res=await call('saveCase',payload(d));
+    dropDraft(d.localKey||''); if(d.id) dropDraft(d.id);
+    S.saveState=''; S.busy=false; await load(); S.openId=null; S.draft=null; mount();
+    toast('تم إرسال الحالة '+res.id+' للاعتماد.'); return;
+  }catch(e){ S.saveState='error'; S.saveErr=e.message||''; S.busy=false; if(e.code==='auth') return logout(true); }
+  refreshEditor();
 }
 async function decide(kind){
   const d=S.draft; if(S.busy) return; S.busy=true; S.railErr='';
-  try{ if(S.saveState==='saving'||S.saveState==='error') await flush(); await call('decide',{id:d.id,kind,reason:S.rail.reason}); S.rail={reason:'',mode:''}; await load(); }
+  try{ await call('decide',{id:d.id,kind,reason:S.rail.reason}); S.rail={reason:'',mode:''}; await load(); }
   catch(e){ if(e.code==='auth') return logout(true); S.railErr=e.message; }
   S.busy=false; refreshEditor();
 }
@@ -1489,7 +1531,7 @@ function updateBest(){
 }
 /* ---------- Posts of the month (approver) ---------- */
 const isBest=id=>statusOf(id)==='Approved'&&!!(S.dec.get(id)||{}).featured;
-function nominatedMonths(){ return [...new Set([...S.cases.values()].filter(c=>c.nominated&&statusOf(c.id)==='Approved').map(c=>c.month))].sort().reverse(); }
+function nominatedMonths(){ return [...new Set([...S.cases.values()].filter(c=>statusOf(c.id)==='Approved').map(c=>c.month))].sort().reverse(); }
 function mountPosts(){
   if(!adminMode()){ $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>'; S.postsSig=''; return; }
   $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span><label class="f" style="flex-direction:row;align-items:center;gap:8px">عدد أفضل المشاركات<input type="number" id="bestCountIn" min="1" max="20" value="'+(S.settings.bestCount||3)+'" style="width:70px;border:1.5px solid var(--line);border-radius:7px;padding:6px 8px"></label><button class="btn" id="btnBestCount">حفظ العدد</button></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>';
@@ -1499,15 +1541,15 @@ function updatePosts(){
   const sel=$('#pMonth'); if(!sel) return; const ms=nominatedMonths();
   if(!S.postsMonth||!ms.includes(S.postsMonth)) S.postsMonth=ms[0]||'';
   const ro=!adminMode();
-  sel.innerHTML=ms.length?ms.map(m=>'<option value="'+m+'">'+esc(monthLabel(m))+'</option>').join(''):'<option value="">'+'لا توجد مشاركات مرشّحة ومعتمدة'+'</option>'; sel.value=S.postsMonth;
-  const ids=[...S.cases.values()].filter(c=>c.month===S.postsMonth&&c.nominated&&statusOf(c.id)==='Approved').map(c=>c.id).sort((a,b)=>{ if(ro&&isBest(a)!==isBest(b)) return isBest(a)?-1:1; const ra=metCount(resultsOf(a,S.cases.get(a))), rb=metCount(resultsOf(b,S.cases.get(b))); return rb-ra||a.localeCompare(b); });
+  sel.innerHTML=ms.length?ms.map(m=>'<option value="'+m+'">'+esc(monthLabel(m))+'</option>').join(''):'<option value="">'+'لا توجد حالات معتمدة'+'</option>'; sel.value=S.postsMonth;
+  const ids=[...S.cases.values()].filter(c=>c.month===S.postsMonth&&statusOf(c.id)==='Approved').map(c=>c.id).sort((a,b)=>{ if(ro&&isBest(a)!==isBest(b)) return isBest(a)?-1:1; const ra=metCount(resultsOf(a,S.cases.get(a))), rb=metCount(resultsOf(b,S.cases.get(b))); return rb-ra||a.localeCompare(b); });
   const N=S.settings.bestCount||3; const picked=ids.filter(id=>(S.dec.get(id)||{}).featured).length;
-  if(ro){ const nb=ids.filter(isBest).length; $('#pSummary').innerHTML=ids.length?'<div class="kpis"><div class="panel kpi"><span>المشاركات المرشّحة والمعتمدة</span><b>'+ids.length+'</b></div><div class="panel kpi"><span>★ أفضل المشاركات</span><b>'+nb+'</b></div></div>'+(nb?'':'<div class="note" style="margin-bottom:12px">لم يختر المعتمد أفضل المشاركات لهذا الشهر بعد.</div>'):''; }
-  else $('#pSummary').innerHTML=ids.length?'<div class="kpis"><div class="panel kpi"><span>مرشّحة ومعتمدة</span><b>'+ids.length+'</b></div><div class="panel kpi"><span>أفضل المشاركات المختارة</span><b>'+picked+' / '+N+'</b></div></div>'+(picked>=N?'<div class="ok-msg" style="margin-bottom:12px">اكتمل العدد المحدد. لإضافة حالة أخرى ألغِ اختيار واحدة أو ارفع العدد.</div>':''):'';
+  if(ro){ const nb=ids.filter(isBest).length; $('#pSummary').innerHTML=ids.length?'<div class="kpis"><div class="panel kpi"><span>المشاركات المعتمدة</span><b>'+ids.length+'</b></div><div class="panel kpi"><span>★ أفضل المشاركات</span><b>'+nb+'</b></div></div>'+(nb?'':'<div class="note" style="margin-bottom:12px">لم يختر المعتمد أفضل المشاركات لهذا الشهر بعد.</div>'):''; }
+  else $('#pSummary').innerHTML=ids.length?'<div class="kpis"><div class="panel kpi"><span>معتمدة</span><b>'+ids.length+'</b></div><div class="panel kpi"><span>أفضل المشاركات المختارة</span><b>'+picked+' / '+N+'</b></div></div>'+(picked>=N?'<div class="ok-msg" style="margin-bottom:12px">اكتمل العدد المحدد. لإضافة حالة أخرى ألغِ اختيار واحدة أو ارفع العدد.</div>':''):'';
   const sig=(ro?'ro|':'')+S.postsMonth+'|'+N+'|'+ids.map(id=>{const c=S.cases.get(id),d=S.dec.get(id)||{}; return id+':'+(d.featured?1:0)+':'+(d.postStage||'')+':'+(c.updatedAt||'');}).join(',');
   if(sig===S.postsSig) return; S.postsSig=sig;
   const box=$('#pList');
-  if(!ids.length){ box.innerHTML=ro?'<div class="panel empty"><b>لا توجد مشاركات مرشّحة ومعتمدة بعد</b>تظهر هنا كل المشاركات المرشّحة لبوست الشهر بعد اعتمادها، وأفضل المشاركات أولًا.</div>':'<div class="panel empty"><b>لا توجد بوستات بعد</b>تظهر هنا الحالات التي رشّحها المقيّمون لبوست الشهر بعد اعتمادها، مع البوست المولَّد لكل منها.</div>'; return; }
+  if(!ids.length){ box.innerHTML=ro?'<div class="panel empty"><b>لا توجد حالات معتمدة بعد</b>تظهر هنا كل الحالات المعتمدة، وأفضل المشاركات أولًا.</div>':'<div class="panel empty"><b>لا توجد بوستات بعد</b>تظهر هنا كل الحالات المعتمدة مع البوست المولَّد لكل منها، ومنها تختار أفضل المشاركات.</div>'; return; }
   box.innerHTML=ids.map((id,i)=>{ const c=S.cases.get(id), d=S.dec.get(id)||{}, r=resultsOf(id,c);
     return '<section class="panel" style="display:grid;grid-template-columns:minmax(0,540px) minmax(0,1fr);gap:18px;padding:16px;'+(d.featured?'border:2px solid var(--good);':'')+'"><canvas data-cv="'+esc(id)+'" style="width:100%;height:auto;border-radius:10px;display:block"></canvas>'+
       '<div style="display:flex;flex-direction:column;gap:10px;min-width:0"><h3 style="margin:0;color:var(--navy)">'+(d.featured?'<span class="pill p-ok" style="margin-inline-end:8px">★ أفضل مشاركة</span>':'')+(i+1)+'. '+esc(c.pharmacist||'—')+' <span class="mono" style="font-size:12px;color:var(--muted)">'+esc(id)+'</span></h3>'+
@@ -1515,7 +1557,7 @@ function updatePosts(){
       '<div class="rail-row"><span>الشارات المتحققة</span>'+dotsFor(id,c)+'<b class="num">'+metCount(r)+'</b></div>'+
       (!ro&&pastPick(id,c)?'<span class="pill p-wait" style="width:fit-content">سبق اختيار الصيدلي: '+esc(pastPick(id,c))+'</span>':'')+
       (ro&&c.reviewerId===S.me.id?'<span class="pill p-ok" style="width:fit-content">من حالاتك</span>':'')+
-      (ro&&d.featured?'<div class="ok-msg">★ ضمن أفضل المشاركات · '+STAGE_AR[d.postStage||'selected']+'</div>':'')+(ro&&!d.featured?'<span class="pill p-na" style="width:fit-content">مرشّحة ومعتمدة</span>':'')+
+      (ro&&d.featured?'<div class="ok-msg">★ ضمن أفضل المشاركات · '+STAGE_AR[d.postStage||'selected']+'</div>':'')+(ro&&!d.featured?'<span class="pill p-na" style="width:fit-content">معتمدة</span>':'')+
       (!ro&&d.featured?'<div class="ok-msg">★ ضمن أفضل المشاركات</div><label class="f">مرحلة البوست<select data-stage="'+esc(id)+'" style="width:100%">'+STAGE_KEYS.map(k=>'<option value="'+k+'"'+((d.postStage||'selected')===k?' selected':'')+'>'+STAGE_AR[k]+'</option>').join('')+'</select></label>':'')+
       '<div class="actions">'+(ro?'':d.featured?'<button class="btn bad" data-unpick="'+esc(id)+'">إلغاء الاختيار</button>':'<button class="btn primary" data-pick="'+esc(id)+'"'+(picked>=N?' disabled':'')+'>★ اختيار كأفضل مشاركة</button>')+'<button class="btn" data-dlpost="'+esc(id)+'">تحميل PNG</button>'+(!ro||c.reviewerId===S.me.id?'<button class="btn" data-open="'+esc(id)+'">فتح الحالة</button>':'')+'</div></div></section>';
   }).join('');
@@ -1641,7 +1683,7 @@ async function drawPost(cv,id,imgs,again){
   cv.width=1080; cv.height=Math.ceil(H); layoutPost(cv,d,false,again);
 }
 function renderPost(){ return drawPost($('#postCv'),S.postId,S.pimgs,()=>{ if(S.view==='post') renderPost(); }); }
-function canEditImgs(id){ return adminMode()||(statusOf(id)==='Pending'&&(S.cases.get(id)||{}).reviewerId===S.me.id); }
+function canEditImgs(id){ return adminMode()||(statusOf(id)==='Approved'&&(S.cases.get(id)||{}).reviewerId===S.me.id); }
 async function openPost(id){ S.postId=id; S.view='post'; S.pimgs=[]; S.postFrom=S.view; S.openId=null; S.draft=null; renderShell(); mount(); window.scrollTo(0,0);
   try{ const r=await call('getPostImages',{ids:[id]}); if(S.view==='post'&&S.postId===id){ S.pimgs=(r[id]||[]).slice(); renderPost(); const pv=document.querySelectorAll('[data-pimgprev]'); pv.forEach(el=>{ const i=+el.dataset.pimgprev; el.innerHTML=S.pimgs[i]?'<img src="'+S.pimgs[i]+'" alt="" style="height:44px">':''; }); } }catch(e){} }
 function resizeProduct(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [h,type,q] of [[360,'image/webp',.85],[300,'image/webp',.8],[260,'image/jpeg',.8],[200,'image/jpeg',.75]]){ const r=Math.min(1,h/Math.max(im.width,im.height)); const cw=Math.round(im.width*r),ch=Math.round(im.height*r); const c=document.createElement('canvas'); c.width=cw;c.height=ch; const x=c.getContext('2d'); if(type==='image/jpeg'){x.fillStyle='#fff';x.fillRect(0,0,cw,ch);} x.drawImage(im,0,0,cw,ch); const u=c.toDataURL(type,q); if(u.length<44000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('صورة المنتج كبيرة جدًا.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
@@ -1658,7 +1700,7 @@ function mountPost(){
 function dlPost(){ const cv=$('#postCv'); if(!cv) return; cv.toBlob(b=>{ if(!b) return; saveFile('USE_Post_'+S.postId+'.png',b).catch(e=>toast(e.message,true)); },'image/png'); }
 function resizeLogo(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [w,type,q] of [[420,'image/png'],[320,'image/png'],[320,'image/webp',.9],[240,'image/webp',.85]]){ const r=Math.min(1,w/im.width); const cw=Math.round(im.width*r),ch=Math.round(im.height*r); const c=document.createElement('canvas'); c.width=cw;c.height=ch; c.getContext('2d').drawImage(im,0,0,cw,ch); const u=c.toDataURL(type,q); if(u.length<58000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('الصورة معقدة جدًا، جرّب صورة أبسط أو أصغر.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
 function resizeIcon(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [sz,type,q] of [[160,'image/png'],[128,'image/png'],[128,'image/webp',.85],[96,'image/webp',.8]]){ const c=document.createElement('canvas'); c.width=c.height=sz; const x=c.getContext('2d'); const r=Math.min(sz/im.width,sz/im.height); x.drawImage(im,(sz-im.width*r)/2,(sz-im.height*r)/2,im.width*r,im.height*r); const u=c.toDataURL(type,q); if(u.length<38000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('الصورة معقدة جدًا، جرّب صورة أبسط.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
-function listHtml(name){ const arr=S.draft[name]||[]; const max=name==='situation'?5:8; const one=name==='situation'?'نقطة':'منتج';
+function listHtml(name){ const arr=S.draft[name]||[]; const max=name==='situation'?6:8; const one=name==='situation'?'نقطة':'منتج';
   return arr.map((v,i)=>'<div class="lrow"><input type="text" data-l="'+name+':'+i+'" value="'+esc(v)+'" placeholder="'+(name==='situation'?'نقطة قصيرة من الموقف':'اسم المنتج')+'"><button class="btn" data-ldel="'+name+':'+i+'" aria-label="حذف">×</button></div>').join('')+(arr.length<max?'<button class="btn" data-ladd="'+name+'">+ إضافة '+one+'</button>':''); }
 function relist(){ const a=$('#lSituation'),b=$('#lProducts'); if(a) a.innerHTML=listHtml('situation'); if(b) b.innerHTML=listHtml('products'); refreshEditor(); }
 
@@ -1680,7 +1722,7 @@ function bqSet(el){
   const [k,i,f]=el.dataset.bq.split(':'); if(k==='gate') S.bd.gate[f]=el.value; else S.bd[k][+i][f]=el.value;
 }
 document.addEventListener('click',e=>{
-  const t=e.target.closest('button,tr[data-open],a[data-openbest]'); if(!t) return;
+  const t=e.target.closest('button,tr[data-open],tr[data-draft],a[data-openbest]'); if(!t) return;
   if(t.dataset.tab) return go(t.dataset.tab);
   if(t.id==='btnPreview'){S.preview=!S.preview;S.view='cases';S.openId=null;S.draft=null;S.filters.status='all';renderShell();mount();return;}
   if(t.dataset.st!==undefined){S.filters.status=t.dataset.st;return updateCases();}
@@ -1715,7 +1757,10 @@ document.addEventListener('click',e=>{
   if(t.dataset.urole){ const u=S.users.find(x=>x.id===t.dataset.urole); return userOp(async()=>{ const r=await call('setUser',{id:u.id,role:u.role==='admin'?'reviewer':'admin'}); if(r.pin) S.code={name:r.name,username:r.username,pin:r.pin}; }); }
   if(t.id==='btnCodeDone'){ S.code=null; return updateUsers(); }
   if(t.id==='btnCopy'){ try{ navigator.clipboard.writeText(S.code.username+' / '+S.code.pin); t.textContent='تم النسخ'; }catch(e){} return; }
-  if(t.id==='btnBack'){ if(S.saveState==='saving'||S.saveState==='error') flush(); S.openId=null;S.draft=null; return mount(); }
+  if(t.id==='btnBack'){ if(S.draft&&!locked()) putDraft(S.draft); S.openId=null;S.draft=null; return mount(); }
+  if(t.id==='btnSubmit') return submitCase();
+  if(t.id==='btnDropDraft'&&S.draft){ dropDraft(S.draft.id||S.draft.localKey); S.openId=null; S.draft=null; toast('حُذفت المسودة.'); return mount(); }
+  if(t.dataset.draft) return openDraft(t.dataset.draft);
   if(t.dataset.q&&S.draft&&!locked()){ const a=S.draft.answers; S.aiCodes.delete(t.dataset.q); if(a[t.dataset.q]===t.dataset.v) delete a[t.dataset.q]; else a[t.dataset.q]=t.dataset.v; refreshEditor(); return touch(); }
   if(t.id==='btnApprove') return decide('approve');
   if(t.id==='btnReject'){S.rail.mode='reject';return refreshEditor();}
@@ -1751,7 +1796,6 @@ document.addEventListener('change',e=>{
   const el=e.target;
   if(el.id==='stageSel'){ call('setPostStage',{id:S.draft.id,stage:el.value}).then(load).then(onData).catch(e=>{toast(e.message,true);}); return; }
   if(el.dataset&&el.dataset.pimg!==undefined&&el.files&&el.files[0]){ const i=+el.dataset.pimg, id=S.postId; resizeProduct(el.files[0]).then(u=>{ S.pimgs[i]=u; const pv=$('[data-pimgprev="'+i+'"]'); if(pv) pv.innerHTML='<img src="'+u+'" alt="" style="height:44px">'; renderPost(); const arr=[]; for(let k=0;k<8;k++) arr.push(S.pimgs[k]||''); return call('savePostImages',{id,imgs:arr}).then(()=>toast('حُفظت صورة المنتج.')); }).catch(e=>toast(e.message,true)); return; }
-  if(el.id==='nomToggle'&&S.draft&&!locked()){ S.draft.nominated=el.checked; refreshEditor(); return touch(); }
   if(el.dataset&&el.dataset.stage){ call('setPostStage',{id:el.dataset.stage,stage:el.value}).then(load).then(onData).catch(e=>toast(e.message,true)); return; }
   if(el.id==='bIcon'&&S.bd&&el.files&&el.files[0]){ resizeIcon(el.files[0]).then(u=>{ S.bd.icon=u; $('#bIconPrev').innerHTML='<img src="'+u+'" width="56" height="56" alt="">'; }).catch(e=>toast(e.message,true)); return; }
   if(el.id==='pMonth'){ S.postsMonth=el.value; return updatePosts(); }
@@ -1769,4 +1813,3 @@ init();
 </script>
 </body>
 </html>
-
