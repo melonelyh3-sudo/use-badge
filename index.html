@@ -224,7 +224,7 @@ const RES_AR={'Met':'متحققة','Not Met':'غير متحققة','N/A':'لا �
 const RES_CLS={'Met':'Met','Not Met':'NotMet','N/A':'NA','Incomplete':'Incomplete'};
 const STATUS={Returned:['معادة للتصحيح','p-no'],Pending:['بانتظار الاعتماد','p-wait'],Approved:['معتمدة','p-ok'],Rejected:['مرفوضة','p-no']};
 const CYCLE=[['25 → 1','الاختيار','EGY Team'],['2','المراجعة الأولية','KSA Team'],['4','الاعتماد','KSA Team'],['4 → 8','التصميم','EGY Team'],['8','المراجعة النهائية','KSA Team'],['10','الإرسال للنشر','KSA Team']];
-const ACT_AR={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار'};
+const ACT_AR={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار',deleted:'حذف حالة',restored:'استرجاع حالة محذوفة'};
 const STAGE_KEYS=['selected','design','final','sent','published'];
 const STAGE_AR={selected:'مختارة',design:'قيد التصميم',final:'مراجعة نهائية',sent:'أُرسلت للنشر',published:'نُشرت'};
 const QT={gate:'سؤال أولي',must:'شرط',disq:'استبعاد'};
@@ -282,7 +282,11 @@ async function bk(op,body,tries){
     let r; try{ r=await fetch(BACKEND_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({op},body||{}))}); }
     catch(e){ last=Object.assign(new Error('تعذر الاتصال بالخادم. تحقق من الإنترنت.'),{code:'unavailable'}); continue; }
     if(!r.ok){ last=Object.assign(new Error('الخادم أعاد خطأ ('+r.status+').'),{code:'unavailable'}); continue; }
-    let j; try{ j=await r.json(); }catch(e){ last=Object.assign(new Error('ردّ غير صالح من الخادم.'),{code:'unavailable'}); continue; }
+    // إذا لم يكن الرد JSON (غالبًا صفحة خطأ من Google) نعرض أول سطر منه لمعرفة السبب. طلب الذكاء الاصطناعي لا يُعاد هنا لأنه طويل.
+    let raw=''; try{ raw=await r.text(); }catch(e){}
+    let j; try{ j=JSON.parse(raw); }catch(e){
+      const hint=raw.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;|&#39;|&quot;/g,' ').replace(/\s+/g,' ').trim().slice(0,160);
+      last=Object.assign(new Error('ردّ غير صالح من الخادم'+(hint?': '+hint:'.')),{code:'unavailable'}); if(op==='ai') throw last; continue; }
     if(!j||!j.ok) throw new Error((j&&j.error)||'خطأ في الخادم.'); return j.data;
   }
   throw last;
@@ -800,13 +804,15 @@ const ACTIONS={
   bootstrap: async(u)=>{
     const admin=u.role==='admin';
     const allDec=await Store.list('decisions'); const appr={}; allDec.forEach(d=>{ if(d.status==='Approved') appr[d.caseId]=1; });
-    const cases=(await Store.list('cases')).filter(c=>admin||c.reviewerId===u.id||appr[c.id]);
+    const allCases=await Store.list('cases');
+    const cases=allCases.filter(c=>!c.deleted&&(admin||c.reviewerId===u.id||appr[c.id]));
     const ids={}; cases.forEach(c=>{ids[c.id]=1;});
     const decisions={}; allDec.forEach(d=>{ if(ids[d.caseId]) decisions[d.caseId]=decOut_(d); });
     const out={user:{id:u.id,name:u.name,role:u.role},badges:await allBadges_(),cases,decisions,settings:await settings_()};
     if(admin){
       const au=[]; (await Store.list('audit')).sort((a,b)=>a.month<b.month?-1:1).forEach(d=>au.push(...(d.items||[])));
       out.audit=au.slice(-150).reverse();
+      out.deleted=allCases.filter(c=>c.deleted).map(c=>({id:c.id,pharmacist:c.pharmacist,branch:c.branch,reviewerName:c.reviewerName,deletedBy:c.deletedBy||'',deletedAt:c.deletedAt||'',deleteReason:c.deleteReason||''})).sort((a,b)=>a.deletedAt<b.deletedAt?1:-1);
       out.users=(await Store.list('users')).map(x=>({id:x.id,username:x.username,name:x.name,role:x.role,active:x.active,createdAt:x.createdAt}));
     }
     return out;
@@ -839,7 +845,7 @@ const ACTIONS={
   }),
   decide:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
     const badges=await activeBadges_(), set=await settings_(); const c=await Store.get('cases',p.id);
-    if(!c) throw err('الحالة غير موجودة.');
+    if(!c||c.deleted) throw err('الحالة غير موجودة.');
     const d0=await decOf_(c.id); if(d0&&d0.status!=='Pending') throw err(d0.status==='Returned'?'الحالة معادة للمقيّم للتصحيح ولم تُرسل من جديد بعد.':'تم اتخاذ قرار في هذه الحالة مسبقًا.');
     const r=resultsLive_(c.answers||{},badges); const approve=p.kind==='approve';
     if(approve){ const is=issues_(c,r,badges,set,u); if(is.length) throw err(is[0]); }
@@ -847,6 +853,21 @@ const ACTIONS={
     const dec={caseId:c.id,status:approve?'Approved':'Rejected',approverId:u.id,approverName:u.name,approvedAt:approve?today_():'',rejectReason:approve?'':String(p.reason).trim().slice(0,1000),results:r,metCount:metCount_(r),updatedAt:now_(),postStage:'',featured:false,featuredNote:''};
     await Store.put('decisions',c.id,dec); await audit_(u,c.id,approve?'approved':'rejected',approve?'':dec.rejectReason);
     return decOut_(dec);
+  }); },
+  // حذف ناعم: الحالة تختفي من كل القوائم واللوحة والتقرير والبوستات، وتبقى محفوظة لإمكانية الاسترجاع.
+  deleteCase:(u,p)=>{ needAdmin_(u); const reason=String(p.reason||'').trim(); if(!reason) throw err('اكتب سبب الحذف.'); return withLock_(async()=>{
+    const c=await Store.get('cases',String(p.id||'')); if(!c||c.deleted) throw err('الحالة غير موجودة.');
+    c.deleted=true; c.deletedBy=u.name; c.deletedAt=now_(); c.deleteReason=reason.slice(0,500);
+    await Store.put('cases',c.id,c);
+    const d=await decOf_(c.id); if(d&&d.featured){ d.featured=false; d.featuredNote=''; d.updatedAt=now_(); await Store.put('decisions',c.id,d); }
+    await audit_(u,c.id,'deleted',reason+((d&&d.status)?' (كانت: '+d.status+')':''));
+    return {ok:true};
+  }); },
+  restoreCase:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    const c=await Store.get('cases',String(p.id||'')); if(!c||!c.deleted) throw err('الحالة غير موجودة في المحذوفات.');
+    delete c.deleted; delete c.deletedBy; delete c.deletedAt; delete c.deleteReason;
+    await Store.put('cases',c.id,c); await audit_(u,c.id,'restored','');
+    return {ok:true};
   }); },
   reopen:(u,p)=>{ needAdmin_(u); if(!String(p.reason||'').trim()) throw err('اكتب سبب الإعادة للتصحيح.'); return withLock_(async()=>{
     const d0=await decOf_(p.id); const before=(d0&&d0.status)||'Pending';
@@ -968,7 +989,7 @@ const ACTIONS={
     const badges=await allBadges_(); const decs={}; (await Store.list('decisions')).forEach(d=>{decs[d.caseId]=d;});
     const head=['Month','Case ID','Pharmacist','Branch','Supervisor','Reviewer','Status','Approved By','Approval Date','Nominated','Best of Month','Post Stage','Case Summary','Start Point','Outcome'];
     badges.forEach(b=>{ head.push(b.name); head.push(b.name+' Reason'); }); head.push('Total Badges','Invoice Net (SAR)','Items Count');
-    const rows=(await Store.list('cases')).sort((a,b)=>a.id<b.id?-1:1).map(c=>{
+    const rows=(await Store.list('cases')).filter(c=>!c.deleted).sort((a,b)=>a.id<b.id?-1:1).map(c=>{
       const d=decs[c.id], dr=d&&d.status!=='Pending'&&d.results?d.results:(c.results||{}); const reasons=c.reasons||{};
       const row=[c.month,c.id,c.pharmacist,c.branch,c.supervisor,c.reviewerName,d?d.status:'Pending',d?d.approverName:'',d?d.approvedAt:'',c.nominated?'YES':'',d&&d.featured?'YES':'',d?d.postStage:'',c.summary,c.startPoint,c.outcome];
       badges.forEach(b=>{ row.push(b.key in dr?dr[b.key]:''); row.push(reasons[b.key]||''); }); row.push(metCount_(dr),c.invoiceTotal==null?'':c.invoiceTotal,c.invoiceCount==null?'':c.invoiceCount); return row;
@@ -1012,7 +1033,7 @@ function errText(c){
 async function load(){
   const d=await call('bootstrap');
   S.me={id:d.user.id,name:d.user.name,role:d.user.role,canEdit:d.user.role==='admin',canWrite:true};
-  S.badges=d.badges||[]; S.cases=new Map((d.cases||[]).map(c=>[c.id,c])); S.dec=new Map(Object.entries(d.decisions||{}));
+  S.badges=d.badges||[]; S.cases=new Map((d.cases||[]).map(c=>[c.id,c])); S.dec=new Map(Object.entries(d.decisions||{})); S.deleted=d.deleted||[];
   S.settings=Object.assign({sep:true,reqQuote:true,reqBadge:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'},d.settings||{}); applyBrand(); S.audit=d.audit||[]; S.users=d.users||[];
 }
 async function reload(){ await load(); onData(); }
@@ -1292,6 +1313,10 @@ function refreshEditor(){
       else h+='<div class="actions" style="margin-top:10px"><button class="btn" id="btnReopen">إعادة للمقيّم للتصحيح</button></div>';
     } else if(st==='Rejected') h+='<p class="note">الرفض نهائي.</p>';
   }
+  if(admin&&L&&d.id&&S.me.canWrite!==false){
+    if(S.rail.mode==='delete') h+='<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px"><label class="f">سبب الحذف (مثال: حالة مكررة من 2026-09-004)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><p class="note" style="margin:4px 0 8px">تختفي الحالة من القوائم ولوحة المتابعة والتقرير والبوستات، ويمكن استرجاعها من «المستخدمون والإعدادات».</p><div class="actions"><button class="btn bad" id="btnDeleteOk">تأكيد الحذف</button><button class="btn" id="btnRailCancel">إلغاء</button></div></div>';
+    else if(!S.rail.mode) h+='<div class="actions" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><button class="btn bad" id="btnDelete" style="background:transparent">🗑 حذف الحالة (مكررة أو مُدخلة بالخطأ)</button></div>';
+  }
   h+='</div>';
   h+='<div class="panel sec"><h3>بوست الشهر</h3>';
   if(st!=='Approved') h+='<p class="note" style="margin:0">يُولَّد البوست وتُضاف صور المنتجات بعد اعتماد الحالة.</p>';
@@ -1376,6 +1401,12 @@ async function submitCase(){
 async function decide(kind){
   const d=S.draft; if(S.busy) return; S.busy=true; S.railErr='';
   try{ await call('decide',{id:d.id,kind,reason:S.rail.reason}); S.rail={reason:'',mode:''}; await load(); }
+  catch(e){ if(e.code==='auth') return logout(true); S.railErr=e.message; }
+  S.busy=false; refreshEditor();
+}
+async function delCase(){
+  const d=S.draft; if(S.busy) return; S.busy=true; S.railErr='';
+  try{ await call('deleteCase',{id:d.id,reason:S.rail.reason}); S.rail={reason:'',mode:''}; S.busy=false; await load(); toast('حُذفت الحالة '+d.id+'.'); S.openId=null; S.draft=null; return mount(); }
   catch(e){ if(e.code==='auth') return logout(true); S.railErr=e.message; }
   S.busy=false; refreshEditor();
 }
@@ -1520,9 +1551,16 @@ function mountRules(){
 /* ---------- Log & settings ---------- */
 function mountUsers(){ $('#main').innerHTML=usersHtml(); }
 function mountLog(){
-  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
+  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
+}
+function updateDeleted(){
+  const box=$('#delBox'); if(!box) return; const L=S.deleted||[];
+  box.innerHTML=!L.length?'<div class="panel empty" style="padding:16px"><b>لا توجد حالات محذوفة</b></div>':
+    '<div class="panel tw"><table><thead><tr><th>رقم الحالة</th><th>الصيدلي / الفرع</th><th>المقيّم</th><th>حذفها</th><th>التاريخ</th><th>السبب</th><th></th></tr></thead><tbody>'+
+    L.map(x=>'<tr><td class="mono">'+esc(x.id)+'</td><td>'+esc(x.pharmacist||'—')+' / '+esc(x.branch||'—')+'</td><td>'+esc(x.reviewerName||'—')+'</td><td>'+esc(x.deletedBy)+'</td><td class="mono">'+esc(String(x.deletedAt).slice(0,10))+'</td><td>'+esc(x.deleteReason)+'</td><td><button class="btn" data-restore="'+esc(x.id)+'">استرجاع</button></td></tr>').join('')+'</tbody></table></div>';
 }
 function updateLog(){
+  updateDeleted();
   const ab=$('#aiBox');
   if(ab){
     const srcAr={backend:'متصل بـ Claude عبر الخادم',claude:'متصل بـ Claude (داخل Claude)',endpoint:'متصل عبر خادم القسم التقني',none:'غير متصل في هذه النسخة'}[S.settings.aiSource||'none'];
@@ -1831,6 +1869,9 @@ document.addEventListener('click',e=>{
   if(t.id==='btnRejectOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return decide('reject'); }
   if(t.id==='btnReopen'){S.rail.mode='reopen';return refreshEditor();}
   if(t.id==='btnReopenOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return reopen(); }
+  if(t.id==='btnDelete'){S.rail={reason:'',mode:'delete'};return refreshEditor();}
+  if(t.id==='btnDeleteOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return delCase(); }
+  if(t.dataset&&t.dataset.restore){ if(S.busy) return; S.busy=true; t.disabled=true; const id=t.dataset.restore; return call('restoreCase',{id}).then(load).then(()=>{ toast('استُرجعت الحالة '+id+'.'); onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.id==='btnRailCancel'){S.rail={reason:'',mode:''};return refreshEditor();}
   if(t.id==='btnNewBadge') return openBadge(null);
   if(t.dataset.bedit) return openBadge(t.dataset.bedit);
