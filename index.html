@@ -1313,8 +1313,8 @@ function refreshEditor(){
       else h+='<div class="actions" style="margin-top:10px"><button class="btn" id="btnReopen">إعادة للمقيّم للتصحيح</button></div>';
     } else if(st==='Rejected') h+='<p class="note">الرفض نهائي.</p>';
   }
-  if(admin&&L&&d.id&&S.me.canWrite!==false){
-    if(S.rail.mode==='delete') h+='<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px"><label class="f">سبب الحذف (مثال: حالة مكررة من 2026-09-004)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><p class="note" style="margin:4px 0 8px">تختفي الحالة من القوائم ولوحة المتابعة والتقرير والبوستات، ويمكن استرجاعها من «المستخدمون والإعدادات».</p><div class="actions"><button class="btn bad" id="btnDeleteOk">تأكيد الحذف</button><button class="btn" id="btnRailCancel">إلغاء</button></div></div>';
+  if(admin&&d.id&&!S.isNew&&S.me.canWrite!==false){
+    if(S.rail.mode==='delete') h+='<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px">'+(S.railErr?'<div class="banner" style="margin-bottom:8px">'+esc(S.railErr)+'</div>':'')+'<label class="f">سبب الحذف (مثال: حالة مكررة من 2026-09-004)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><p class="note" style="margin:4px 0 8px">تختفي الحالة من القوائم ولوحة المتابعة والتقرير والبوستات، ويمكن استرجاعها من «المستخدمون والإعدادات».</p><div class="actions"><button class="btn bad" id="btnDeleteOk">تأكيد الحذف</button><button class="btn" id="btnRailCancel">إلغاء</button></div></div>';
     else if(!S.rail.mode) h+='<div class="actions" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><button class="btn bad" id="btnDelete" style="background:transparent">🗑 حذف الحالة (مكررة أو مُدخلة بالخطأ)</button></div>';
   }
   h+='</div>';
@@ -1406,8 +1406,8 @@ async function decide(kind){
 }
 async function delCase(){
   const d=S.draft; if(S.busy) return; S.busy=true; S.railErr='';
-  try{ await call('deleteCase',{id:d.id,reason:S.rail.reason}); S.rail={reason:'',mode:''}; S.busy=false; await load(); toast('حُذفت الحالة '+d.id+'.'); S.openId=null; S.draft=null; return mount(); }
-  catch(e){ if(e.code==='auth') return logout(true); S.railErr=e.message; }
+  try{ await call('deleteCase',{id:d.id,reason:S.rail.reason}); S.rail={reason:'',mode:''}; try{ dropDraft(d.id); }catch(_){} S.busy=false; await load(); toast('حُذفت الحالة '+d.id+'.'); S.openId=null; S.draft=null; return mount(); }
+  catch(e){ if(e.code==='auth') return logout(true); S.railErr=e.message; toast(e.message,true); }
   S.busy=false; refreshEditor();
 }
 async function reopen(){
