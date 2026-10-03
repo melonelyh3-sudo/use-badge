@@ -363,16 +363,23 @@ const AI=(()=>{
     if(c==='cancelled') return 'أُلغي الطلب.';
     return 'تعذر الاتصال بالذكاء الاصطناعي. حاول لاحقًا.';
   }
-  async function analyze(prompt,schema){
+  // file (اختياري): {kind:'image'|'pdf', mediaType, data(base64)} — صورة/PDF الفاتورة، تُرسل مع الطلب ولا تُحفظ.
+  async function analyze(prompt,schema,file){
     await init();
     if(src==='endpoint'){
-      let r; try{ r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({prompt,schema})}); }catch(e){ throw new Error('تعذر الاتصال بخادم الذكاء الاصطناعي.'); }
+      let r; try{ r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(file?{prompt,schema,file}:{prompt,schema})}); }catch(e){ throw new Error('تعذر الاتصال بخادم الذكاء الاصطناعي.'); }
       if(!r.ok) throw new Error('خادم الذكاء الاصطناعي أعاد خطأ ('+r.status+').');
       return r.json();
     }
-    if(src==='backend') return bk('ai',{prompt,schema});
+    if(src==='backend') return bk('ai',file?{prompt,schema,file}:{prompt,schema});
     if(src==='claude'){
-      try{ return await sample.json(prompt+'\n\nأعد فقط كائن JSON واحدًا مطابقًا لهذا المخطط (JSON Schema)، بلا أي نص خارجه:\n'+JSON.stringify(schema),{modelTier:'default'}); }
+      const opt={modelTier:'default'};
+      if(file){
+        if(file.kind!=='image') throw new Error('قراءة ملفات PDF غير متاحة في هذه النسخة. ارفع صورة الفاتورة بدلًا منه.');
+        const bin=atob(file.data), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+        opt.images=new Blob([u8],{type:file.mediaType});
+      }
+      try{ return await sample.json(prompt+'\n\nأعد فقط كائن JSON واحدًا مطابقًا لهذا المخطط (JSON Schema)، بلا أي نص خارجه:\n'+JSON.stringify(schema),opt); }
       catch(e){ throw new Error(errText(e)); }
     }
     throw new Error('الذكاء الاصطناعي غير متصل في هذه النسخة.');
@@ -688,12 +695,14 @@ function issues_(c,r,badges,set,approver){
 }
 
 /* AI prompt & schema (نفس منطق نسخة Apps Script) */
-function aiSchema_(){
+function aiSchema_(inv){
   // الترتيب مقصود: الملخص السردي أولًا كأرضية، ثم الاقتباس (quote) قبل القرار (answer) لكل سؤال.
-  return {type:'object',properties:{
+  const s={type:'object',properties:{
     startPoint:{type:'string'},outcome:{type:'string'},situation:{type:'array',items:{type:'string'}},products:{type:'array',items:{type:'string'}},
     suggestions:{type:'array',items:{type:'object',properties:{code:{type:'string'},quote:{type:'string'},answer:{type:'string',enum:['Y','N','unclear']}},required:['code','quote','answer']}}
   },required:['startPoint','outcome','situation','products','suggestions']};
+  if(inv){ s.properties.invoiceItems={type:'array',items:{type:'string'}}; s.properties.invoiceNote={type:'string'}; s.required.push('invoiceItems','invoiceNote'); }
+  return s;
 }
 // أمثلة حقيقية من بوستات «أفضل مشاركات الصيادلة» المنشورة، تُعطى للنموذج كمرجع للأسلوب فقط (لا للمحتوى).
 const STYLE_EXAMPLES=[
@@ -713,7 +722,7 @@ const STYLE_EXAMPLES=[
   'تم توضيح أهمية استكمال العلاج بروتين يومي مناسب لدعم النتائج وتقليل ظهور الحبوب.',
   'تم شرح طريقة استخدام المنتجات والتأكد من فهم العميلة للروتين، مع الاتفاق على متابعة النتائج.']}
 ];
-function aiPrompt_(text,badges){
+function aiPrompt_(text,badges,inv){
   const ex=STYLE_EXAMPLES.map((e,i)=>'مثال '+(i+1)+':\nstartPoint: '+e.startPoint+'\noutcome: '+e.outcome+'\nsituation:\n- '+e.situation.join('\n- ')).join('\n\n');
   const lines=['أنت تساعد فريق إدارة المواهب في صيدلية المتحدة على تجهيز بوست «أفضل مشاركات الصيادلة» من نص كتبه صيدلي عن حالة حقيقية مع عميل، وعلى تقييم الحالة.',
     'اعتمد فقط على ما ورد صراحةً في نص الصيدلي. لا تخترع أي معلومة أو منتج أو تفصيلة غير مكتوبة.','',
@@ -728,22 +737,29 @@ function aiPrompt_(text,badges){
     'products: قائمة بأسماء المنتجات المذكورة بوضوح في النص (ماركة واسم منتج)، منسوخة حرفيًا كما وردت في النص. لا تضف منتجًا غير مذكور، ولا تخمّن اسمًا ناقصًا (مثل «كريم ترطيب» بلا ماركة)؛ اتركه خارج القائمة.','',
     'أمثلة من البوستات المنشورة (للأسلوب):',ex,'',
     'ثانيًا — لكل سؤال أدناه أعد: code، وquote (اقتباس حرفي قصير من النص نفسه يدعم إجابتك، أو نص فارغ إن لم يوجد)، وanswer (Y أو N بناءً على الاقتباس، أو unclear إن لم يذكر النص إجابة واضحة).','',
-    'نص الصيدلي:',text,'','الأسئلة:'];
+    'نص الصيدلي:',text,''];
+  if(inv) lines.push('مرفق مع الطلب '+(inv==='pdf'?'ملف PDF':'صورة')+' لفاتورة البيع الخاصة بهذه الحالة. اقرأها واستخدمها كالتالي:',
+    'invoiceItems: أسماء الأصناف المباعة كما هي مطبوعة في الفاتورة (مع الكمية إن ظهرت، مثل «… × 2»). تجاهل اسم العميل ورقم جواله وأي بيانات شخصية أو تأمينية ولا تكتبها إطلاقًا. إن تعذّرت قراءة الفاتورة أعد قائمة فارغة.',
+    'invoiceNote: جملة أو جملتان عن مدى تطابق الفاتورة مع نص الصيدلي (مثلًا: منتجات ذُكرت في النص وغير موجودة في الفاتورة، أو العكس، أو عرض/خصم ظاهر في الفاتورة). إن كانت مطابقة فاكتب ذلك باختصار. إن كانت غير مقروءة فاذكر ذلك.',
+    'products: يمكن أخذها من النص أو من الفاتورة؛ وإذا ورد المنتج في الاثنين فاكتب اسمه كما في الفاتورة.',
+    'الأسئلة: يجوز الاستناد إلى الفاتورة كدليل (مثل بيع منتج مكمّل أو استخدام عرض)، وعندها اجعل quote يبدأ بـ «الفاتورة:» ثم اسم الصنف.','');
+  lines.push('الأسئلة:');
   badges.forEach(b=>{ lines.push('# '+b.name); (b.qs||[]).forEach(q=>lines.push(q.c+': '+q.q+' (نعم عندما: '+(q.y||'—')+' | لا عندما: '+(q.n||'—')+')')); });
-  lines.push('','أعد النتيجة ككائن JSON واحد فقط بالمفاتيح startPoint وoutcome وsituation وproducts وsuggestions.');
+  lines.push('','أعد النتيجة ككائن JSON واحد فقط بالمفاتيح startPoint وoutcome وsituation وproducts وsuggestions'+(inv?' وinvoiceItems وinvoiceNote':'')+'.');
   return lines.join('\n');
 }
 const normTxt_=x=>String(x||'').toLowerCase().replace(/[ً-ْ]/g,'').replace(/\s+/g,' ').trim();
-function aiApply_(obj,badges,text){
+function aiApply_(obj,badges,text,inv){
   const byCode={}; badges.forEach(b=>(b.qs||[]).forEach(q=>{byCode[q.c]=1;}));
   if(typeof obj==='string'){ try{ obj=JSON.parse(obj); }catch(e){ throw err('تعذّر فهم ردّ الذكاء الاصطناعي.'); } }
   if(!obj||typeof obj!=='object'||Array.isArray(obj)||!Array.isArray(obj.suggestions)) throw err('تعذّر فهم ردّ الذكاء الاصطناعي.');
   const out=[];
   obj.suggestions.forEach(it=>{ if(!it||!byCode[it.code]) return; if(it.answer!=='Y'&&it.answer!=='N') return; out.push({code:it.code,answer:it.answer,quote:String(it.quote||'').trim().slice(0,300)}); });
   // حماية: لا يُقبل منتج إلا إذا كان اسمه موجودًا فعلًا في نص الصيدلي
-  const src=normTxt_(text); const seen={};
+  const invoiceItems=inv?clean_(obj.invoiceItems,20,120):[];
+  const src=normTxt_(text)+' | '+normTxt_(invoiceItems.join(' | ')); const seen={};
   const products=clean_(obj.products,8,80).filter(p=>{ const k=normTxt_(p); if(k.length<3||seen[k]||src.indexOf(k)<0) return false; seen[k]=1; return true; });
-  return {suggestions:out,startPoint:String(obj.startPoint||'').trim().slice(0,400),outcome:String(obj.outcome||'').trim().slice(0,400),situation:clean_(obj.situation,6,260),products};
+  return {invoiceItems,invoiceNote:inv?String(obj.invoiceNote||'').trim().slice(0,400):'',suggestions:out,startPoint:String(obj.startPoint||'').trim().slice(0,400),outcome:String(obj.outcome||'').trim().slice(0,400),situation:clean_(obj.situation,6,260),products};
 }
 const aiUse={};
 function aiThrottle_(u){ const h=Math.floor(Date.now()/3600000), k=u.id+':'+h; aiUse[k]=(aiUse[k]||0)+1; if(aiUse[k]>20) throw err('تجاوزت الحد المسموح (20 اقتراحًا كل ساعة). حاول لاحقًا.'); }
@@ -808,6 +824,7 @@ const ACTIONS={
     const rec={id,month,pharmacist:String(p.pharmacist||'').slice(0,120),branch:String(p.branch||'').slice(0,120),supervisor:String(p.supervisor||'').slice(0,120),
       reviewerId:old?old.reviewerId:u.id,reviewerName:old?old.reviewerName:u.name,summary:String(p.summary||'').slice(0,5000),
       startPoint:String(p.startPoint||'').slice(0,400),outcome:String(p.outcome||'').slice(0,400),situation:clean_(p.situation,6,400),products:clean_(p.products,8,80),
+      invoiceItems:clean_(p.invoiceItems,20,120),invoiceNote:String(p.invoiceNote||'').slice(0,400),
       answers,reasons,results:r,metCount:metCount_(r),nominated:true,submittedAt:now_(),createdAt:old?old.createdAt:now_(),updatedAt:now_(),example:old?!!old.example:false};
     const miss=issues_(rec,r,badges,await settings_(),null); if(miss.length) throw err(miss[0]);
     await Store.put('cases',id,rec);
@@ -927,8 +944,15 @@ const ACTIONS={
     if(text.length>8000) throw err('النص طويل جدًا (الحد 8000 حرف). اختصره ثم أعد المحاولة.');
     const all=await activeBadges_(); const badges=(p.badgeKeys&&p.badgeKeys.length)?all.filter(b=>p.badgeKeys.indexOf(b.key)>=0):all;
     if(!badges.length) throw err('لا توجد شارات مفعّلة لتحليلها.');
-    const result=aiApply_(await AI.analyze(aiPrompt_(text,badges),aiSchema_()),badges,text);
-    await audit_(u,p.caseId||'','ai_suggest','اقتراحات AI: '+result.suggestions.length+' إجابة');
+    let file=null;
+    if(p.file){
+      const f=p.file, okType=['image/jpeg','image/png','image/webp','application/pdf'];
+      if(okType.indexOf(f.mediaType)<0||typeof f.data!=='string') throw err('نوع ملف الفاتورة غير مدعوم. ارفع صورة أو PDF.');
+      if(f.data.length>7000000) throw err('ملف الفاتورة كبير جدًا (الحد 5 ميغابايت).');
+      file={kind:f.mediaType==='application/pdf'?'pdf':'image',mediaType:f.mediaType,data:f.data};
+    }
+    const result=aiApply_(await AI.analyze(aiPrompt_(text,badges,file&&file.kind),aiSchema_(!!file),file),badges,text,!!file);
+    await audit_(u,p.caseId||'','ai_suggest','اقتراحات AI: '+result.suggestions.length+' إجابة'+(file?' (مع قراءة الفاتورة)':''));
     return result;
   },
   aiTest: async(u)=>{ needAdmin_(u); return {ok:true,sample:(await AI.ping()).slice(0,60)}; },
@@ -1202,7 +1226,7 @@ function mountEditor(){
   '<label class="f">الفرع<input type="text" data-f="branch" value="'+esc(d.branch)+'"></label>'+
   '<label class="f">اسم المشرف<input type="text" data-f="supervisor" value="'+esc(d.supervisor||'')+'"></label></div>'+
   '<label class="f" style="margin-top:12px">ملخص الحالة (كما كتبه الصيدلي)<textarea data-f="summary" rows="4">'+esc(d.summary)+'</textarea></label>'+
-  (S.settings.aiEnabled?'<div class="actions" style="margin-top:10px"><button class="btn" id="btnAiSuggest"'+(locked()?' disabled':'')+'>✨ اقترح الإجابات من النص أعلاه</button><span class="note" id="aiStatus" style="margin-inline-start:8px"></span></div><div id="aiErrBox"></div><p class="note" style="margin-top:6px">يقترح الذكاء الاصطناعي إجابات الأسئلة، ونقطة البداية والنتيجة ووصف الموقف في محتوى البوست أدناه — كل ذلك من نص ملخص الحالة، ويملأ فقط ما هو فارغ. راجع كل شيء قبل الحفظ.</p>':(adminMode()?'<p class="note" style="margin-top:10px">اقتراح الإجابات بالذكاء الاصطناعي غير متاح حاليًا. راجع تبويب «السجل والإعدادات».</p>':''))+
+  (S.settings.aiEnabled?'<div class="actions" style="margin-top:10px"><button class="btn" id="btnAiSuggest"'+(locked()?' disabled':'')+'>✨ اقترح الإجابات من النص أعلاه</button><label class="btn" id="invPick"'+(locked()?' hidden':'')+'>📎 إرفاق الفاتورة (اختياري)<input type="file" id="invFile" accept="image/jpeg,image/png,image/webp,application/pdf" hidden></label><span class="note" id="invName"></span><span class="note" id="aiStatus" style="margin-inline-start:8px"></span></div><div id="aiErrBox"></div><p class="note" style="margin-top:4px">الفاتورة صورة أو PDF، تُقرأ مع النص عند الضغط على «اقترح» ولا تُحفظ في المنصة. يُرجى قصّ اسم العميل ورقم جواله قبل الرفع.</p><div id="invBox">'+invBoxHtml(d)+'</div><p class="note" style="margin-top:6px">يقترح الذكاء الاصطناعي إجابات الأسئلة، ونقطة البداية والنتيجة ووصف الموقف في محتوى البوست أدناه — كل ذلك من نص ملخص الحالة، ويملأ فقط ما هو فارغ. راجع كل شيء قبل الحفظ.</p>':(adminMode()?'<p class="note" style="margin-top:10px">اقتراح الإجابات بالذكاء الاصطناعي غير متاح حاليًا. راجع تبويب «السجل والإعدادات».</p>':''))+
   '<p class="note">المقيّم: <b>'+esc(d.reviewerName||S.me.name)+'</b></p></section>'+
   '<section class="panel sec"><h3>محتوى البوست</h3><p class="note" style="margin:0 0 10px">يُستخدم لتوليد بوست الشهر بعد الاعتماد. اكتب ما حدث فعلًا كما في نص الحالة.</p><div class="grid"><label class="f">نقطة البداية<textarea data-f="startPoint" rows="2">'+esc(d.startPoint||'')+'</textarea></label><label class="f">النتيجة<textarea data-f="outcome" rows="2">'+esc(d.outcome||'')+'</textarea></label></div><h3 style="margin-top:14px">وصف الموقف (نقاط محددة من الحالة، حتى 6)</h3><div id="lSituation">'+listHtml('situation')+'</div><h3 style="margin-top:14px">المنتجات المذكورة (حتى 8)</h3><div id="lProducts">'+listHtml('products')+'</div></section>'+cards+'</div>'+
   '<aside class="ed-rail" id="rail"></aside></div>';
@@ -1215,7 +1239,7 @@ function refreshEditor(){
   document.querySelectorAll('#main [data-f],#main [data-reason],#main [data-l],#main [data-ladd],#main [data-ldel],#nomToggle').forEach(el=>{el.disabled=L;});
   document.querySelectorAll('#main [data-q]').forEach(btn=>{btn.setAttribute('aria-pressed',String(d.answers[btn.dataset.q]===btn.dataset.v)); btn.disabled=L;});
   document.querySelectorAll('#main [data-aichip]').forEach(el=>{el.hidden=!S.aiCodes.has(el.dataset.aichip);});
-  const abtn=$('#btnAiSuggest'); if(abtn) abtn.disabled=L||S.aiBusy;
+  const abtn=$('#btnAiSuggest'); if(abtn) abtn.disabled=L||S.aiBusy; invUi();
   const aerr=$('#aiErrBox'); if(aerr) aerr.innerHTML=S.aiErr?'<div class="banner">'+esc(S.aiErr)+'</div>':'';
   bs.forEach(b=>{
     const res=r[b.key]; const chip=document.querySelector('[data-res="'+b.key+'"]'); if(!chip) return;
@@ -1281,7 +1305,9 @@ async function runAiSuggest(){
   if(!text.trim()){ S.aiErr='اكتب ملخص الحالة أولًا قبل طلب الاقتراح.'; }
   else{
     try{
-      const r=await call('aiSuggest',{caseId:d.id||'',text:text});
+      const inv=S.invoice&&S.invoice.draft===d?S.invoice:null;
+      const r=await call('aiSuggest',inv?{caseId:d.id||'',text:text,file:{mediaType:inv.mediaType,data:inv.data}}:{caseId:d.id||'',text:text});
+      if(inv){ d.invoiceItems=r.invoiceItems||[]; d.invoiceNote=r.invoiceNote||''; const ib=$('#invBox'); if(ib) ib.innerHTML=invBoxHtml(d); touch(); }
       const codeToBadge={}; activeBadges().forEach(b=>{(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;});});
       let applied=0, skipped=0;
       (r.suggestions||[]).forEach(s=>{
@@ -1299,6 +1325,7 @@ async function runAiSuggest(){
       const total=(r.suggestions||[]).length;
       let msg=total===0?'لم يجد الذكاء الاصطناعي إجابات واضحة في النص.':(applied?('تم اقتراح '+applied+' إجابة جديدة، راجعها أدناه.'+(skipped?(' (تجاهل '+skipped+' سؤالًا مُجابًا مسبقًا.)'):'')):'كل الأسئلة التي فهمها الذكاء الاصطناعي من النص مُجابة مسبقًا.');
       if(filledLabels.length) msg+=' كما اقترح محتوى: '+filledLabels.join('، ')+'.';
+      if(inv) msg+=(r.invoiceItems&&r.invoiceItems.length)?(' وقُرئ من الفاتورة '+r.invoiceItems.length+' صنف.'):' ولم تُقرأ أصناف واضحة من الفاتورة.';
       if(st) st.textContent=msg;
       if(applied||filledLabels.length){ touch(); }
       if(filledLabels.indexOf('وصف الموقف')>=0||filledLabels.indexOf('المنتجات')>=0) relist(); // يعيد رسم قائمة نقاط الموقف مع القيم الجديدة
@@ -1310,7 +1337,7 @@ async function runAiSuggest(){
 }
 let saveTimer=null, chain=Promise.resolve();
 function payload(d){
-  return {id:d.id||'',month:d.month,pharmacist:d.pharmacist,branch:d.branch,supervisor:d.supervisor||'',summary:d.summary,answers:d.answers,reasons:d.reasons,startPoint:d.startPoint||'',outcome:d.outcome||'',situation:d.situation||[],products:d.products||[]};
+  return {id:d.id||'',month:d.month,pharmacist:d.pharmacist,branch:d.branch,supervisor:d.supervisor||'',summary:d.summary,answers:d.answers,reasons:d.reasons,startPoint:d.startPoint||'',outcome:d.outcome||'',situation:d.situation||[],products:d.products||[],invoiceItems:d.invoiceItems||[],invoiceNote:d.invoiceNote||''};
 }
 function touch(){
   if(locked()||!S.draft) return; clearTimeout(saveTimer);
@@ -1702,6 +1729,32 @@ function resizeLogo(file){ return new Promise((res,rej)=>{ const fr=new FileRead
 function resizeIcon(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [sz,type,q] of [[160,'image/png'],[128,'image/png'],[128,'image/webp',.85],[96,'image/webp',.8]]){ const c=document.createElement('canvas'); c.width=c.height=sz; const x=c.getContext('2d'); const r=Math.min(sz/im.width,sz/im.height); x.drawImage(im,(sz-im.width*r)/2,(sz-im.height*r)/2,im.width*r,im.height*r); const u=c.toDataURL(type,q); if(u.length<38000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('الصورة معقدة جدًا، جرّب صورة أبسط.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
 function listHtml(name){ const arr=S.draft[name]||[]; const max=name==='situation'?6:8; const one=name==='situation'?'نقطة':'منتج';
   return arr.map((v,i)=>'<div class="lrow"><input type="text" data-l="'+name+':'+i+'" value="'+esc(v)+'" placeholder="'+(name==='situation'?'نقطة قصيرة من الموقف':'اسم المنتج')+'"><button class="btn" data-ldel="'+name+':'+i+'" aria-label="حذف">×</button></div>').join('')+(arr.length<max?'<button class="btn" data-ladd="'+name+'">+ إضافة '+one+'</button>':''); }
+function invBoxHtml(d){
+  const it=(d&&d.invoiceItems)||[]; if(!it.length&&!(d&&d.invoiceNote)) return '';
+  return '<div class="panel" style="margin-top:10px;padding:12px 14px;background:var(--bg,#f6f8fb)"><b style="font-size:13px">ما قرأه الذكاء الاصطناعي من الفاتورة</b>'+
+    (it.length?'<ul style="margin:6px 0 0;padding-inline-start:20px;font-size:13px">'+it.map(x=>'<li dir="auto">'+esc(x)+'</li>').join('')+'</ul>':'')+
+    (d.invoiceNote?'<p class="note" style="margin-top:6px">ملاحظة المطابقة: '+esc(d.invoiceNote)+'</p>':'')+'</div>';
+}
+function invUi(){
+  const n=$('#invName'); const f=S.invoice&&S.invoice.draft===S.draft?S.invoice:null;
+  if(n) n.innerHTML=f?('📄 '+esc(f.name)+' <button class="btn" id="invClear" style="padding:2px 8px;min-height:0">✕</button>'):'';
+}
+// صورة الفاتورة تُصغَّر في المتصفح قبل الإرسال (أخف وأرخص)، والـ PDF يُرسل كما هو بحد 5 ميغابايت.
+function prepInvoice(file){
+  return new Promise((res,rej)=>{
+    if(file.type==='application/pdf'){
+      if(file.size>5*1024*1024) return rej(new Error('ملف PDF أكبر من 5 ميغابايت. صوّر الفاتورة بدلًا منه.'));
+      const fr=new FileReader(); fr.onload=()=>res({kind:'pdf',mediaType:'application/pdf',data:String(fr.result).split(',')[1],name:file.name}); fr.onerror=()=>rej(new Error('تعذّرت قراءة الملف.')); fr.readAsDataURL(file); return;
+    }
+    if(!/^image\//.test(file.type)) return rej(new Error('ارفع صورة أو ملف PDF فقط.'));
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{ const M=1600, k=Math.min(1,M/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+      const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url);
+      res({kind:'image',mediaType:'image/jpeg',data:c.toDataURL('image/jpeg',0.85).split(',')[1],name:file.name}); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error('تعذّرت قراءة الصورة. جرّب صيغة JPG أو PNG.')); };
+    img.src=url;
+  });
+}
 function relist(){ const a=$('#lSituation'),b=$('#lProducts'); if(a) a.innerHTML=listHtml('situation'); if(b) b.innerHTML=listHtml('products'); refreshEditor(); }
 
 /* ---------- Users (admin) ---------- */
@@ -1732,6 +1785,7 @@ document.addEventListener('click',e=>{
   if(t.id==='btnSetup') return doSetup();
   if(t.id==='btnReloadPage'){ location.reload(); return; }
   if(t.id==='btnAiSuggest') return runAiSuggest();
+  if(t.id==='invClear'){ S.invoice=null; return invUi(); }
   if(t.dataset.post) return openPost(t.dataset.post);
   if(t.dataset.openbest){ e.preventDefault(); S.view='cases'; renderShell(); return openCase(t.dataset.open); }
   if(t.dataset.pick){ if(S.busy) return; S.busy=true; t.disabled=true; return call('setFeatured',{id:t.dataset.pick,featured:true}).then(()=>{ toast('اختيرت الحالة '+t.dataset.pick+' ضمن أفضل المشاركات.'); return load(); }).catch(err=>toast(err.message,true)).then(()=>{S.busy=false; onData();}); }
@@ -1794,6 +1848,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{
   const el=e.target;
+  if(el.id==='invFile'&&el.files&&el.files[0]&&S.draft){ const f=el.files[0]; el.value=''; prepInvoice(f).then(x=>{ x.draft=S.draft; S.invoice=x; invUi(); toast('أُرفقت الفاتورة. اضغط «اقترح» لقراءتها مع النص.'); }).catch(e=>toast(e.message,true)); return; }
   if(el.id==='stageSel'){ call('setPostStage',{id:S.draft.id,stage:el.value}).then(load).then(onData).catch(e=>{toast(e.message,true);}); return; }
   if(el.dataset&&el.dataset.pimg!==undefined&&el.files&&el.files[0]){ const i=+el.dataset.pimg, id=S.postId; resizeProduct(el.files[0]).then(u=>{ S.pimgs[i]=u; const pv=$('[data-pimgprev="'+i+'"]'); if(pv) pv.innerHTML='<img src="'+u+'" alt="" style="height:44px">'; renderPost(); const arr=[]; for(let k=0;k<8;k++) arr.push(S.pimgs[k]||''); return call('savePostImages',{id,imgs:arr}).then(()=>toast('حُفظت صورة المنتج.')); }).catch(e=>toast(e.message,true)); return; }
   if(el.dataset&&el.dataset.stage){ call('setPostStage',{id:el.dataset.stage,stage:el.value}).then(load).then(onData).catch(e=>toast(e.message,true)); return; }
