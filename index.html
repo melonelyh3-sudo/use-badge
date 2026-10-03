@@ -701,7 +701,8 @@ function aiSchema_(inv){
     startPoint:{type:'string'},outcome:{type:'string'},situation:{type:'array',items:{type:'string'}},products:{type:'array',items:{type:'string'}},
     suggestions:{type:'array',items:{type:'object',properties:{code:{type:'string'},quote:{type:'string'},answer:{type:'string',enum:['Y','N','unclear']}},required:['code','quote','answer']}}
   },required:['startPoint','outcome','situation','products','suggestions']};
-  if(inv){ s.properties.invoiceItems={type:'array',items:{type:'string'}}; s.properties.invoiceNote={type:'string'}; s.required.push('invoiceItems','invoiceNote'); }
+  if(inv){ s.properties.invoiceItems={type:'array',items:{type:'string'}}; s.properties.invoiceNote={type:'string'}; s.properties.invoiceTotal={type:'number'}; s.properties.invoiceCount={type:'integer'};
+    s.required.push('invoiceItems','invoiceNote','invoiceTotal','invoiceCount'); }
   return s;
 }
 // أمثلة حقيقية من بوستات «أفضل مشاركات الصيادلة» المنشورة، تُعطى للنموذج كمرجع للأسلوب فقط (لا للمحتوى).
@@ -736,18 +737,22 @@ function aiPrompt_(text,badges,inv){
     '  - إذا كان النص فقيرًا بالتفاصيل فاكتب نقاطًا أقل؛ لا تملأ بكلام عام.',
     'products: قائمة بأسماء المنتجات المذكورة بوضوح في النص (ماركة واسم منتج)، منسوخة حرفيًا كما وردت في النص. لا تضف منتجًا غير مذكور، ولا تخمّن اسمًا ناقصًا (مثل «كريم ترطيب» بلا ماركة)؛ اتركه خارج القائمة.','',
     'أمثلة من البوستات المنشورة (للأسلوب):',ex,'',
-    'ثانيًا — لكل سؤال أدناه أعد: code، وquote (اقتباس حرفي قصير من النص نفسه يدعم إجابتك، أو نص فارغ إن لم يوجد)، وanswer (Y أو N بناءً على الاقتباس، أو unclear إن لم يذكر النص إجابة واضحة).','',
+    'ثانيًا — لكل سؤال أدناه أعد: code، وquote (اقتباس حرفي قصير لا يزيد عن 12 كلمة من النص نفسه يدعم إجابتك، أو نص فارغ إن لم يوجد)، وanswer (Y أو N بناءً على الاقتباس، أو unclear إن لم يذكر النص إجابة واضحة).','',
     'نص الصيدلي:',text,''];
   if(inv) lines.push('مرفق مع الطلب '+(inv==='pdf'?'ملف PDF':'صورة')+' لفاتورة البيع الخاصة بهذه الحالة. اقرأها واستخدمها كالتالي:',
     'invoiceItems: أسماء الأصناف المباعة كما هي مطبوعة في الفاتورة (مع الكمية إن ظهرت، مثل «… × 2»). تجاهل اسم العميل ورقم جواله وأي بيانات شخصية أو تأمينية ولا تكتبها إطلاقًا. إن تعذّرت قراءة الفاتورة أعد قائمة فارغة.',
     'invoiceNote: جملة أو جملتان عن مدى تطابق الفاتورة مع نص الصيدلي (مثلًا: منتجات ذُكرت في النص وغير موجودة في الفاتورة، أو العكس، أو عرض/خصم ظاهر في الفاتورة). إن كانت مطابقة فاكتب ذلك باختصار. إن كانت غير مقروءة فاذكر ذلك.',
+    'invoiceTotal: صافي الفاتورة (المبلغ النهائي المدفوع بعد الخصومات والضريبة) كرقم فقط بدون عملة. إن لم يظهر بوضوح أعد 0.',
+    'invoiceCount: عدد القطع المباعة في الفاتورة (مجموع الكميات) كرقم صحيح. إن لم يظهر بوضوح أعد 0.',
     'products: يمكن أخذها من النص أو من الفاتورة؛ وإذا ورد المنتج في الاثنين فاكتب اسمه كما في الفاتورة.',
     'الأسئلة: يجوز الاستناد إلى الفاتورة كدليل (مثل بيع منتج مكمّل أو استخدام عرض)، وعندها اجعل quote يبدأ بـ «الفاتورة:» ثم اسم الصنف.','');
   lines.push('الأسئلة:');
   badges.forEach(b=>{ lines.push('# '+b.name); (b.qs||[]).forEach(q=>lines.push(q.c+': '+q.q+' (نعم عندما: '+(q.y||'—')+' | لا عندما: '+(q.n||'—')+')')); });
-  lines.push('','أعد النتيجة ككائن JSON واحد فقط بالمفاتيح startPoint وoutcome وsituation وproducts وsuggestions'+(inv?' وinvoiceItems وinvoiceNote':'')+'.');
+  lines.push('','أعد النتيجة ككائن JSON واحد فقط بالمفاتيح startPoint وoutcome وsituation وproducts وsuggestions'+(inv?' وinvoiceItems وinvoiceNote وinvoiceTotal وinvoiceCount':'')+'.');
   return lines.join('\n');
 }
+// رقم موجب ضمن حد معقول، وإلا فارغ
+const num_=(v,min,max,dp)=>{ const n=parseFloat(String(v==null?'':v).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[,٬\s]/g,'').replace('٫','.')); if(!isFinite(n)||n<=min||n>max) return ''; const k=Math.pow(10,dp); return Math.round(n*k)/k; };
 const normTxt_=x=>String(x||'').toLowerCase().replace(/[ً-ْ]/g,'').replace(/\s+/g,' ').trim();
 function aiApply_(obj,badges,text,inv){
   const byCode={}; badges.forEach(b=>(b.qs||[]).forEach(q=>{byCode[q.c]=1;}));
@@ -759,7 +764,7 @@ function aiApply_(obj,badges,text,inv){
   const invoiceItems=inv?clean_(obj.invoiceItems,20,120):[];
   const src=normTxt_(text)+' | '+normTxt_(invoiceItems.join(' | ')); const seen={};
   const products=clean_(obj.products,8,80).filter(p=>{ const k=normTxt_(p); if(k.length<3||seen[k]||src.indexOf(k)<0) return false; seen[k]=1; return true; });
-  return {invoiceItems,invoiceNote:inv?String(obj.invoiceNote||'').trim().slice(0,400):'',suggestions:out,startPoint:String(obj.startPoint||'').trim().slice(0,400),outcome:String(obj.outcome||'').trim().slice(0,400),situation:clean_(obj.situation,6,260),products};
+  return {invoiceItems,invoiceNote:inv?String(obj.invoiceNote||'').trim().slice(0,400):'',invoiceTotal:inv?num_(obj.invoiceTotal,0,1000000,2):'',invoiceCount:inv?num_(obj.invoiceCount,0,500,0):'',suggestions:out,startPoint:String(obj.startPoint||'').trim().slice(0,400),outcome:String(obj.outcome||'').trim().slice(0,400),situation:clean_(obj.situation,6,260),products};
 }
 const aiUse={};
 function aiThrottle_(u){ const h=Math.floor(Date.now()/3600000), k=u.id+':'+h; aiUse[k]=(aiUse[k]||0)+1; if(aiUse[k]>20) throw err('تجاوزت الحد المسموح (20 اقتراحًا كل ساعة). حاول لاحقًا.'); }
@@ -824,7 +829,7 @@ const ACTIONS={
     const rec={id,month,pharmacist:String(p.pharmacist||'').slice(0,120),branch:String(p.branch||'').slice(0,120),supervisor:String(p.supervisor||'').slice(0,120),
       reviewerId:old?old.reviewerId:u.id,reviewerName:old?old.reviewerName:u.name,summary:String(p.summary||'').slice(0,5000),
       startPoint:String(p.startPoint||'').slice(0,400),outcome:String(p.outcome||'').slice(0,400),situation:clean_(p.situation,6,400),products:clean_(p.products,8,80),
-      invoiceItems:clean_(p.invoiceItems,20,120),invoiceNote:String(p.invoiceNote||'').slice(0,400),
+      invoiceItems:clean_(p.invoiceItems,20,120),invoiceNote:String(p.invoiceNote||'').slice(0,400),invoiceTotal:num_(p.invoiceTotal,0,1000000,2),invoiceCount:num_(p.invoiceCount,0,500,0),
       answers,reasons,results:r,metCount:metCount_(r),nominated:true,submittedAt:now_(),createdAt:old?old.createdAt:now_(),updatedAt:now_(),example:old?!!old.example:false};
     const miss=issues_(rec,r,badges,await settings_(),null); if(miss.length) throw err(miss[0]);
     await Store.put('cases',id,rec);
@@ -951,7 +956,9 @@ const ACTIONS={
       if(f.data.length>7000000) throw err('ملف الفاتورة كبير جدًا (الحد 5 ميغابايت).');
       file={kind:f.mediaType==='application/pdf'?'pdf':'image',mediaType:f.mediaType,data:f.data};
     }
-    const result=aiApply_(await AI.analyze(aiPrompt_(text,badges,file&&file.kind),aiSchema_(!!file),file),badges,text,!!file);
+    // علامات " و \ في نص الصيدلي قد تكسر صيغة JSON عند اقتباسها، فتُستبدل في النص المُرسل فقط (النص الأصلي في الحالة لا يتغير).
+    const safeText=text.replace(/"/g,'”').replace(/\\/g,'/');
+    const result=aiApply_(await AI.analyze(aiPrompt_(safeText,badges,file&&file.kind),aiSchema_(!!file),file),badges,text,!!file);
     await audit_(u,p.caseId||'','ai_suggest','اقتراحات AI: '+result.suggestions.length+' إجابة'+(file?' (مع قراءة الفاتورة)':''));
     return result;
   },
@@ -960,11 +967,11 @@ const ACTIONS={
     needAdmin_(u);
     const badges=await allBadges_(); const decs={}; (await Store.list('decisions')).forEach(d=>{decs[d.caseId]=d;});
     const head=['Month','Case ID','Pharmacist','Branch','Supervisor','Reviewer','Status','Approved By','Approval Date','Nominated','Best of Month','Post Stage','Case Summary','Start Point','Outcome'];
-    badges.forEach(b=>{ head.push(b.name); head.push(b.name+' Reason'); }); head.push('Total Badges');
+    badges.forEach(b=>{ head.push(b.name); head.push(b.name+' Reason'); }); head.push('Total Badges','Invoice Net (SAR)','Items Count');
     const rows=(await Store.list('cases')).sort((a,b)=>a.id<b.id?-1:1).map(c=>{
       const d=decs[c.id], dr=d&&d.status!=='Pending'&&d.results?d.results:(c.results||{}); const reasons=c.reasons||{};
       const row=[c.month,c.id,c.pharmacist,c.branch,c.supervisor,c.reviewerName,d?d.status:'Pending',d?d.approverName:'',d?d.approvedAt:'',c.nominated?'YES':'',d&&d.featured?'YES':'',d?d.postStage:'',c.summary,c.startPoint,c.outcome];
-      badges.forEach(b=>{ row.push(b.key in dr?dr[b.key]:''); row.push(reasons[b.key]||''); }); row.push(metCount_(dr)); return row;
+      badges.forEach(b=>{ row.push(b.key in dr?dr[b.key]:''); row.push(reasons[b.key]||''); }); row.push(metCount_(dr),c.invoiceTotal==null?'':c.invoiceTotal,c.invoiceCount==null?'':c.invoiceCount); return row;
     });
     return {head,rows};
   }
@@ -1224,7 +1231,9 @@ function mountEditor(){
   '<label class="f">الشهر<input type="month" data-f="month" value="'+esc(d.month)+'"></label>'+
   '<label class="f">اسم الصيدلي<input type="text" data-f="pharmacist" value="'+esc(d.pharmacist)+'"></label>'+
   '<label class="f">الفرع<input type="text" data-f="branch" value="'+esc(d.branch)+'"></label>'+
-  '<label class="f">اسم المشرف<input type="text" data-f="supervisor" value="'+esc(d.supervisor||'')+'"></label></div>'+
+  '<label class="f">اسم المشرف<input type="text" data-f="supervisor" value="'+esc(d.supervisor||'')+'"></label>'+
+  '<label class="f">صافي الفاتورة (ر.س)<input type="text" inputmode="decimal" data-f="invoiceTotal" value="'+esc(d.invoiceTotal==null?'':d.invoiceTotal)+'" placeholder="مثال: 245.50"></label>'+
+  '<label class="f">عدد المنتجات (القطع)<input type="text" inputmode="numeric" data-f="invoiceCount" value="'+esc(d.invoiceCount==null?'':d.invoiceCount)+'" placeholder="مثال: 4"></label></div>'+
   '<label class="f" style="margin-top:12px">ملخص الحالة (كما كتبه الصيدلي)<textarea data-f="summary" rows="4">'+esc(d.summary)+'</textarea></label>'+
   (S.settings.aiEnabled?'<div class="actions" style="margin-top:10px"><button class="btn" id="btnAiSuggest"'+(locked()?' disabled':'')+'>✨ اقترح الإجابات من النص أعلاه</button><label class="btn" id="invPick"'+(locked()?' hidden':'')+'>📎 إرفاق الفاتورة (اختياري)<input type="file" id="invFile" accept="image/jpeg,image/png,image/webp,application/pdf" hidden></label><span class="note" id="invName"></span><span class="note" id="aiStatus" style="margin-inline-start:8px"></span></div><div id="aiErrBox"></div><p class="note" style="margin-top:4px">الفاتورة صورة أو PDF، تُقرأ مع النص عند الضغط على «اقترح» ولا تُحفظ في المنصة. يُرجى قصّ اسم العميل ورقم جواله قبل الرفع.</p><div id="invBox">'+invBoxHtml(d)+'</div><p class="note" style="margin-top:6px">يقترح الذكاء الاصطناعي إجابات الأسئلة، ونقطة البداية والنتيجة ووصف الموقف في محتوى البوست أدناه — كل ذلك من نص ملخص الحالة، ويملأ فقط ما هو فارغ. راجع كل شيء قبل الحفظ.</p>':(adminMode()?'<p class="note" style="margin-top:10px">اقتراح الإجابات بالذكاء الاصطناعي غير متاح حاليًا. راجع تبويب «السجل والإعدادات».</p>':''))+
   '<p class="note">المقيّم: <b>'+esc(d.reviewerName||S.me.name)+'</b></p></section>'+
@@ -1307,7 +1316,8 @@ async function runAiSuggest(){
     try{
       const inv=S.invoice&&S.invoice.draft===d?S.invoice:null;
       const r=await call('aiSuggest',inv?{caseId:d.id||'',text:text,file:{mediaType:inv.mediaType,data:inv.data}}:{caseId:d.id||'',text:text});
-      if(inv){ d.invoiceItems=r.invoiceItems||[]; d.invoiceNote=r.invoiceNote||''; const ib=$('#invBox'); if(ib) ib.innerHTML=invBoxHtml(d); touch(); }
+      if(inv){ d.invoiceItems=r.invoiceItems||[]; d.invoiceNote=r.invoiceNote||'';
+        [['invoiceTotal','صافي الفاتورة'],['invoiceCount','عدد المنتجات']].forEach(([k,lb])=>{ if(r[k]!==''&&r[k]!=null&&!String(d[k]==null?'':d[k]).trim()){ d[k]=r[k]; const el=$('[data-f="'+k+'"]'); if(el) el.value=r[k]; } }); const ib=$('#invBox'); if(ib) ib.innerHTML=invBoxHtml(d); touch(); }
       const codeToBadge={}; activeBadges().forEach(b=>{(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;});});
       let applied=0, skipped=0;
       (r.suggestions||[]).forEach(s=>{
@@ -1337,7 +1347,7 @@ async function runAiSuggest(){
 }
 let saveTimer=null, chain=Promise.resolve();
 function payload(d){
-  return {id:d.id||'',month:d.month,pharmacist:d.pharmacist,branch:d.branch,supervisor:d.supervisor||'',summary:d.summary,answers:d.answers,reasons:d.reasons,startPoint:d.startPoint||'',outcome:d.outcome||'',situation:d.situation||[],products:d.products||[],invoiceItems:d.invoiceItems||[],invoiceNote:d.invoiceNote||''};
+  return {id:d.id||'',month:d.month,pharmacist:d.pharmacist,branch:d.branch,supervisor:d.supervisor||'',summary:d.summary,answers:d.answers,reasons:d.reasons,startPoint:d.startPoint||'',outcome:d.outcome||'',situation:d.situation||[],products:d.products||[],invoiceItems:d.invoiceItems||[],invoiceNote:d.invoiceNote||'',invoiceTotal:d.invoiceTotal==null?'':d.invoiceTotal,invoiceCount:d.invoiceCount==null?'':d.invoiceCount};
 }
 function touch(){
   if(locked()||!S.draft) return; clearTimeout(saveTimer);
