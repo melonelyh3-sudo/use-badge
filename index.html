@@ -279,8 +279,10 @@ async function bk(op,body,tries){
   tries=tries||(op==='ai'?2:4); let last;
   for(let i=0;i<tries;i++){
     if(i) await new Promise(r=>setTimeout(r,600*i+Math.random()*400));
-    let r; try{ r=await fetch(BACKEND_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({op},body||{}))}); }
-    catch(e){ last=Object.assign(new Error('تعذر الاتصال بالخادم. تحقق من الإنترنت.'),{code:'unavailable'}); continue; }
+    const ac=(typeof AbortController!=='undefined')?new AbortController():null; const tm=ac?setTimeout(()=>ac.abort(),op==='ai'?330000:30000):0;
+    let r; try{ r=await fetch(BACKEND_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({op},body||{})),signal:ac?ac.signal:undefined}); }
+    catch(e){ clearTimeout(tm); last=Object.assign(new Error(e&&e.name==='AbortError'?'انتهت مهلة انتظار رد الخادم.':'تعذر الاتصال بالخادم. تحقق من الإنترنت.'),{code:'unavailable'}); if(op==='ai') throw last; continue; }
+    clearTimeout(tm);
     if(!r.ok){ last=Object.assign(new Error('الخادم أعاد خطأ ('+r.status+').'),{code:'unavailable'}); continue; }
     // إذا لم يكن الرد JSON (غالبًا صفحة خطأ من Google) نعرض أول سطر منه لمعرفة السبب. طلب الذكاء الاصطناعي لا يُعاد هنا لأنه طويل.
     let raw=''; try{ raw=await r.text(); }catch(e){}
@@ -296,7 +298,20 @@ async function bk(op,body,tries){
 // الأولوية: قاعدة بيانات Claude (عند التشغيل داخل Claude) ← window.storage (نمط V17) ← متصفح محلي (للتجربة فقط).
 const Store=(()=>{
   let kind=null, db=null, mem=new Map(), snap=null, snapAt=0, snapP=null, batch=null;
-  async function remoteAll(){ if(snap&&(batch||Date.now()-snapAt<2500)) return snap; if(!snapP) snapP=bk('all').then(d=>{ snap=d||{}; snapAt=Date.now(); snapP=null; return snap; }).catch(e=>{ snapP=null; throw e; }); return snapP; }
+  // البيانات الثقيلة (صور منتجات البوستات) لا تُحمَّل مع كل فتح، بل عند الحاجة فقط
+  const HEAVY=['postimgs']; const heavy={}; let heavyOk=true;
+  const isHeavy=c=>kind==='remote'&&HEAVY.indexOf(c)>=0;
+  async function heavyGet(c,ids){
+    heavy[c]=heavy[c]||{}; const need=ids.map(String).filter(id=>!(id in heavy[c]));
+    if(need.length){
+      let got=null;
+      if(heavyOk){ try{ got=await bk('getMany',{col:c,ids:need}); }catch(e){ if(/unknown op/.test(e.message||'')) heavyOk=false; else throw e; } }
+      if(!got){ const all=await bk('all'); got=(all&&all[c])||{}; }   // خادم بنسخة قديمة
+      need.forEach(id=>{ heavy[c][id]=got[id]||null; });
+    }
+    const out={}; ids.forEach(id=>{ out[id]=heavy[c][String(id)]?clone(heavy[c][String(id)]):null; }); return out;
+  }
+  async function remoteAll(){ if(snap&&(batch||Date.now()-snapAt<2500)) return snap; if(!snapP) snapP=bk('all',{skip:HEAVY}).then(d=>{ snap=d||{}; snapAt=Date.now(); snapP=null; return snap; }).catch(e=>{ snapP=null; throw e; }); return snapP; }
   const clone=o=>o==null?o:JSON.parse(JSON.stringify(o));
   const k=(c,id)=>'useb:'+c+':'+id;
   async function init(){
@@ -327,8 +342,13 @@ const Store=(()=>{
       if(kind==='wstorage'){ const idx=(await wsGet(k(c,'__index')))||[]; const out=[]; for(const id of idx){ const v=await wsGet(k(c,id)); if(v) out.push(v); } return out; }
       return lsKeys('useb:'+c+':').map(lsGet).filter(Boolean);
     },
+    async getMany(c,ids){
+      await init(); if(isHeavy(c)) return heavyGet(c,ids);
+      const out={}; for(const id of ids) out[id]=await this.get(c,id); return out;
+    },
     async get(c,id){
       await init(); if(kind==='unavailable') throw Object.assign(new Error('storage_unavailable'),{code:'storage_unavailable'});
+      if(isHeavy(c)) return (await heavyGet(c,[id]))[id];
       if(kind==='remote'){ const v=((await remoteAll())[c]||{})[id]; return v?clone(v):null; }
       if(kind==='db'){ const s=await retry(()=>db.doc(c+'/'+id).get()); return s.exists?clone(s.data()):null; }
       if(kind==='wstorage') return wsGet(k(c,id));
@@ -336,7 +356,9 @@ const Store=(()=>{
     },
     async put(c,id,obj){
       await init(); if(kind==='unavailable') throw Object.assign(new Error('storage_unavailable'),{code:'storage_unavailable'});
-      if(kind==='remote'){ if(snap){ (snap[c]=snap[c]||{})[id]=clone(obj); } if(batch){ batch.push({col:c,id,obj:clone(obj)}); return; } await bk('put',{col:c,id,obj}); return; }
+      if(isHeavy(c)){ (heavy[c]=heavy[c]||{})[String(id)]=clone(obj); }
+      else if(kind==='remote'&&snap){ (snap[c]=snap[c]||{})[id]=clone(obj); }
+      if(kind==='remote'){ if(batch){ batch.push({col:c,id,obj:clone(obj)}); return; } await bk('put',{col:c,id,obj}); return; }
       if(kind==='db') return retry(()=>db.doc(c+'/'+id).set(clone(obj)));
       if(kind==='wstorage'){ await wsSet(k(c,id),obj); const idx=(await wsGet(k(c,'__index')))||[]; if(idx.indexOf(id)<0){ idx.push(id); await wsSet(k(c,'__index'),idx); } return; }
       lsSet(k(c,id),obj);
@@ -957,10 +979,11 @@ const ACTIONS={
     return {ok:true};
   }),
   getPostImages: async(u,p)=>{
-    const out={}; for(const id of (Array.isArray(p.ids)?p.ids:[]).slice(0,60)){
+    const ok=[]; for(const id of (Array.isArray(p.ids)?p.ids:[]).slice(0,60)){
       if(u.role!=='admin'){ const c=await Store.get('cases',id); if(!c) continue; if(c.reviewerId!==u.id){ const dd=await decOf_(id); if(!(dd&&dd.status==='Approved')) continue; } }
-      const d=await Store.get('postimgs',String(id)); out[id]=(d&&d.imgs)||[];
-    } return out;
+      ok.push(String(id));
+    }
+    const docs=ok.length?await Store.getMany('postimgs',ok):{}; const out={}; ok.forEach(id=>{ out[id]=(docs[id]&&docs[id].imgs)||[]; }); return out;
   },
   aiSuggest: async(u,p)=>{
     const set=await settings_(); if(!set.aiEnabled) throw err('الذكاء الاصطناعي غير مفعّل.');
@@ -1040,7 +1063,11 @@ async function reload(){ await load(); onData(); }
 function toast(t,bad){ const b=$('#banner'); b.innerHTML='<div class="banner"'+(bad?'':' style="background:var(--good-soft);color:var(--good)"')+'>'+esc(t)+'</div>'; clearTimeout(toast.t); toast.t=setTimeout(()=>{b.innerHTML='';},6000); }
 async function init(){
   let st={initialized:true,storage:'server'};
-  try{ st=await call('status'); }catch(e){}
+  // شاشة انتظار بدل صفحة فارغة، ورسالة واضحة إذا تأخر الخادم
+  $('#main').innerHTML='<div class="panel login" style="text-align:center"><h2>جارٍ الاتصال بالخادم…</h2><p class="note" style="margin:0 auto" id="waitNote">قد يستغرق أول فتح بضع ثوانٍ.</p></div>';
+  const slow=setTimeout(()=>{ const n=$('#waitNote'); if(n) n.innerHTML='الخادم يتأخر في الرد أكثر من المعتاد. إذا استمر ذلك فافتح رابط الخادم (/exec) في المتصفح وتأكد أنه يعرض: <b dir="ltr">USE Badges backend is running.</b><div class="actions" style="margin-top:12px;justify-content:center"><button class="btn primary" id="btnReloadPage">إعادة تحميل الصفحة</button></div>'; },15000);
+  try{ st=await call('status'); }catch(e){ clearTimeout(slow); $('#sub').textContent=''; $('#main').innerHTML='<div class="panel login"><h2>تعذر الاتصال بالخادم</h2><p class="note" style="margin:0 0 12px">'+esc(e.message||'')+'</p><p class="note" style="margin:0 0 12px">افتح رابط الخادم (/exec) في المتصفح وتأكد أنه يعرض: <b dir="ltr">USE Badges backend is running.</b> إذا ظهرت صفحة خطأ فالمشكلة في Code.gs أو في النشر.</p><div class="actions"><button class="btn primary" id="btnReloadPage" style="width:100%">إعادة تحميل الصفحة</button></div></div>'; return; }
+  clearTimeout(slow);
   S.storage=st.storage;
   if(st.storage==='unavailable'){ $('#sub').textContent=''; $('#main').innerHTML='<div class="panel login"><h2>تعذر الاتصال بقاعدة بيانات المنصة</h2><p class="note" style="margin:0 0 12px">لم تتصل هذه الصفحة بقاعدة البيانات في هذا العرض، فلم نعرض أي بيانات حتى لا تظهر فارغة بالخطأ. أعد تحميل الصفحة، أو افتحها من رابطها مباشرة في المتصفح. بياناتك محفوظة ولم تتأثر.</p><div class="actions"><button class="btn primary" id="btnReloadPage" style="width:100%">إعادة تحميل الصفحة</button></div></div>'; return; }
   if(!st.initialized) return showSetup('');
