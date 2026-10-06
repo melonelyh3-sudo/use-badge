@@ -224,7 +224,8 @@ const RES_AR={'Met':'متحققة','Not Met':'غير متحققة','N/A':'لا �
 const RES_CLS={'Met':'Met','Not Met':'NotMet','N/A':'NA','Incomplete':'Incomplete'};
 const STATUS={Returned:['معادة للتصحيح','p-no'],Pending:['بانتظار الاعتماد','p-wait'],Approved:['معتمدة','p-ok'],Rejected:['مرفوضة','p-no']};
 const CYCLE=[['25 → 1','الاختيار','EGY Team'],['2','المراجعة الأولية','KSA Team'],['4','الاعتماد','KSA Team'],['4 → 8','التصميم','EGY Team'],['8','المراجعة النهائية','KSA Team'],['10','الإرسال للنشر','KSA Team']];
-const ACT_AR={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار',deleted:'حذف حالة',restored:'استرجاع حالة محذوفة'};
+const ACT_AR={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار',deleted:'حذف حالة',restored:'استرجاع حالة محذوفة',edited:'تعديل من المعتمد',decision_changed:'تغيير القرار'};
+const FIELD_AR={month:'الشهر',pharmacist:'اسم الصيدلي',branch:'الفرع',supervisor:'المشرف',summary:'ملخص الحالة',startPoint:'نقطة البداية',outcome:'النتيجة',situation:'وصف الموقف',products:'المنتجات',answers:'إجابات الأسئلة',reasons:'أدلة الشارات',invoiceTotal:'صافي الفاتورة',invoiceCount:'عدد القطع',invoiceItems:'أصناف الفاتورة',invoiceNote:'ملاحظة الفاتورة'};
 const STAGE_KEYS=['selected','design','final','sent','published'];
 const STAGE_AR={selected:'مختارة',design:'قيد التصميم',final:'مراجعة نهائية',sent:'أُرسلت للنشر',published:'نُشرت'};
 const QT={gate:'سؤال أولي',must:'شرط',disq:'استبعاد'};
@@ -255,7 +256,7 @@ function badgeResult(b,a){
 }
 function resultsLive(c,bs){const r={};bs.forEach(b=>{r[b.key]=badgeResult(b,c.answers||{});});return r;}
 function statusOf(id){const d=S.dec.get(id);return (d&&d.status)||'Pending';}
-function resultsOf(id,c){const d=S.dec.get(id); if(d&&d.status&&d.status!=='Pending'&&d.results) return d.results; return resultsLive(c,activeBadges());}
+function resultsOf(id,c){ if(S.adminEdit&&S.draft&&S.draft.id===id) return resultsLive(c,activeBadges()); const d=S.dec.get(id); if(d&&d.status&&d.status!=='Pending'&&d.results) return d.results; return resultsLive(c,activeBadges());}
 const badgesIn=r=>allBadges().filter(b=>b.key in r);
 const metCount=r=>Object.values(r).filter(v=>v==='Met').length;
 const abOf=b=>(b.ab||b.name||'?').slice(0,2);
@@ -815,7 +816,7 @@ async function audit_(u,caseId,action,note){
   await Store.put('audit',m,doc);
 }
 async function decOf_(id){ return Store.get('decisions',id); }
-function decOut_(d){ return {returnReason:d.returnReason||'',returnedBy:d.returnedBy||'',postStage:d.postStage||'',featured:d.featured===true,featuredNote:d.featuredNote||'',status:d.status,approverId:d.approverId,approverName:d.approverName,approvedAt:d.approvedAt,rejectReason:d.rejectReason,results:d.results||null,metCount:d.metCount}; }
+function decOut_(d){ return {changedBy:d.changedBy||'',changedAt:d.changedAt||'',changeReason:d.changeReason||'',changedFrom:d.changedFrom||'',returnReason:d.returnReason||'',returnedBy:d.returnedBy||'',postStage:d.postStage||'',featured:d.featured===true,featuredNote:d.featuredNote||'',status:d.status,approverId:d.approverId,approverName:d.approverName,approvedAt:d.approvedAt,rejectReason:d.rejectReason,results:d.results||null,metCount:d.metCount}; }
 function needAdmin_(u){ if(u.role!=='admin') throw err('هذه العملية للمدير فقط.'); }
 
 /* عمليات بدون تسجيل دخول: حالة التهيئة والإعداد الأول */
@@ -887,6 +888,52 @@ const ACTIONS={
     else if(!String(p.reason||'').trim()) throw err('اكتب سبب الرفض.');
     const dec={caseId:c.id,status:approve?'Approved':'Rejected',approverId:u.id,approverName:u.name,approvedAt:approve?today_():'',rejectReason:approve?'':String(p.reason).trim().slice(0,1000),results:r,metCount:metCount_(r),updatedAt:now_(),postStage:'',featured:false,featuredNote:''};
     await Store.put('decisions',c.id,dec); await audit_(u,c.id,approve?'approved':'rejected',approve?'':dec.rejectReason);
+    return decOut_(dec);
+  }); },
+  // تعديل المعتمد لحالة مُرسلة (أي وضع): تُحفظ التعديلات ويُسجَّل من عدّل ومتى وما الحقول التي تغيّرت.
+  adminEditCase:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    const c=await Store.get('cases',String(p.id||'')); if(!c||c.deleted) throw err('الحالة غير موجودة.');
+    const badges=await activeBadges_(), set=await settings_();
+    const answers={}; Object.keys(p.answers||{}).forEach(k=>{ if(p.answers[k]==='Y'||p.answers[k]==='N') answers[k]=p.answers[k]; });
+    const reasons={}; Object.keys(p.reasons||{}).forEach(k=>{ const v=String(p.reasons[k]||'').slice(0,2000); if(v) reasons[k]=v; });
+    const upd={month:/^\d{4}-\d{2}$/.test(String(p.month||''))?p.month:c.month,pharmacist:String(p.pharmacist||'').slice(0,120),branch:String(p.branch||'').slice(0,120),supervisor:String(p.supervisor||'').slice(0,120),
+      summary:String(p.summary||'').slice(0,5000),startPoint:String(p.startPoint||'').slice(0,400),outcome:String(p.outcome||'').slice(0,400),situation:clean_(p.situation,6,400),products:clean_(p.products,8,80),
+      invoiceItems:clean_(p.invoiceItems,20,120),invoiceNote:String(p.invoiceNote||'').slice(0,400),invoiceTotal:num_(p.invoiceTotal,0,1000000,2),invoiceCount:num_(p.invoiceCount,0,500,0),answers,reasons};
+    const norm=v=>JSON.stringify(v==null?'':v), oldReasons={}; Object.keys(c.reasons||{}).forEach(k=>{ if(c.reasons[k]) oldReasons[k]=c.reasons[k]; });
+    const changed=Object.keys(upd).filter(k=>k==='reasons'?norm(oldReasons)!==norm(reasons):norm(c[k]==null?(Array.isArray(upd[k])?[]:''):c[k])!==norm(upd[k]));
+    if(!changed.length) throw err('لم يتغير شيء في الحالة.');
+    const merged=Object.assign({},c,upd); const r=resultsLive_(answers,badges);
+    const d=await decOf_(c.id);
+    if(d&&d.status==='Approved'){
+      const is=issues_(merged,r,badges,set,null); if(set.reqBadge&&metCount_(r)===0) is.push('لا توجد شارة متحققة بعد التعديل، والإعداد لا يسمح بحالة معتمدة بلا شارات.');
+      if(is.length) throw err('الحالة معتمدة، والتعديل يجعلها غير مستوفية: '+is[0]+' غيّر القرار أولًا أو عدّل الإجابات.');
+    }
+    const now=now_(); const labels=changed.map(k=>FIELD_AR[k]||k);
+    merged.results=r; merged.metCount=metCount_(r); merged.editedBy=u.name; merged.editedAt=now;
+    merged.editLog=(c.editLog||[]).concat([{by:u.name,at:now,fields:labels}]).slice(-30);
+    await Store.put('cases',c.id,merged);
+    if(d&&(d.status==='Approved'||d.status==='Rejected')){ d.results=r; d.metCount=metCount_(r); d.updatedAt=now; await Store.put('decisions',c.id,d); }
+    await audit_(u,c.id,'edited',labels.join('، '));
+    return {ok:true,fields:labels};
+  }); },
+  // تغيير القرار بعد اتخاذه: معتمد ⇄ مرفوض، بسبب مكتوب، ويُسجَّل من غيّره.
+  changeDecision:(u,p)=>{ needAdmin_(u); const reason=String(p.reason||'').trim(); if(!reason) throw err('اكتب سبب تغيير القرار.'); return withLock_(async()=>{
+    const c=await Store.get('cases',String(p.id||'')); if(!c||c.deleted) throw err('الحالة غير موجودة.');
+    const d0=await decOf_(c.id); const from=d0&&d0.status; const to=p.to==='Approved'?'Approved':'Rejected';
+    if(!(from==='Approved'||from==='Rejected')) throw err('تغيير القرار متاح فقط للحالات المعتمدة أو المرفوضة.');
+    if(from===to) throw err('الحالة '+(to==='Approved'?'معتمدة':'مرفوضة')+' أصلًا.');
+    const badges=await activeBadges_(), set=await settings_(); const now=now_();
+    let dec;
+    if(to==='Approved'){
+      const r=resultsLive_(c.answers||{},badges); const is=issues_(c,r,badges,set,u); if(is.length) throw err(is[0]);
+      dec=Object.assign({},d0,{status:'Approved',approverId:u.id,approverName:u.name,approvedAt:today_(),rejectReason:'',results:r,metCount:metCount_(r),postStage:'',featured:false,featuredNote:''});
+    } else {
+      dec=Object.assign({},d0,{status:'Rejected',rejectReason:reason.slice(0,1000),postStage:'',featured:false,featuredNote:''});
+    }
+    Object.assign(dec,{changedBy:u.name,changedAt:now,changedFrom:from,changeReason:reason.slice(0,500),updatedAt:now});
+    dec.changeLog=(d0.changeLog||[]).concat([{from,to,by:u.name,at:now,reason:reason.slice(0,500)}]).slice(-20);
+    await Store.put('decisions',c.id,dec);
+    await audit_(u,c.id,'decision_changed',(from==='Approved'?'معتمدة':'مرفوضة')+' ← '+(to==='Approved'?'معتمدة':'مرفوضة')+': '+reason);
     return decOut_(dec);
   }); },
   // حذف ناعم: الحالة تختفي من كل القوائم واللوحة والتقرير والبوستات، وتبقى محفوظة لإمكانية الاسترجاع.
@@ -1243,7 +1290,7 @@ function updateCases(){
     let last;
     if(admin){ const is=issuesFor(id,c,false); last=st==='Pending'?(is.length?'<span class="pill p-wait">ناقصة ('+is.length+')</span>':'<span class="pill p-ok">جاهزة للاعتماد</span>'):(st==='Approved'&&dec.featured?'<span class="pill p-ok">★ أفضل مشاركة</span>':st==='Returned'?'<span class="pill p-na">بانتظار تصحيح المقيّم</span>':'<span class="pill p-na">—</span>'); }
     else { last=st==='Returned'?'<b>أعادها المعتمد للتصحيح:</b> '+esc(dec.returnReason||'—'):(st==='Rejected'?esc(dec.rejectReason||'—'):st==='Approved'?'اعتُمدت في <span class="mono">'+esc(dec.approvedAt||'')+'</span>'+(dec.featured?' · اختيرت ضمن أفضل المشاركات ('+STAGE_AR[dec.postStage||'selected']+')':''):(issuesFor(id,c,false).length?'<span class="pill p-wait">ينقصها إكمال</span>':'مكتملة وبانتظار الاعتماد')); }
-    return '<tr class="row" data-open="'+esc(id)+'" tabindex="0"><td class="mono">'+esc(id)+(c.example?' <span class="pill p-na">مثال</span>':'')+'</td><td>'+esc(monthLabel(c.month))+'</td><td>'+esc(c.pharmacist||'—')+'</td><td>'+esc(c.branch||'—')+'</td><td>'+esc(c.supervisor||'—')+'</td>'+(admin?'<td>'+esc(c.reviewerName||'—')+'</td>':'')+'<td class="num">'+(c.invoiceCount?esc(c.invoiceCount):'—')+'</td><td class="num">'+(c.invoiceTotal?esc(Number(c.invoiceTotal).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})):'—')+'</td><td>'+dotsFor(id,c)+'</td><td><span class="pill '+stp[1]+'">'+stp[0]+'</span></td><td>'+last+'</td></tr>';
+    return '<tr class="row" data-open="'+esc(id)+'" tabindex="0"><td class="mono">'+esc(id)+(c.example?' <span class="pill p-na">مثال</span>':'')+((c.editLog&&c.editLog.length)||(S.dec.get(id)||{}).changedBy?' <span class="pill p-wait" title="'+esc(((c.editLog&&c.editLog.length)?'عدّلها '+c.editLog[c.editLog.length-1].by:'')+((S.dec.get(id)||{}).changedBy?' — غيّر القرار '+S.dec.get(id).changedBy:''))+'">✏️</span>':'')+'</td><td>'+esc(monthLabel(c.month))+'</td><td>'+esc(c.pharmacist||'—')+'</td><td>'+esc(c.branch||'—')+'</td><td>'+esc(c.supervisor||'—')+'</td>'+(admin?'<td>'+esc(c.reviewerName||'—')+'</td>':'')+'<td class="num">'+(c.invoiceCount?esc(c.invoiceCount):'—')+'</td><td class="num">'+(c.invoiceTotal?esc(Number(c.invoiceTotal).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})):'—')+'</td><td>'+dotsFor(id,c)+'</td><td><span class="pill '+stp[1]+'">'+stp[0]+'</span></td><td>'+last+'</td></tr>';
   }).join('');
 }
 
@@ -1260,7 +1307,7 @@ function newDraft(){
 }
 function openCase(id){
   if(S.view!=='cases'){S.view='cases';renderShell();}
-  S.rail={reason:'',mode:''};
+  S.rail={reason:'',mode:''}; S.adminEdit=false;
   const local=id&&statusOf(id)==='Returned'&&getDrafts()[id];
   if(local){S.draft=JSON.parse(JSON.stringify(local));S.isNew=false;}
   else if(id){S.draft=JSON.parse(JSON.stringify(S.cases.get(id)));S.draft.id=id;S.draft.answers=S.draft.answers||{};S.draft.reasons=S.draft.reasons||{};S.draft.situation=S.draft.situation||[];S.draft.products=S.draft.products||[];S.isNew=false;}
@@ -1270,6 +1317,7 @@ function openCase(id){
 function locked(){
   const d=S.draft; if(!S.me.canWrite) return true;
   if(S.isNew) return false;
+  if(S.adminEdit&&S.me.role==='admin') return false;
   return !(statusOf(d.id)==='Returned'&&d.reviewerId===S.me.id);
 }
 function qHtml(q){
@@ -1287,6 +1335,7 @@ function mountEditor(){
   }).join('') || '<div class="panel empty"><b>لا توجد شارات مفعّلة</b>يضيف مدير النظام الشارات من لوحة التحكم.</div>';
   $('#main').innerHTML=
   '<div class="bar"><button class="btn" id="btnBack">← الحالات</button><span class="mono" style="font-weight:600" id="cid">'+(d.id?esc(d.id):'رقم جديد (يُعطى عند أول حفظ)')+'</span><span class="sp"></span><span class="save" id="saveState"></span></div>'+
+  editedBanner(d)+
   '<div class="ed"><div class="ed-main">'+
   '<section class="panel sec"><h3>بيانات الحالة</h3><div class="grid">'+
   '<label class="f">الشهر<input type="month" data-f="month" value="'+esc(d.month)+'"></label>'+
@@ -1309,7 +1358,7 @@ function refreshEditor(){
   document.querySelectorAll('#main [data-f],#main [data-reason],#main [data-l],#main [data-ladd],#main [data-ldel],#nomToggle').forEach(el=>{el.disabled=L;});
   document.querySelectorAll('#main [data-q]').forEach(btn=>{btn.setAttribute('aria-pressed',String(d.answers[btn.dataset.q]===btn.dataset.v)); btn.disabled=L;});
   document.querySelectorAll('#main [data-aichip]').forEach(el=>{el.hidden=!S.aiCodes.has(el.dataset.aichip);});
-  const abtn=$('#btnAiSuggest'); if(abtn) abtn.disabled=L||S.aiBusy; invUi();
+  const abtn=$('#btnAiSuggest'); if(abtn) abtn.disabled=L||S.aiBusy; invUi(); const ip=$('#invPick'); if(ip) ip.hidden=L;
   const aerr=$('#aiErrBox'); if(aerr) aerr.innerHTML=S.aiErr?'<div class="banner">'+esc(S.aiErr)+'</div>':'';
   bs.forEach(b=>{
     const res=r[b.key]; const chip=document.querySelector('[data-res="'+b.key+'"]'); if(!chip) return;
@@ -1325,7 +1374,11 @@ function refreshEditor(){
     '<div class="rail-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:10px"><b>عدد الشارات</b><b class="num">'+metCount(r)+' من '+bs.length+'</b></div>'+
     '<p class="note">النتيجة تُحسب من إجاباتك تلقائيًا ولا تُعدَّل يدويًا.</p></div>';
   h+='<div class="panel sec"><h3>'+(admin?'الاعتماد':'حالة الاعتماد')+' <span class="pill '+stp[1]+'" style="margin-inline-start:6px">'+stp[0]+'</span></h3>';
-  if(!L){
+  if(S.adminEdit){
+    if(S.railErr) h+='<div class="banner" style="margin:0 0 10px">'+esc(S.railErr)+'</div>';
+    h+='<p class="note" style="margin:0 0 8px">أنت في وضع التعديل. حالة الاعتماد لا تتغير بالحفظ'+(st==='Approved'?'، وتتحدث نتيجة الشارات المعتمدة حسب إجاباتك':'')+'.</p><div class="actions"><button class="btn primary" id="btnAdminSave"'+(S.busy?' disabled':'')+'>'+(S.busy?'جارٍ الحفظ…':'حفظ التعديلات')+'</button><button class="btn" id="btnAdminCancel">إلغاء التعديل</button></div>';
+  }
+  else if(!L){
     if(st==='Returned'&&dec.returnReason) h+='<div class="banner" style="margin:0 0 10px">أعادها المعتمد للتصحيح: '+esc(dec.returnReason)+'</div>';
     const miss=issuesFor(d.id,d,false);
     h+=miss.length?'<ul class="issues">'+miss.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>':'<div class="ok-msg">الحالة مكتملة وجاهزة للإرسال.</div>';
@@ -1350,12 +1403,13 @@ function refreshEditor(){
     if(admin&&S.railErr) h+='<div class="banner" style="margin-top:10px">'+esc(S.railErr)+'</div>';
     if(admin&&S.me.canWrite){
       if(S.rail.mode==='reopen') h+='<label class="f" style="margin-top:10px">ما الذي يحتاج تصحيحًا؟ (يظهر للمقيّم)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn primary" id="btnReopenOk">إعادة للمقيّم</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
-      else h+='<div class="actions" style="margin-top:10px"><button class="btn" id="btnReopen">إعادة للمقيّم للتصحيح</button></div>';
+      else if(S.rail.mode==='change') h+='<label class="f" style="margin-top:10px">سبب تغيير القرار إلى «'+(st==='Approved'?'مرفوضة':'معتمدة')+'» (يُسجَّل ويظهر في الحالة)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label>'+(st==='Approved'?'<p class="note" style="margin:4px 0 0">إن كانت ضمن أفضل المشاركات فسيُلغى اختيارها.</p>':'')+'<div class="actions" style="margin-top:8px"><button class="btn '+(st==='Approved'?'bad':'primary')+'" id="btnChangeOk">تأكيد التغيير</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
+      else h+='<div class="actions" style="margin-top:10px"><button class="btn" id="btnChangeDec">'+(st==='Approved'?'تغيير القرار إلى مرفوض':'تغيير القرار إلى معتمد')+'</button><button class="btn" id="btnReopen">إعادة للمقيّم للتصحيح</button></div>';
     } else if(st==='Rejected') h+='<p class="note">الرفض نهائي.</p>';
   }
   if(admin&&d.id&&!S.isNew&&S.me.canWrite!==false){
     if(S.rail.mode==='delete') h+='<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px">'+(S.railErr?'<div class="banner" style="margin-bottom:8px">'+esc(S.railErr)+'</div>':'')+'<label class="f">سبب الحذف (مثال: حالة مكررة من 2026-09-004)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><p class="note" style="margin:4px 0 8px">تختفي الحالة من القوائم ولوحة المتابعة والتقرير والبوستات، ويمكن استرجاعها من «المستخدمون والإعدادات».</p><div class="actions"><button class="btn bad" id="btnDeleteOk">تأكيد الحذف</button><button class="btn" id="btnRailCancel">إلغاء</button></div></div>';
-    else if(!S.rail.mode) h+='<div class="actions" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><button class="btn bad" id="btnDelete" style="background:transparent">🗑 حذف الحالة (مكررة أو مُدخلة بالخطأ)</button></div>';
+    else if(!S.rail.mode&&!S.adminEdit) h+='<div class="actions" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">'+(L?'<button class="btn" id="btnAdminEdit">✏️ تعديل الحالة</button>':'')+'<button class="btn bad" id="btnDelete" style="background:transparent">🗑 حذف الحالة (مكررة أو مُدخلة بالخطأ)</button></div>';
   }
   h+='</div>';
   h+='<div class="panel sec"><h3>بوست الشهر</h3>';
@@ -1415,7 +1469,7 @@ function payload(d){
   return {id:d.id||'',month:d.month,pharmacist:d.pharmacist,branch:d.branch,supervisor:d.supervisor||'',summary:d.summary,answers:d.answers,reasons:d.reasons,startPoint:d.startPoint||'',outcome:d.outcome||'',situation:d.situation||[],products:d.products||[],invoiceItems:d.invoiceItems||[],invoiceNote:d.invoiceNote||'',invoiceTotal:d.invoiceTotal==null?'':d.invoiceTotal,invoiceCount:d.invoiceCount==null?'':d.invoiceCount};
 }
 function touch(){
-  if(locked()||!S.draft) return; clearTimeout(saveTimer);
+  if(locked()||!S.draft||S.adminEdit) return; clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{ S.saveState=putDraft(S.draft)?'local':'localerr'; const ss=$('#saveState'); if(ss) ss.textContent=saveMsg(); },400);
 }
 let saveTry=0;
@@ -1442,6 +1496,20 @@ async function decide(kind){
   const d=S.draft; if(S.busy) return; S.busy=true; S.railErr='';
   try{ await call('decide',{id:d.id,kind,reason:S.rail.reason}); S.rail={reason:'',mode:''}; await load(); }
   catch(e){ if(e.code==='auth') return logout(true); S.railErr=e.message; }
+  S.busy=false; refreshEditor();
+}
+function enterAdminEdit(){ S.adminEdit=true; S.adminOrig=JSON.parse(JSON.stringify(S.draft)); S.rail={reason:'',mode:''}; S.railErr=''; mountEditor(); refreshEditor(); window.scrollTo(0,0); }
+function cancelAdminEdit(){ S.adminEdit=false; if(S.adminOrig) S.draft=S.adminOrig; S.adminOrig=null; S.railErr=''; S.aiCodes=new Set(); mountEditor(); refreshEditor(); }
+async function saveAdminEdit(){
+  const d=S.draft; if(S.busy) return; S.busy=true; S.railErr=''; refreshEditor();
+  try{ const r=await call('adminEditCase',payload(d)); S.adminEdit=false; S.adminOrig=null; S.busy=false; await load(); toast('حُفظت التعديلات ('+r.fields.join('، ')+').'); return openCase(d.id); }
+  catch(e){ if(e.code==='auth') return logout(true); S.railErr=e.message; toast(e.message,true); }
+  S.busy=false; refreshEditor();
+}
+async function changeDec(){
+  const d=S.draft; if(S.busy) return; S.busy=true; S.railErr=''; const to=statusOf(d.id)==='Approved'?'Rejected':'Approved';
+  try{ await call('changeDecision',{id:d.id,to,reason:S.rail.reason}); S.rail={reason:'',mode:''}; S.busy=false; await load(); toast('تم تغيير القرار إلى «'+(to==='Approved'?'معتمدة':'مرفوضة')+'».'); return openCase(d.id); }
+  catch(e){ if(e.code==='auth') return logout(true); S.railErr=e.message; toast(e.message,true); }
   S.busy=false; refreshEditor();
 }
 async function delCase(){
@@ -1619,7 +1687,7 @@ function updateLog(){
     '<div style="margin-top:12px"><span class="note">شعار الشركة (يظهر أعلى المنصة وفي البوست، الأنسب صورة PNG بخلفية شفافة)</span><div class="lrow" style="margin-top:6px">'+(S.settings.brandLogo?'<img src="'+S.settings.brandLogo+'" style="height:40px" alt="">':'<span class="note">لا يوجد شعار</span>')+(dis?'':' <input type="file" id="brandLogoFile" accept="image/*"><button class="btn" id="brandLogoDel">إزالة</button>')+'</div></div>'+
     (dis?'':'<div class="actions" style="margin-top:12px"><button class="btn" id="brandReset">إرجاع الألوان الافتراضية</button></div>');
   }
-  $('#auditB').innerHTML=S.audit.length?S.audit.map(a=>'<tr><td class="mono">'+esc((a.ts||'').slice(0,16).replace('T',' '))+'</td><td class="mono">'+esc(a.caseId||'—')+'</td><td>'+esc(ACT_AR[a.action]||a.action)+'</td><td>'+esc(a.byName||'—')+'</td><td>'+esc(a.note||'')+'</td></tr>').join(''):'<tr><td colspan="5"><div class="empty"><b>السجل فارغ</b>تظهر هنا عمليات الإنشاء والاعتماد والرفض وإعادة الفتح وتعديل الشارات.</div></td></tr>';
+  $('#auditB').innerHTML=S.audit.length?S.audit.map(a=>'<tr><td class="mono">'+esc(ts_(a.ts))+'</td><td class="mono">'+esc(a.caseId||'—')+'</td><td>'+esc(ACT_AR[a.action]||a.action)+'</td><td>'+esc(a.byName||'—')+'</td><td>'+esc(a.note||'')+'</td></tr>').join(''):'<tr><td colspan="5"><div class="empty"><b>السجل فارغ</b>تظهر هنا عمليات الإنشاء والاعتماد والرفض وإعادة الفتح وتعديل الشارات.</div></td></tr>';
 }
 
 /* ---------- Best of month ---------- */
@@ -1817,6 +1885,16 @@ function resizeLogo(file){ return new Promise((res,rej)=>{ const fr=new FileRead
 function resizeIcon(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [sz,type,q] of [[160,'image/png'],[128,'image/png'],[128,'image/webp',.85],[96,'image/webp',.8]]){ const c=document.createElement('canvas'); c.width=c.height=sz; const x=c.getContext('2d'); const r=Math.min(sz/im.width,sz/im.height); x.drawImage(im,(sz-im.width*r)/2,(sz-im.height*r)/2,im.width*r,im.height*r); const u=c.toDataURL(type,q); if(u.length<38000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('الصورة معقدة جدًا، جرّب صورة أبسط.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
 function listHtml(name){ const arr=S.draft[name]||[]; const max=name==='situation'?6:8; const one=name==='situation'?'نقطة':'منتج';
   return arr.map((v,i)=>'<div class="lrow"><input type="text" data-l="'+name+':'+i+'" value="'+esc(v)+'" placeholder="'+(name==='situation'?'نقطة قصيرة من الموقف':'اسم المنتج')+'"><button class="btn" data-ldel="'+name+':'+i+'" aria-label="حذف">×</button></div>').join('')+(arr.length<max?'<button class="btn" data-ladd="'+name+'">+ إضافة '+one+'</button>':''); }
+// وقت محلي لجهاز المستخدم بدل توقيت UTC المخزَّن
+function ts_(x){ const d=new Date(x); if(isNaN(d)) return String(x||'').slice(0,16).replace('T',' '); const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+' '+z(d.getHours())+':'+z(d.getMinutes()); }
+function editedBanner(d){
+  const c=d&&d.id?S.cases.get(d.id):null; const log=(c&&c.editLog)||[]; const dec=d&&d.id?S.dec.get(d.id):null; let h='';
+  if(S.adminEdit) h+='<div class="banner" style="margin:0 0 12px;background:var(--warn-soft);color:var(--warn)">✏️ وضع تعديل المعتمد: عدّل ما تحتاجه ثم اضغط «حفظ التعديلات» في لوحة الاعتماد. سيُسجَّل اسمك والحقول التي غيّرتها.</div>';
+  if(log.length){ const last=log[log.length-1];
+    h+='<div class="banner" style="margin:0 0 12px;background:var(--bg,#f6f8fb);color:var(--ink)"><b>✏️ عُدّلت بواسطة '+esc(last.by)+'</b> <span class="mono">'+esc(ts_(last.at))+'</span> — '+esc((last.fields||[]).join('، '))+(log.length>1?'<details style="margin-top:6px"><summary>كل التعديلات ('+log.length+')</summary>'+log.slice().reverse().map(x=>'<div class="note" style="margin:4px 0 0">'+esc(x.by)+' — <span class="mono">'+esc(ts_(x.at))+'</span> — '+esc((x.fields||[]).join('، '))+'</div>').join('')+'</details>':'')+'</div>'; }
+  if(dec&&dec.changedBy) h+='<div class="banner" style="margin:0 0 12px;background:var(--bg,#f6f8fb);color:var(--ink)"><b>🔁 غيّر '+esc(dec.changedBy)+' القرار</b> من «'+(dec.changedFrom==='Approved'?'معتمدة':'مرفوضة')+'» إلى «'+(dec.status==='Approved'?'معتمدة':'مرفوضة')+'» <span class="mono">'+esc(ts_(dec.changedAt))+'</span>. السبب: '+esc(dec.changeReason||'—')+'</div>';
+  return h;
+}
 function invBoxHtml(d){
   const it=(d&&d.invoiceItems)||[]; if(!it.length&&!(d&&d.invoiceNote)) return '';
   return '<div class="panel" style="margin-top:10px;padding:12px 14px;background:var(--bg,#f6f8fb)"><b style="font-size:13px">ما قرأه الذكاء الاصطناعي من الفاتورة</b>'+
@@ -1899,7 +1977,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.urole){ const u=S.users.find(x=>x.id===t.dataset.urole); return userOp(async()=>{ const r=await call('setUser',{id:u.id,role:u.role==='admin'?'reviewer':'admin'}); if(r.pin) S.code={name:r.name,username:r.username,pin:r.pin}; }); }
   if(t.id==='btnCodeDone'){ S.code=null; return updateUsers(); }
   if(t.id==='btnCopy'){ try{ navigator.clipboard.writeText(S.code.username+' / '+S.code.pin); t.textContent='تم النسخ'; }catch(e){} return; }
-  if(t.id==='btnBack'){ if(S.draft&&!locked()) putDraft(S.draft); S.openId=null;S.draft=null; return mount(); }
+  if(t.id==='btnBack'){ if(S.adminEdit){ S.adminEdit=false; S.openId=null; S.draft=null; return mount(); } if(S.draft&&!locked()) putDraft(S.draft); S.openId=null;S.draft=null; return mount(); }
   if(t.id==='btnSubmit') return submitCase();
   if(t.id==='btnDropDraft'&&S.draft){ dropDraft(S.draft.id||S.draft.localKey); S.openId=null; S.draft=null; toast('حُذفت المسودة.'); return mount(); }
   if(t.dataset.draft) return openDraft(t.dataset.draft);
@@ -1909,6 +1987,11 @@ document.addEventListener('click',e=>{
   if(t.id==='btnRejectOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return decide('reject'); }
   if(t.id==='btnReopen'){S.rail.mode='reopen';return refreshEditor();}
   if(t.id==='btnReopenOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return reopen(); }
+  if(t.id==='btnAdminEdit') return enterAdminEdit();
+  if(t.id==='btnAdminCancel') return cancelAdminEdit();
+  if(t.id==='btnAdminSave') return saveAdminEdit();
+  if(t.id==='btnChangeDec'){S.rail={reason:'',mode:'change'};return refreshEditor();}
+  if(t.id==='btnChangeOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return changeDec(); }
   if(t.id==='btnDelete'){S.rail={reason:'',mode:'delete'};return refreshEditor();}
   if(t.id==='btnDeleteOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return delCase(); }
   if(t.dataset&&t.dataset.restore){ if(S.busy) return; S.busy=true; t.disabled=true; const id=t.dataset.restore; return call('restoreCase',{id}).then(load).then(()=>{ toast('استُرجعت الحالة '+id+'.'); onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
