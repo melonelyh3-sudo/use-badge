@@ -1308,7 +1308,7 @@ const WA=(()=>{
   /* ---------- segmentation ---------- */
   function segment(msgs){
     const cases=[]; const last={}; // sender -> open case
-    const WINDOW=3*60*1000, SAME=5*1000, MIN=50;
+    const WINDOW=3*60*1000, LATE=10*60*1000, SAME=5*1000, MIN=50;
     for(const m of msgs){
       if(isSystem(m.body)) continue;
       const {text,atts}=attachmentsOf(m.body);
@@ -1325,6 +1325,11 @@ const WA=(()=>{
         if(longText&&!c.text) join=true;                       // file first, then the text
         else if(hasAtt&&!longText&&(!c.text||gap<=SAME)) join=true;   // more files, or a file sent with the text
         else if(hasAtt&&!longText&&c.text&&!c.atts.length) join=true; // text first, then the file
+      }
+      // حتى 10 دقائق: فاتورة بدون نص ثم نص بدون مرفق (أو العكس) من نفس الصيدلي = حالة واحدة
+      if(!join&&c&&gap<=LATE){
+        if(longText&&!hasAtt&&!c.text&&c.atts.length) join=true;
+        else if(hasAtt&&!longText&&c.text&&!c.atts.length) join=true;
       }
       if(!join){ c={sender:m.sender,t:m.t,lastT:m.t,text:'',mention:'',atts:[]}; cases.push(c); last[m.sender]=c; }
       if(longText) c.text=(c.text?c.text+'\n':'')+text.replace(/@\s*~?\s*/g,'@').trim();
