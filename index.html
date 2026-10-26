@@ -913,9 +913,12 @@ const ACTIONS={
     return decOut_(dec);
   }); },
   // ---- قائمة الموظفين (للمدير فقط؛ تُحفظ مقسّمة لأن المستند الواحد محدود الحجم) ----
-  hcGet: async(u)=>{ needAdmin_(u); const meta=await Store.get('hc','meta'); if(!meta||!meta.parts) return {meta:null,people:[]};
+  hcGet: async(u)=>{ needAdmin_(u); const g0=await Store.getMany('hc',['meta','manual']); const meta=g0.meta, manual=(g0.manual&&g0.manual.items)||[]; if(!meta||!meta.parts) return {meta:null,people:[],manual};
     const ids=[]; for(let i=0;i<meta.parts;i++) ids.push('p'+i); const got=await Store.getMany('hc',ids); let people=[]; ids.forEach(id=>{ people=people.concat((got[id]&&got[id].items)||[]); });
-    return {meta:{at:meta.at,by:meta.by,count:meta.count},people}; },
+    return {meta:{at:meta.at,by:meta.by,count:meta.count},people,manual}; },
+  hcManSave:(u,p)=>{ needAdmin_(u); const L=(Array.isArray(p.items)?p.items:[]).slice(0,300); const S_=(v,m)=>String(v==null?'':v).trim().slice(0,m);
+    const items=L.map(x=>({name:S_(x.name,80),phone:S_(x.phone,20),role:['talent','sup','am'].indexOf(x.role)>=0?x.role:'talent',group:S_(x.group,40),wa:S_(x.wa,80)})).filter(x=>x.name);
+    return withLock_(async()=>{ await Store.put('hc','manual',{items,at:now_(),by:u.name}); await audit_(u,'','headcount','الأعضاء المضافون يدويًا: '+items.length); return {items}; }); },
   hcSave:(u,p)=>{ needAdmin_(u); const L=Array.isArray(p.people)?p.people:[]; if(!L.length) throw err('القائمة فارغة.'); if(L.length>6000) throw err('القائمة أكبر من الحد (6000 شخص).');
     const S_=(v,m)=>String(v==null?'':v).trim().slice(0,m); const roles=['pharm','sup','talent','am'], sts=['active','left','leave'];
     const clean=L.map(x=>({emp:S_(x.emp,20),ar:S_(x.ar,80),en:S_(x.en,80),phone:S_(x.phone,16).replace(/\D/g,''),branch:S_(x.branch,10),group:S_(x.group,40),role:roles.indexOf(x.role)>=0?x.role:'pharm',
@@ -1737,9 +1740,17 @@ function hcDiff(oldL,newL){
   const left=[...n.keys()].filter(k=>o.has(k)&&o.get(k).status!=='left'&&n.get(k).status==='left').map(k=>n.get(k));
   return {added,removed,supCh,left};
 }
-async function hcLoad(force){ if(S.hc&&!force) return S.hc; const r=await call('hcGet',{}); S.hc={meta:r.meta||null,people:r.people||[]}; S.hcIdx=null; return S.hc; }
+async function hcLoad(force){ if(S.hc&&!force) return S.hc; const r=await call('hcGet',{}); S.hc={meta:r.meta||null,people:r.people||[],manual:r.manual||[]}; S.hcIdx=null; S.hcAllC=null; return S.hc; }
+// القائمة الفعلية = ملف الـ Headcount + الأعضاء المضافون يدويًا (Talent ومشرفون غير موجودين بالملف)
+function hcAll(){
+  if(S.hcAllC) return S.hcAllC; const L=((S.hc&&S.hc.people)||[]).map(p=>Object.assign({},p));
+  ((S.hc&&S.hc.manual)||[]).forEach(m=>{ const ph=phoneKey_(m.phone); const t=ph&&L.find(p=>p.phone===ph);
+    if(t){ t.role=m.role; t.alias=m.wa||m.name||t.alias; if(m.group) t.group=m.group; t.manual=true; }
+    else L.push({emp:'',ar:/[؀-ۿ]/.test(m.name)?m.name:'',en:/[؀-ۿ]/.test(m.name)?'':m.name,alias:m.wa||'',phone:ph,branch:'',group:m.group||'',role:m.role,sup:'',region:'',am:'',status:'active',join:'',manual:true}); });
+  S.hcAllC=L; return L;
+}
 function hcIndex(){
-  if(S.hcIdx) return S.hcIdx; const L=(S.hc&&S.hc.people)||[]; const byPhone=new Map(), byEmp=new Map(), byName=new Map();
+  if(S.hcIdx) return S.hcIdx; const L=hcAll(); const byPhone=new Map(), byEmp=new Map(), byName=new Map();
   L.filter(p=>p.alias).forEach(p=>{ const k=normN_(p.alias); if(k) byName.set(k,p); });
   L.forEach(p=>{ if(p.phone) byPhone.set(p.phone,p); if(p.emp) byEmp.set(p.emp,p); [p.ar,p.en].forEach(n=>{ const k=normN_(n); if(k&&!byName.has(k)) byName.set(k,p); }); });
   const supByName=new Map(); L.filter(p=>p.role==='sup'||p.role==='am').forEach(p=>[p.ar,p.en,p.alias].forEach(n=>{ const k=normN_(n); if(k) supByName.set(k,p); }));
@@ -1750,7 +1761,7 @@ function hcIndex(){
 function updateHc(){
   const box=$('#hcBox'); if(!box) return; const H=S.hc;
   if(!H){ box.innerHTML='<p class="note">جارٍ التحميل…</p>'; hcLoad().then(updateHc).catch(e=>{ box.innerHTML='<p class="note" style="color:var(--bad)">'+esc(e.message)+'</p>'; }); return; }
-  const P=S.hcPending; const L=H.people; const act=L.filter(p=>p.status!=='left');
+  const P=S.hcPending; const L=H.people; const act=hcAll().filter(p=>p.status!=='left');
   const cnt=r=>act.filter(p=>p.role===r).length; const grp={}; act.filter(p=>p.role==='pharm').forEach(p=>{ grp[p.group||'—']=(grp[p.group||'—']||0)+1; });
   let h='<p class="note" style="margin:0 0 10px">قائمة الموظفين هي مرجع تحليل مجموعات الواتساب: تربط رقم الجوال واسم الواتساب والرقم الوظيفي في الفاتورة بالاسم الرسمي والفرع والمشرف. تُعرض للمدير فقط.</p>';
   h+=L.length?'<div class="kpis" style="margin-bottom:10px">'+[['صيدلي على رأس العمل',cnt('pharm')],['مشرف',cnt('sup')],['Talent',cnt('talent')],['مدير منطقة',cnt('am')]].map(x=>'<div class="panel kpi" style="cursor:default"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join('')+'</div>'+
@@ -1765,7 +1776,21 @@ function updateHc(){
       '</ul>'+(P.issues.length?'<p class="note" style="color:var(--warn);margin:0">ملاحظات ('+P.issues.length+'):</p><ul class="issues" style="max-height:160px;overflow:auto">'+P.issues.slice(0,60).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="note" style="color:var(--good)">لا توجد ملاحظات على الملف.</p>')+
       '<div class="actions"><button class="btn primary" id="btnHcSave">حفظ القائمة</button><button class="btn" id="btnHcCancel">إلغاء</button></div></div>';
   }
+  // الأعضاء المضافون يدويًا
+  if(!S.hcMan) S.hcMan=JSON.parse(JSON.stringify(H.manual||[]));
+  const roleOpt=v=>[['talent','Talent'],['sup','مشرف'],['am','مدير منطقة']].map(([k,l])=>'<option value="'+k+'"'+(v===k?' selected':'')+'>'+l+'</option>').join('');
+  h+='<h3 style="margin:18px 0 6px">أعضاء مضافون يدويًا</h3><p class="note" style="margin:0 0 8px">فريق Talent، والمشرفون أو مديرو المناطق غير الموجودين في ملف الـ Headcount. لا يُمسحون عند رفع ملف جديد. رقم الجوال هو الأهم للربط؛ واكتب «الاسم في الواتساب» إذا كان يظهر باسم مختلف.</p>'+
+    (S.hcMan.length?'<div class="tw"><table><thead><tr><th>الاسم</th><th>رقم الجوال</th><th>الدور</th><th>المجموعة/الـ District (اختياري)</th><th>الاسم في الواتساب (اختياري)</th><th></th></tr></thead><tbody>'+
+    S.hcMan.map((m,i)=>'<tr><td><input type="text" data-hmf="'+i+':name" value="'+esc(m.name)+'" placeholder="مثال: عمرو وفيق"></td><td><input type="tel" dir="ltr" data-hmf="'+i+':phone" value="'+esc(m.phone)+'" placeholder="05xxxxxxxx"></td><td><select data-hmf="'+i+':role">'+roleOpt(m.role)+'</select></td><td><input type="text" data-hmf="'+i+':group" value="'+esc(m.group||'')+'" placeholder="الكل"></td><td><input type="text" data-hmf="'+i+':wa" value="'+esc(m.wa||'')+'"></td><td><button class="btn bad" data-hmdel="'+i+'" aria-label="حذف">×</button></td></tr>').join('')+'</tbody></table></div>'
+    :'<div class="empty" style="padding:18px">لا يوجد أعضاء مضافون يدويًا.</div>')+
+    '<div class="actions"><button class="btn" id="btnHmAdd">+ إضافة عضو</button><button class="btn primary" id="btnHmSave">حفظ الأعضاء</button></div>';
   box.innerHTML=h;
+}
+async function hcManSave(){
+  const L=(S.hcMan||[]).map(m=>({name:String(m.name||'').trim(),phone:String(m.phone||'').trim(),role:m.role||'talent',group:String(m.group||'').trim(),wa:String(m.wa||'').trim()})).filter(m=>m.name||m.phone);
+  const bad=L.find(m=>!m.name); if(bad) throw new Error('اكتب الاسم لكل عضو.');
+  const badPh=L.find(m=>m.phone&&!phoneKey_(m.phone)); if(badPh) throw new Error('رقم الجوال غير صحيح: '+badPh.name);
+  const r=await call('hcManSave',{items:L}); S.hc.manual=r.items; S.hcMan=null; S.hcIdx=null; S.hcAllC=null; toast('حُفظ الأعضاء المضافون يدويًا ('+r.items.length+').'); updateHc();
 }
 async function hcOnFile(file){
   try{ await hcLoad(); const r=await hcParse(file); if(!r.people.length) throw new Error('الملف لا يحتوي على أسماء.');
@@ -1861,18 +1886,18 @@ function anAgg(R){
       units:parsed.length?Math.round(parsed.reduce((s,c)=>s+c.units,0)/parsed.length*10)/10:0,rate:pct_(rep.length,x.length),med:median_(rep.map(c=>mins_(c.first-c.c.t))),un:x.length-rep.length,
       talent:R.replies.filter(r=>r.role==='talent'&&x.includes(r.x)).length}; };
   const groups=R.groups.map(g=>{ const x=C.filter(c=>c.g===g); const k=kpi(x);
-    if(idx.n){ const team=S.hc.people.filter(p=>p.role==='pharm'&&p.status==='active'&&hcGroupOf(p)===g); const part=new Set(x.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); k.team=team.length; k.part=team.filter(p=>part.has(hcId_(p))).length; }
+    if(idx.n){ const team=hcAll().filter(p=>p.role==='pharm'&&p.status==='active'&&hcGroupOf(p)===g); const part=new Set(x.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); k.team=team.length; k.part=team.filter(p=>part.has(hcId_(p))).length; }
     return Object.assign({g},k); });
   const sups={}; C.forEach(c=>{ const k=c.sup?c.sup.key:'—'; const s=sups[k]||(sups[k]={key:k,name:c.sup?c.sup.name:'بدون مشرف',p:c.sup&&c.sup.p,groups:new Set(),n:0,rep:0,t:[],any:0}); s.n++; s.groups.add(c.g); if(c.supT){ s.rep++; s.t.push(mins_(c.supT-c.c.t)); } if(c.first) s.any++; });
-  const supL=Object.values(sups).map(s=>{ let team=null,part=null; if(idx.n&&s.p){ const nm=new Set([normN_(s.p.ar),normN_(s.p.en),normN_(s.p.alias)].filter(Boolean)); const T=S.hc.people.filter(p=>p.role==='pharm'&&p.status==='active'&&nm.has(normN_(p.sup))&&R.groups.includes(hcGroupOf(p))); const P=new Set(C.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); team=T.length; part=T.filter(p=>P.has(hcId_(p))).length; }
-    let region=s.p?(s.p.region||''):''; if(team){ const rc={}; S.hc.people.filter(p=>p.role==='pharm'&&p.status==='active'&&[normN_(s.p.ar),normN_(s.p.en),normN_(s.p.alias)].includes(normN_(p.sup))&&p.region).forEach(p=>{ rc[p.region]=(rc[p.region]||0)+1; }); const top=Object.keys(rc).sort((a,b)=>rc[b]-rc[a])[0]; if(top) region=top; }
+  const supL=Object.values(sups).map(s=>{ let team=null,part=null; if(idx.n&&s.p){ const nm=new Set([normN_(s.p.ar),normN_(s.p.en),normN_(s.p.alias)].filter(Boolean)); const T=hcAll().filter(p=>p.role==='pharm'&&p.status==='active'&&nm.has(normN_(p.sup))&&R.groups.includes(hcGroupOf(p))); const P=new Set(C.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); team=T.length; part=T.filter(p=>P.has(hcId_(p))).length; }
+    let region=s.p?(s.p.region||''):''; if(team){ const rc={}; hcAll().filter(p=>p.role==='pharm'&&p.status==='active'&&[normN_(s.p.ar),normN_(s.p.en),normN_(s.p.alias)].includes(normN_(p.sup))&&p.region).forEach(p=>{ rc[p.region]=(rc[p.region]||0)+1; }); const top=Object.keys(rc).sort((a,b)=>rc[b]-rc[a])[0]; if(top) region=top; }
     return Object.assign(s,{rate:pct_(s.rep,s.n),med:median_(s.t),region,team,part,groups:[...s.groups].sort().join(' · ')}); }).sort((a,b)=>b.n-a.n);
   const tal={}; R.replies.filter(r=>r.role==='talent').forEach(r=>{ const t=tal[r.key]||(tal[r.key]={name:r.name,n:0,groups:new Set(),t:[]}); t.n++; t.groups.add(r.g); t.t.push(mins_(r.t-r.x.c.t)); });
   const talL=Object.values(tal).map(t=>Object.assign(t,{groups:[...t.groups].sort().join(' · '),med:median_(t.t)})).sort((a,b)=>b.n-a.n);
   const cats={}; C.forEach(c=>{ if(!c.c.cats.length) cats.__none=(cats.__none||0)+1; c.c.cats.forEach(k=>{ cats[k]=(cats[k]||0)+1; }); });
   const phs={}; C.forEach(c=>{ const p=phs[c.ph.key]||(phs[c.ph.key]={name:c.ph.name,branch:c.branch,g:c.g,n:0,net:0}); p.n++; p.net+=c.net; if(!p.branch) p.branch=c.branch; });
   const topPh=Object.values(phs).sort((a,b)=>b.n-a.n).slice(0,10);
-  let nonPart=[]; if(idx.n){ const P=new Set(C.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); nonPart=S.hc.people.filter(p=>p.role==='pharm'&&p.status==='active'&&R.groups.includes(hcGroupOf(p))&&!P.has(hcId_(p))); }
+  let nonPart=[]; if(idx.n){ const P=new Set(C.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); nonPart=hcAll().filter(p=>p.role==='pharm'&&p.status==='active'&&R.groups.includes(hcGroupOf(p))&&!P.has(hcId_(p))); }
   return {kpi:kpi(C),groups,sups:supL,tal:talL,cats,topPh,nonPart,un:C.filter(c=>!c.first).sort((a,b)=>b.c.t-a.c.t)};
 }
 function anChart(R){
@@ -2761,9 +2786,12 @@ document.addEventListener('click',e=>{
   if(t.id==='btnAnMoreUn'){ anState().showAllUn=true; return updateAn(); }
   if(t.id==='btnAnXlsx'){ if(S.busy) return; S.busy=true; return anXlsx().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.id==='btnAnSave'){ if(S.busy) return; S.busy=true; return anSave().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
+  if(t.id==='btnHmAdd'){ (S.hcMan=S.hcMan||[]).push({name:'',phone:'',role:'talent',group:'',wa:''}); return updateHc(); }
+  if(t.dataset&&t.dataset.hmdel!==undefined){ S.hcMan.splice(+t.dataset.hmdel,1); return updateHc(); }
+  if(t.id==='btnHmSave'){ if(S.busy) return; S.busy=true; return hcManSave().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.id==='btnHcDown'){ return hcDownload().catch(e=>toast(e.message,true)); }
   if(t.id==='btnHcCancel'){ S.hcPending=null; return updateHc(); }
-  if(t.id==='btnHcSave'){ if(S.busy||!S.hcPending) return; S.busy=true; t.disabled=true; const L=S.hcPending.people; return call('hcSave',{people:L}).then(r=>{ S.hcPending=null; S.hc=null; S.hcIdx=null; toast('حُفظت قائمة الموظفين ('+r.count+' شخص).'); return hcLoad(true); }).then(updateHc).catch(e=>{ toast(e.message,true); t.disabled=false; }).then(()=>{S.busy=false;}); }
+  if(t.id==='btnHcSave'){ if(S.busy||!S.hcPending) return; S.busy=true; t.disabled=true; const L=S.hcPending.people; return call('hcSave',{people:L}).then(r=>{ S.hcPending=null; S.hc=null; S.hcIdx=null; S.hcAllC=null; toast('حُفظت قائمة الموظفين ('+r.count+' شخص).'); return hcLoad(true); }).then(updateHc).catch(e=>{ toast(e.message,true); t.disabled=false; }).then(()=>{S.busy=false;}); }
   if(t.id==='btnImpExtract') return impExtract();
   if(t.id==='btnImpRun') return impRun();
   if(t.id==='btnImpStop'){ impState().stop=true; return; }
@@ -2799,6 +2827,7 @@ document.addEventListener('input',e=>{
   if(el.id==='loginPin'){ el.value=el.value.replace(/\D/g,'').slice(0,6); return; }
   if(el.id==='fQ'){S.filters.q=el.value;return updateCases();}
   if(el.id==='railReason'){S.rail.reason=el.value;return;}
+  if(el.dataset&&el.dataset.hmf&&S.hcMan){ const [i,f]=el.dataset.hmf.split(':'); if(S.hcMan[+i]) S.hcMan[+i][f]=el.value; return; }
   if(el.dataset&&el.dataset.icn!==undefined&&S.icEdit){ S.icEdit[+el.dataset.icn].n=el.value; return; }
   if(el.dataset&&el.dataset.ick!==undefined&&S.icEdit){ S.icEdit[+el.dataset.ick].k=el.value; return; }
   if(el.id==='pickReason'&&S.pick){S.pick.reason=el.value;return;}
