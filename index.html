@@ -202,6 +202,9 @@ button.kpi[aria-pressed="true"] span,button.kpi[aria-pressed="true"] b{color:#ff
 .seg button[aria-pressed="true"][data-v="Y"]{background:var(--navy);color:#fff}
 @media (max-width:820px){#pList section{grid-template-columns:1fr!important}}
 @media (max-width:640px){.topbar{padding:12px 16px}.topbar h1{font-size:18px}.tab{padding:8px 12px}}
+.hb{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px;width:100%;background:none;border:0;padding:2px 4px;border-radius:6px;cursor:pointer;font:inherit;color:inherit;text-align:start}.hb.static{cursor:default}.hb:not(.static):hover,.hb.on{background:var(--brand-soft)}.hb .l{width:150px;flex:none}.hb .t{flex:1;background:var(--line);border-radius:4px;height:14px;overflow:hidden}.hb .t i{display:block;height:100%;background:var(--brand)}.hb .v{width:40px;text-align:end;color:var(--muted);font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px}.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-inline-end:5px}
+tr.clickable{cursor:pointer}tr.clickable:hover td,tr.sel td{background:var(--brand-soft)}
 .chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 10px;margin:3px 2px;cursor:pointer;font-size:13px;background:var(--surface)}.chip input{margin:0}.chip.on{background:var(--brand-soft);border-color:var(--brand)}.chip b{font-size:11px;color:var(--muted)}
 </style>
 </head>
@@ -236,7 +239,7 @@ const RES_AR={'Met':'متحققة','Not Met':'غير متحققة','N/A':'لا �
 const RES_CLS={'Met':'Met','Not Met':'NotMet','N/A':'NA','Incomplete':'Incomplete'};
 const STATUS={Returned:['معادة للتصحيح','p-no'],Pending:['بانتظار الاعتماد','p-wait'],Approved:['معتمدة','p-ok'],Rejected:['مرفوضة','p-no']};
 const CYCLE=[['25 → 1','الاختيار','EGY Team'],['2','المراجعة الأولية','KSA Team'],['4','الاعتماد','KSA Team'],['4 → 8','التصميم','EGY Team'],['8','المراجعة النهائية','KSA Team'],['10','الإرسال للنشر','KSA Team']];
-const ACT_AR={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار',import:'استيراد من الواتساب',inbox_take:'أخذ حالة من صندوق الوارد',inbox_dismiss:'استبعاد من صندوق الوارد',inbox_back:'إرجاع لصندوق الوارد',deleted:'حذف حالة',restored:'استرجاع حالة محذوفة',edited:'تعديل من المعتمد',decision_changed:'تغيير القرار'};
+const ACT_AR={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار',import:'استيراد من الواتساب',headcount:'تحديث قائمة الموظفين',wa_stats:'حفظ ملخص تحليل الواتساب',inbox_take:'أخذ حالة من صندوق الوارد',inbox_dismiss:'استبعاد من صندوق الوارد',inbox_back:'إرجاع لصندوق الوارد',deleted:'حذف حالة',restored:'استرجاع حالة محذوفة',edited:'تعديل من المعتمد',decision_changed:'تغيير القرار'};
 const FIELD_AR={month:'الشهر',pharmacist:'اسم الصيدلي',branch:'الفرع',supervisor:'المشرف',summary:'ملخص الحالة',startPoint:'نقطة البداية',outcome:'النتيجة',situation:'وصف الموقف',products:'المنتجات',answers:'إجابات الأسئلة',reasons:'أدلة الشارات',invoiceTotal:'صافي الفاتورة',invoiceCount:'عدد القطع',invoiceItems:'أصناف الفاتورة',invoiceNote:'ملاحظة الفاتورة'};
 const STAGE_KEYS=['selected','design','final','sent','published'];
 const STAGE_AR={selected:'مختارة',design:'قيد التصميم',final:'مراجعة نهائية',sent:'أُرسلت للنشر',published:'نُشرت'};
@@ -313,7 +316,7 @@ async function bk(op,body,tries){
 const Store=(()=>{
   let kind=null, db=null, mem=new Map(), snap=null, snapAt=0, snapP=null, batch=null;
   // البيانات الثقيلة (صور منتجات البوستات) لا تُحمَّل مع كل فتح، بل عند الحاجة فقط
-  const HEAVY=['postimgs','inboxd']; const heavy={}; let heavyOk=true;
+  const HEAVY=['postimgs','inboxd','hc']; const heavy={}; let heavyOk=true;
   const isHeavy=c=>kind==='remote'&&HEAVY.indexOf(c)>=0;
   async function heavyGet(c,ids){
     heavy[c]=heavy[c]||{}; const need=ids.map(String).filter(id=>!(id in heavy[c]));
@@ -909,6 +912,25 @@ const ACTIONS={
     await Store.put('decisions',c.id,dec); await audit_(u,c.id,approve?'approved':'rejected',approve?'':dec.rejectReason);
     return decOut_(dec);
   }); },
+  // ---- قائمة الموظفين (للمدير فقط؛ تُحفظ مقسّمة لأن المستند الواحد محدود الحجم) ----
+  hcGet: async(u)=>{ needAdmin_(u); const meta=await Store.get('hc','meta'); if(!meta||!meta.parts) return {meta:null,people:[]};
+    const ids=[]; for(let i=0;i<meta.parts;i++) ids.push('p'+i); const got=await Store.getMany('hc',ids); let people=[]; ids.forEach(id=>{ people=people.concat((got[id]&&got[id].items)||[]); });
+    return {meta:{at:meta.at,by:meta.by,count:meta.count},people}; },
+  hcSave:(u,p)=>{ needAdmin_(u); const L=Array.isArray(p.people)?p.people:[]; if(!L.length) throw err('القائمة فارغة.'); if(L.length>6000) throw err('القائمة أكبر من الحد (6000 شخص).');
+    const S_=(v,m)=>String(v==null?'':v).trim().slice(0,m); const roles=['pharm','sup','talent','am'], sts=['active','left','leave'];
+    const clean=L.map(x=>({emp:S_(x.emp,20),ar:S_(x.ar,80),en:S_(x.en,80),phone:S_(x.phone,16).replace(/\D/g,''),branch:S_(x.branch,10),group:S_(x.group,40),role:roles.indexOf(x.role)>=0?x.role:'pharm',
+      sup:S_(x.sup,80),alias:S_(x.alias,80),region:S_(x.region,60),am:S_(x.am,80),status:sts.indexOf(x.status)>=0?x.status:'active',join:S_(x.join,10)})).filter(x=>x.ar||x.en);
+    return withLock_(async()=>{ const per=300, parts=Math.ceil(clean.length/per);
+      for(let i=0;i<parts;i++) await Store.put('hc','p'+i,{items:clean.slice(i*per,(i+1)*per)});
+      await Store.put('hc','meta',{parts,count:clean.length,at:now_(),by:u.name});
+      await audit_(u,'','headcount','قائمة الموظفين: '+clean.length+' شخص'); return {count:clean.length}; }); },
+  anSave:(u,p)=>{ needAdmin_(u); const id=String(p.month||''); if(!/^\d{4}-\d{2}$/.test(id)) throw err('شهر غير صالح.');
+    return withLock_(async()=>{ const doc=(await Store.get('wastats',id))||{id,groups:{},sups:{}}; const g=p.groups&&typeof p.groups==='object'?p.groups:{};
+      Object.keys(g).slice(0,12).forEach(k=>{ if(!/^[A-Za-z0-9\u0600-\u06FF ]{1,10}$/.test(k)) return; const v=g[k]||{}; const o={}; ['cases','ph','inv','net','avg','rate','med','talent','un','team','part'].forEach(f=>{ const n=Number(v[f]); o[f]=isFinite(n)?Math.round(n*10)/10:0; }); doc.groups[k]=o; });
+      doc.sups[Object.keys(g).sort().join('-')]=(Array.isArray(p.sups)?p.sups:[]).slice(0,80).map(s=>({name:String(s.name||'').slice(0,80),n:+s.n||0,rep:+s.rep||0,rate:+s.rate||0,med:s.med==null?null:+s.med}));
+      doc.from=String(p.from||'').slice(0,10); doc.to=String(p.to||'').slice(0,10); doc.savedAt=now_(); doc.savedBy=u.name;
+      await Store.put('wastats',id,doc); await audit_(u,'','wa_stats','ملخص تحليل الواتساب '+id+': '+Object.keys(g).join('، ')); return {id}; }); },
+  anList: async(u)=>{ needAdmin_(u); return {items:(await Store.list('wastats')).map(d=>({id:d.id,groups:d.groups,savedAt:d.savedAt}))}; },
   // ---- صندوق الوارد من الواتساب ----
   inboxAdd:(u,p)=>{ needAdmin_(u); const items=Array.isArray(p.items)?p.items.slice(0,20):[]; if(!items.length) throw err('لا توجد حالات.'); return withLock_(async()=>{
     let n=0; const S_=(v,m)=>String(v==null?'':v).slice(0,m);
@@ -1424,12 +1446,15 @@ const WA=(()=>{
   // تصدير الويب يحتفظ بالنص المكتوب مع الملف ولا يحتفظ بالملف، وتصدير الجوال العكس.
   // نربط الرسالتين بالوقت نفسه (بالثانية) ونضيف النص لرسالة الجوال.
   function mergeText(msgs, helpers){
-    const idx=new Map(); let filled=0; const names={};
-    helpers.forEach(h=>h.msgs.forEach(w=>{ if(!/omitted>/.test(w.body)) return; const k=w.t.getTime(); (idx.get(k)||idx.set(k,[]).get(k)).push(w); }));
+    const idx=new Map(), all=new Map(); let filled=0; const names={}, votes={};
+    helpers.forEach(h=>h.msgs.forEach(w=>{ const k=w.t.getTime(); (all.get(k)||all.set(k,[]).get(k)).push(w); if(/omitted>/.test(w.body)) (idx.get(k)||idx.set(k,[]).get(k)).push(w); }));
+    // ربط اسم المرسل في تصدير الجوال برقمه في تصدير الويب (نفس الثانية)
+    msgs.forEach(m=>{ const L=all.get(m.t.getTime()); if(!L||L.length!==1) return; const w=L[0]; const v=votes[m.sender]||(votes[m.sender]={}); v[w.sender]=(v[w.sender]||0)+1; });
+    Object.keys(votes).forEach(nm=>{ const v=votes[nm]; const best=Object.keys(v).sort((a,b)=>v[b]-v[a])[0]; if(best) names[best]=nm; });
     const out=msgs.map(m=>{
       const L=idx.get(m.t.getTime()); if(!L||!L.length) return m;
       const a=attachmentsOf(m.body); if(!a.atts.length) return m;
-      const w=L.shift(); const cap=attachmentsOf(w.body).text; names[w.sender]=m.sender;
+      const w=L.shift(); const cap=attachmentsOf(w.body).text;
       const plain=stripMentions(a.text), wp=stripMentions(cap);
       if(wp.replace(/\s/g,'').length<=plain.replace(/\s/g,'').length) return m;
       filled++; return Object.assign({},m,{body:m.body+'\n'+cap,web:true});
@@ -1482,7 +1507,7 @@ const WA=(()=>{
 })();
 
 /* ===== WhatsApp import UI + inbox ===== */
-const IMP_GROUPS=['D1','D2','D3','D4'];
+const IMP_GROUPS=['D1','D2','D3','D4','D5'];
 function impState(){ if(!S.imp) S.imp={srcs:[],cases:[],sel:new Set(),f:{cats:new Set(),groups:new Set(),inv:false,hideOld:true},busy:false,stop:false,log:[],msg:''}; return S.imp; }
 const fixName_=s=>{ s=String(s||'').normalize('NFKC').replace(/\s+/g,' ').trim(); if(/^(?:[؀-ۿ]\s)+[؀-ۿ]$/.test(s)) s=s.split(' ').reverse().join(''); return s; };
 const cleanSender_=s=>String(s||'').replace(/[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}☀-➿]/gu,'').trim();
@@ -1493,14 +1518,14 @@ function impCats(){ return (S.settings.importCats&&S.settings.importCats.length)
 
 function mountImport(){
   impState();
-  $('#main').innerHTML=
+  $('#main').innerHTML='<div class="actions" style="margin:0 0 12px"><button class="chip'+(S.impTab!=='an'?' on':'')+'" data-imptab="imp">استيراد الحالات</button><button class="chip'+(S.impTab==='an'?' on':'')+'" data-imptab="an">📊 تحليل المجموعات</button></div><div id="impPane"'+(S.impTab==='an'?' hidden':'')+'>'+
   '<section class="panel sec"><h3>1) ملفات تصدير المجموعات</h3>'+
   '<p class="note" style="margin:0 0 10px">لكل مجموعة: تصدير الجوال مع الوسائط (ZIP، فيه الفواتير) + تصدير الويب (ZIP نصي، فيه الكلام المكتوب مع الفواتير). اختر الملفات كلها معًا؛ تتعرف المنصة على مجموعة كل ملف وتدمج الاثنين بالوقت. تتم القراءة على جهازك ولا يُرفع أي ملف للخادم.</p>'+
   '<div class="actions"><label class="btn primary">📁 اختيار ملفات ZIP<input type="file" id="impFiles" accept=".zip,application/zip" multiple hidden></label><span class="note" id="impLoadMsg"></span></div>'+
   '<div id="impSrcs" style="margin-top:10px"></div></section>'+
   '<section class="panel sec" id="impStep2" hidden><h3>2) الفلترة والاختيار</h3><div id="impFilters"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="impSelAllBox" aria-label="تحديد الكل"></th><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>نص الحالة</th><th>المرفقات</th><th>الفاتورة</th><th>الحالة</th></tr></thead><tbody id="impRows"></tbody></table></div></section>'+
-  '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><button class="btn primary" id="btnImpRun"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><div id="impLog" style="margin-top:10px"></div></section>';
-  updateImport();
+  '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><button class="btn primary" id="btnImpRun"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><div id="impLog" style="margin-top:10px"></div></section></div><div id="anBox"'+(S.impTab==='an'?'':' hidden')+'></div>';
+  updateImport(); if(S.impTab==='an') updateAn();
 }
 function impFiltered(){
   const I=impState(), oldKeys=new Set((S.inboxKeys||[]));
@@ -1545,7 +1570,7 @@ async function impLoadFiles(files){
   I.busy=false; updateImport();
 }
 async function impExtract(){
-  const I=impState(); if(I.busy||!I.srcs.length) return; I.busy=true; I.cases=[]; I.sel=new Set(); I.extractMsg='جارٍ استخراج الحالات وقراءة الفواتير…'; updateImport();
+  const I=impState(); if(I.busy||!I.srcs.length) return; I.busy=true; I.cases=[]; I.sel=new Set(); I.groupMsgs={}; I.groupNames={}; I.an=null; I.extractMsg='جارٍ استخراج الحالات وقراءة الفواتير…'; updateImport();
   try{
     const from=I.from?new Date(I.from+'T00:00:00'):null, to=I.to?new Date(I.to+'T23:59:59'):null; const cats=impCats(); let all=[];
     let filled=0;
@@ -1553,7 +1578,8 @@ async function impExtract(){
       const same=I.srcs.filter(x=>x.group===s0.group);
       if(!s0.media&&same.some(x=>x.media)) continue;            // ملف نص فقط: يُستخدم لإكمال ملف الجوال
       let s=s0; const helpers=same.filter(x=>x!==s0&&!x.media);
-      if(s0.media&&helpers.length){ const mg=WA.mergeText(s0.msgs,helpers); filled+=mg.msgs.filter(m=>m.web&&(!from||m.t>=from)&&(!to||m.t<=to)).length; s=Object.assign({},s0,{msgs:mg.msgs}); }
+      if(s0.media&&helpers.length){ const mg=WA.mergeText(s0.msgs,helpers); filled+=mg.msgs.filter(m=>m.web&&(!from||m.t>=from)&&(!to||m.t<=to)).length; s=Object.assign({},s0,{msgs:mg.msgs,names:mg.names}); }
+      I.groupMsgs[s.group]={msgs:s.msgs,names:s.names||{}}; (I.groupNames=I.groupNames||{})[s.group]=normN_(same.map(x=>x.file.name).join(' '));
       const cs=await WA.buildCases(s,from,to,cats,(i,n)=>{ const m=$('#impExtractMsg'); if(m) m.textContent=s.group+': قراءة الحالة '+i+' من '+n+'…'; });
       cs.forEach(c=>{ c.src=s; c.group=s.group; c.key=[c.group,c.t.toISOString().slice(0,16),WA.normA(c.sender)].join('|'); }); all=all.concat(cs);
     }
@@ -1629,6 +1655,307 @@ function updateIc(){
   box.innerHTML='<p class="note" style="margin:0 0 10px">تُصنَّف حالات الواتساب تلقائيًا عند الاستيراد إذا ظهرت أي كلمة من كلمات التصنيف في نص الحالة أو أصناف الفاتورة. اكتب الكلمات مفصولة بفواصل (عربي أو إنجليزي، أسماء منتجات أو أعراض). الحالة قد تأخذ أكثر من تصنيف.</p>'+
    S.icEdit.map((c,i)=>'<div class="grid" style="grid-template-columns:200px 1fr auto;align-items:start;margin-bottom:8px"><input type="text" data-icn="'+i+'" value="'+esc(c.n)+'" placeholder="اسم التصنيف"><textarea data-ick="'+i+'" rows="2" placeholder="كلمات مفتاحية مفصولة بفواصل">'+esc(c.k)+'</textarea><button class="btn bad" data-icdel="'+i+'" aria-label="حذف التصنيف">×</button></div>').join('')+
    '<div class="actions"><button class="btn" id="btnIcAdd">+ تصنيف</button><button class="btn primary" id="btnIcSave">حفظ التصنيفات</button><button class="btn" id="btnIcReset">استعادة الافتراضي</button></div>';
+}
+
+/* ===== Headcount (قائمة الموظفين) + WhatsApp groups analysis ===== */
+const XLSX_URL='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+function xlsxLib(){ if(window.XLSX) return Promise.resolve(window.XLSX); return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=XLSX_URL; s.onload=()=>res(window.XLSX); s.onerror=()=>rej(new Error('تعذر تحميل مكتبة Excel. تحقق من الاتصال بالإنترنت.')); document.head.appendChild(s); }); }
+const ROLE_AR={pharm:'صيدلي',sup:'مشرف',talent:'Talent',am:'مدير منطقة'};
+const latinD_=s=>String(s==null?'':s).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+function phoneKey_(s){ let d=latinD_(s).replace(/\D/g,''); if(d.startsWith('00')) d=d.slice(2); if(d.length===10&&d.startsWith('05')) d='966'+d.slice(1); else if(d.length===9&&d.startsWith('5')) d='966'+d; return d.length>=8?d:''; }
+const isPhone_=s=>/^\+?[\d\s\-()‪‬]{8,}$/.test(String(s||'').trim());
+const normN_=s=>WA.normA(String(s||'')).replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim().replace(/^(dr|د|دكتور|دكتوره|doctor|ph|pharm)\s+/,'').trim();
+const maskPhone_=k=>k?k.slice(0,5)+'•••'+k.slice(-4):'';
+
+/* ----- headcount parsing ----- */
+const HC_COLS={emp:['الرقم الوظيفي','رقم الموظف','user/employee id','employee id','employee','emp','id','pharmacist no'],ar:['الاسم بالعربي','الاسم العربي','name ar','arabic name'],en:['الاسم بالإنجليزي','الاسم بالانجليزي','display name','name en','english name','name','الاسم'],
+  phone:['رقم الجوال','الجوال','الهاتف','رقم الهاتف','phone number','mobile','phone','whatsapp'],branch:['رقم الفرع','pharmacy no','pharmacy','الفرع','branch'],group:['المجموعة','district','group','الجروب'],role:['الدور','الوظيفة','role'],
+  sup:['المشرف','supervisor name','supervisor'],region:['المنطقة','city','region','area','المدينة'],am:['مدير المنطقة','area manager'],status:['الحالة','employment status','status'],join:['تاريخ الالتحاق','join','hire date']};
+const hcHead_=h=>String(h||'').trim().toLowerCase().replace(/\s*\(.*$/,'').replace(/[.:]+$/,'').trim();
+function hcRole_(v){ const s=String(v||'').trim().toLowerCase(); if(!s) return 'pharm'; if(/talent|تالنت|تطوير/.test(s)) return 'talent'; if(/مدير/.test(s)||/area\s*manager|\bam\b/.test(s)) return 'am'; if(/مشرف|super/.test(s)) return 'sup'; return 'pharm'; }
+function hcStatus_(v){ const s=String(v||'').trim(); if(/مستقيل|منتهي|left|resign|terminated/i.test(s)) return 'left'; if(/إجازة طويلة|اجازة طويلة|long leave/i.test(s)) return 'leave'; return 'active'; }
+const blank_=v=>{ const s=String(v==null?'':v).trim(); return /^[-–—_.]*$|^n\/?a$|^not assigned$/i.test(s)?'':s; };
+function hcSheet_(X,ws){
+  const rows=X.utils.sheet_to_json(ws,{header:1,defval:'',raw:false}); const head=(rows[0]||[]).map(hcHead_); const col={};
+  Object.keys(HC_COLS).forEach(k=>{ let i=-1; for(const syn of HC_COLS[k]){ i=head.findIndex((h,ix)=>h===syn&&!Object.values(col).includes(ix)); if(i>=0) break; } if(i<0&&k==='phone') i=head.findIndex(h=>/جوال|mobile|phone|whatsapp/.test(h)); if(i>=0) col[k]=i; });
+  return {rows,col};
+}
+async function hcParse(file){
+  const X=await xlsxLib(); const wb=X.read(await file.arrayBuffer(),{type:'array',cellDates:true});
+  let main=null, extra=[];
+  for(const n of wb.SheetNames){ const sh=hcSheet_(X,wb.Sheets[n]); if(sh.col.phone==null||(sh.col.en==null&&sh.col.ar==null)) continue;
+    if(!main&&!/مشرف|supervisor|talent/i.test(n)) main={n,...sh}; else extra.push({n,...sh}); }
+  if(!main&&extra.length) main=extra.shift();
+  if(!main) throw new Error('لم أجد ورقة فيها أعمدة الاسم ورقم الجوال. استخدم ملف الـ Headcount أو قالب قائمة الموظفين.');
+  const out=[], issues=[];
+  const read=(sh,defRole)=>sh.rows.slice(1).forEach((r,ix)=>{
+    const g=k=>sh.col[k]==null?'':blank_(r[sh.col[k]]);
+    if(!r.some(v=>String(v).trim())) return; if(/^مثال$|^example$/i.test(g('emp'))) return;
+    const rawPh=g('phone');
+    const p={emp:latinD_(g('emp')).replace(/\.0+$/,''),ar:g('ar'),en:g('en'),phone:phoneKey_(rawPh),branch:latinD_(g('branch')).replace(/^p\s*/i,'').replace(/\.0+$/,''),group:g('group'),
+      role:sh.col.role!=null?hcRole_(g('role')):defRole,sup:g('sup'),region:g('region'),am:g('am'),status:hcStatus_(g('status')),join:g('join').slice(0,10)};
+    if(!p.ar&&!p.en){ issues.push(sh.n+' السطر '+(ix+2)+': بدون اسم، تم تجاهله.'); return; }
+    if(!p.phone) issues.push('السطر '+(ix+2)+' ('+(p.ar||p.en)+'): رقم الجوال ناقص أو غير صحيح.');
+    else if(!/^9665\d{8}$/.test(p.phone)) issues.push('السطر '+(ix+2)+' ('+(p.ar||p.en)+'): رقم الجوال بصيغة غير سعودية ('+rawPh+')، راجعه.');
+    out.push(p);
+  });
+  read(main,'pharm');
+  // ملف الـ Headcount الرسمي لا يحتوي المشرفين كأسطر: نضيفهم من عمودي المشرف ومدير المنطقة (بدون جوال)
+  // المشرف ومدير المنطقة موجودون غالبًا كسطر عادي باسمهم الكامل (Dr. Mahmoud Rizk ← Mahmoud Fathi Rizk Laila): نربطهم بالاسم الأول + باقي الأسماء
+  const toks=x=>normN_(x).split(' ').filter(Boolean);
+  const lev=(a,b)=>{ if(Math.abs(a.length-b.length)>1) return 9; const d=[...Array(b.length+1).keys()]; for(let i=1;i<=a.length;i++){ let prev=d[0]; d[0]=i; for(let j=1;j<=b.length;j++){ const t=d[j]; d[j]=Math.min(d[j]+1,d[j-1]+1,prev+(a[i-1]===b[j-1]?0:1)); prev=t; } } return d[b.length]; };
+  const nameMatch=(short,full)=>{ const st=toks(short), ft=toks(full); if(!st.length||!ft.length||st[0]!==ft[0]) return false; if(st.length===1) return false; return st.slice(1).every(t=>ft.slice(1).some(x=>x===t||(t.length>=4&&lev(t,x)<=1))); };
+  const linked=new Set();
+  [['sup','sup'],['am','am']].forEach(([fld,role])=>{ [...new Set(out.filter(p=>p.role==='pharm'&&p[fld]).map(p=>p[fld]))].forEach(nm=>{
+    const ref=out.find(p=>p[fld]===nm); let c=out.filter(p=>p.role==='pharm'&&!linked.has(p)&&(nameMatch(nm,p.en)||nameMatch(nm,p.ar)));
+    // عند تشابه الأسماء: سطر المشرف نفسه لا يكون له مشرف، ثم نفس الـ District
+    if(c.length>1){ const b=c.filter(p=>!p.sup); if(b.length) c=b; } if(c.length>1){ const b=c.filter(p=>p.group===ref.group); if(b.length) c=b; } if(c.length===1){ c[0].role=role; c[0].alias=nm; linked.add(c[0]); } }); });
+  const have=new Set(out.filter(p=>p.role!=='pharm').map(p=>normN_(p.alias||p.en||p.ar)));
+  const virt=(name,role,p)=>{ const k=normN_(name); if(!k||have.has(k)) return; have.add(k); out.push({emp:'',ar:'',en:name,phone:'',branch:'',group:p.group,role,sup:role==='sup'?'':'',region:p.region,am:role==='sup'?p.am:'',status:'active',join:'',virtual:true}); };
+  out.filter(p=>p.role==='pharm').forEach(p=>{ if(p.sup) virt(p.sup,'sup',p); if(p.am) virt(p.am,'am',p); });
+  // ورقة إضافية للمشرفين وفريق Talent (الاسم، الجوال، الدور): تكمل الجوالات
+  extra.forEach(sh=>{ const before=out.length; const tmp=[]; const keep=out.splice(0); read(sh,'sup'); const add=out.splice(0); out.push(...keep);
+    add.forEach(a=>{ const k=normN_(a.en||a.ar); const t=out.find(p=>p.role!=='pharm'&&(normN_(p.en)===k||normN_(p.ar)===k)); if(t){ t.phone=a.phone||t.phone; t.role=a.role||t.role; t.ar=t.ar||a.ar; t.en=t.en||a.en; if(a.group) t.group=a.group; t.virtual=false; } else out.push(a); }); });
+  const noPh=out.filter(p=>p.role!=='pharm'&&!p.phone).length;
+  if(noPh) issues.unshift(noPh+' من المشرفين/مديري المناطق/Talent بدون رقم جوال. أضف ورقة باسم «المشرفون و Talent» فيها (الاسم، رقم الجوال، الدور) حتى تُحسب ردودهم بدقة.');
+  return {people:out, issues};
+}
+function hcCheck(people){
+  const issues=[]; const ph={}, em={};
+  people.forEach(p=>{ if(p.phone){ if(ph[p.phone]) issues.push('رقم جوال مكرر: '+maskPhone_(p.phone)+' ('+ph[p.phone]+' / '+(p.ar||p.en)+')'); ph[p.phone]=p.ar||p.en; }
+    if(p.emp){ if(em[p.emp]) issues.push('رقم وظيفي مكرر: '+p.emp+' ('+em[p.emp]+' / '+(p.ar||p.en)+')'); em[p.emp]=p.ar||p.en; } });
+  const sups=new Set(people.filter(p=>p.role==='sup'||p.role==='am').map(p=>normN_(p.ar)).concat(people.filter(p=>p.role==='sup'||p.role==='am').map(p=>normN_(p.en))).filter(Boolean));
+  const miss={}; people.filter(p=>p.role==='pharm'&&p.status==='active').forEach(p=>{ if(!p.sup) miss['(بدون مشرف)']=(miss['(بدون مشرف)']||0)+1; else if(!sups.has(normN_(p.sup))) miss[p.sup]=(miss[p.sup]||0)+1; });
+  Object.keys(miss).forEach(k=>issues.push('المشرف «'+k+'» غير موجود كسطر بدور «مشرف» ('+miss[k]+' صيدلي).'));
+  return issues;
+}
+const hcId_=p=>p.emp?'e'+p.emp:(p.phone?'p'+p.phone:'n'+normN_(p.ar||p.en));
+function hcDiff(oldL,newL){
+  const o=new Map((oldL||[]).map(p=>[hcId_(p),p])), n=new Map(newL.map(p=>[hcId_(p),p]));
+  const added=[...n.keys()].filter(k=>!o.has(k)).map(k=>n.get(k)), removed=[...o.keys()].filter(k=>!n.has(k)).map(k=>o.get(k));
+  const supCh=[...n.keys()].filter(k=>o.has(k)&&normN_(o.get(k).sup)!==normN_(n.get(k).sup)).map(k=>({p:n.get(k),from:o.get(k).sup}));
+  const left=[...n.keys()].filter(k=>o.has(k)&&o.get(k).status!=='left'&&n.get(k).status==='left').map(k=>n.get(k));
+  return {added,removed,supCh,left};
+}
+async function hcLoad(force){ if(S.hc&&!force) return S.hc; const r=await call('hcGet',{}); S.hc={meta:r.meta||null,people:r.people||[]}; S.hcIdx=null; return S.hc; }
+function hcIndex(){
+  if(S.hcIdx) return S.hcIdx; const L=(S.hc&&S.hc.people)||[]; const byPhone=new Map(), byEmp=new Map(), byName=new Map();
+  L.filter(p=>p.alias).forEach(p=>{ const k=normN_(p.alias); if(k) byName.set(k,p); });
+  L.forEach(p=>{ if(p.phone) byPhone.set(p.phone,p); if(p.emp) byEmp.set(p.emp,p); [p.ar,p.en].forEach(n=>{ const k=normN_(n); if(k&&!byName.has(k)) byName.set(k,p); }); });
+  const supByName=new Map(); L.filter(p=>p.role==='sup'||p.role==='am').forEach(p=>[p.ar,p.en,p.alias].forEach(n=>{ const k=normN_(n); if(k) supByName.set(k,p); }));
+  S.hcIdx={byPhone,byEmp,byName,supByName,n:L.length}; return S.hcIdx;
+}
+
+/* ----- headcount box (settings) ----- */
+function updateHc(){
+  const box=$('#hcBox'); if(!box) return; const H=S.hc;
+  if(!H){ box.innerHTML='<p class="note">جارٍ التحميل…</p>'; hcLoad().then(updateHc).catch(e=>{ box.innerHTML='<p class="note" style="color:var(--bad)">'+esc(e.message)+'</p>'; }); return; }
+  const P=S.hcPending; const L=H.people; const act=L.filter(p=>p.status!=='left');
+  const cnt=r=>act.filter(p=>p.role===r).length; const grp={}; act.filter(p=>p.role==='pharm').forEach(p=>{ grp[p.group||'—']=(grp[p.group||'—']||0)+1; });
+  let h='<p class="note" style="margin:0 0 10px">قائمة الموظفين هي مرجع تحليل مجموعات الواتساب: تربط رقم الجوال واسم الواتساب والرقم الوظيفي في الفاتورة بالاسم الرسمي والفرع والمشرف. تُعرض للمدير فقط.</p>';
+  h+=L.length?'<div class="kpis" style="margin-bottom:10px">'+[['صيدلي على رأس العمل',cnt('pharm')],['مشرف',cnt('sup')],['Talent',cnt('talent')],['مدير منطقة',cnt('am')]].map(x=>'<div class="panel kpi" style="cursor:default"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join('')+'</div>'+
+    '<p class="note">الصيادلة حسب المجموعة: '+Object.keys(grp).sort().map(g=>esc(g)+' <b>'+grp[g]+'</b>').join(' · ')+(H.meta?' — آخر تحديث '+esc(String(H.meta.at||'').slice(0,16).replace('T',' '))+' بواسطة '+esc(H.meta.by||''):'')+'</p>'
+    :'<div class="empty" style="margin-bottom:10px">لم تُرفع قائمة الموظفين بعد.</div>';
+  h+='<div class="actions"><label class="btn primary">⬆ رفع ملف Excel<input type="file" id="hcFile" accept=".xlsx,.xls,.csv" hidden></label>'+(L.length?'<button class="btn" id="btnHcDown">⬇ تنزيل القائمة الحالية</button>':'')+'</div>';
+  if(P){
+    const d=P.diff; const li=(arr,f)=>arr.slice(0,8).map(f).join('، ')+(arr.length>8?' … و'+(arr.length-8)+' غيرهم':'');
+    h+='<div class="panel" style="margin-top:12px;border-color:var(--brand)"><b>مراجعة الملف قبل الحفظ: '+esc(P.name)+'</b><ul class="issues" style="margin:8px 0">'+
+      '<li>إجمالي الأسطر: <b>'+P.people.length+'</b></li>'+
+      (L.length?'<li>مضافون: <b>'+d.added.length+'</b>'+(d.added.length?' — '+esc(li(d.added,p=>p.ar||p.en)):'')+'</li><li>غير موجودين في الملف الجديد: <b>'+d.removed.length+'</b>'+(d.removed.length?' — '+esc(li(d.removed,p=>p.ar||p.en)):'')+'</li><li>تغيّر مشرفهم: <b>'+d.supCh.length+'</b>'+(d.supCh.length?' — '+esc(li(d.supCh,x=>(x.p.ar||x.p.en)+' ('+(x.from||'—')+' ← '+(x.p.sup||'—')+')')):'')+'</li><li>أصبحوا «مستقيل»: <b>'+d.left.length+'</b></li>':'')+
+      '</ul>'+(P.issues.length?'<p class="note" style="color:var(--warn);margin:0">ملاحظات ('+P.issues.length+'):</p><ul class="issues" style="max-height:160px;overflow:auto">'+P.issues.slice(0,60).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="note" style="color:var(--good)">لا توجد ملاحظات على الملف.</p>')+
+      '<div class="actions"><button class="btn primary" id="btnHcSave">حفظ القائمة</button><button class="btn" id="btnHcCancel">إلغاء</button></div></div>';
+  }
+  box.innerHTML=h;
+}
+async function hcOnFile(file){
+  try{ await hcLoad(); const r=await hcParse(file); if(!r.people.length) throw new Error('الملف لا يحتوي على أسماء.');
+    S.hcPending={name:file.name,people:r.people,issues:r.issues.concat(hcCheck(r.people)),diff:hcDiff(S.hc.people,r.people)}; updateHc(); }
+  catch(e){ toast(e.message||'تعذرت قراءة الملف.',true); }
+}
+async function hcDownload(){
+  const X=await xlsxLib(); const L=(S.hc&&S.hc.people)||[]; const st={active:'على رأس العمل',left:'مستقيل',leave:'إجازة طويلة'};
+  const aoa=[['الرقم الوظيفي','الاسم بالعربي','الاسم بالإنجليزي','رقم الجوال','رقم الفرع','المجموعة','الدور','المشرف','المنطقة','مدير المنطقة','الحالة','تاريخ الالتحاق']].concat(L.map(p=>[p.emp,p.ar,p.en,p.phone?'+'+p.phone:'',p.branch,p.group,ROLE_AR[p.role]||'صيدلي',p.sup,p.region,p.am,st[p.status]||'',p.join]));
+  const wb=X.utils.book_new(); X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(aoa),'الموظفون'); wb.Workbook={Views:[{RTL:true}]};
+  await saveFile('قائمة_الموظفين_'+new Date().toISOString().slice(0,10)+'.xlsx',new Blob([X.write(wb,{type:'array',bookType:'xlsx'})],{type:'application/octet-stream'}));
+}
+
+/* ----- analysis ----- */
+// المجموعة في القائمة قد تكون D4 أو اسم الـ District (Dr. Deiaa) الموجود في اسم ملف التصدير
+function hcGroupOf(p){ const I=impState(); const G=Object.keys(I.groupMsgs||{}); if(!p.group) return ''; if(G.includes(p.group)) return p.group; const k=normN_(p.group); if(k.length<3) return '';
+  return G.find(g=>((I.groupNames||{})[g]||'').split(' ').join(' ').includes(k))||''; }
+function anState(){ if(!S.an) S.an={groups:new Set(),cat:'',sup:'',win:24,showAllUn:false}; return S.an; }
+function anResolver(group,names){
+  const idx=hcIndex(); const n2p={}; Object.keys(names||{}).forEach(ph=>{ n2p[normN_(names[ph])]=phoneKey_(ph); });
+  const cache=new Map();
+  const fn=function(sender,pharmNo){
+    const ck=sender+'|'+(pharmNo||''); if(cache.has(ck)) return cache.get(ck);
+    let p=null, phone='';
+    if(isPhone_(sender)) phone=phoneKey_(sender); else phone=n2p[normN_(sender)]||'';
+    if(phone) p=idx.byPhone.get(phone)||null;
+    if(!p&&pharmNo) p=idx.byEmp.get(String(pharmNo))||null;
+    if(!p){ const k=normN_(cleanSender_(sender)); if(k.length>=4) p=idx.byName.get(k)||null; }
+    const r={p, key:p?hcId_(p):'n:'+normN_(cleanSender_(sender)||sender), name:p?(p.alias||p.ar||p.en):cleanSender_(sender), phone};
+    cache.set(ck,r); return r;
+  };
+  fn.n2p=n2p; return fn;
+}
+function anCompute(){
+  const I=impState(), A=anState(), win=A.win*3600000; const idx=hcIndex();
+  const groups=Object.keys(I.groupMsgs||{}).filter(g=>!A.groups.size||A.groups.has(g)).sort();
+  const cases=[], replies=[], unknown={};
+  for(const g of groups){
+    const GM=I.groupMsgs[g], res=anResolver(g,GM.names);
+    const gc=I.cases.filter(c=>c.group===g).sort((a,b)=>a.t-b.t);
+    // منشن بصيغة الويب قد يلتصق به أول كلمات النص: نطابق أطول اسم معروف في بدايته
+    const nameKeys=[...new Set(Object.keys(res.n2p).concat([...idx.byName.keys()]))].filter(k=>k.length>=5);
+    const resM=mn=>{ const r=res(mn); if(r.p) return r; const k=normN_(mn); let best=''; nameKeys.forEach(key=>{ if(key.length>best.length&&(k===key||k.startsWith(key+' '))) best=key; });
+      if(!best) return r; if(res.n2p[best]) return res('+'+res.n2p[best]); const p=idx.byName.get(best); return p?{p,key:hcId_(p),name:p.ar||p.en,phone:p.phone}:r; };
+    gc.forEach(c=>{ if(c.mention){ const r=resM(c.mention); c._m=r; } });
+    const mentionKeys=new Set(gc.map(c=>c._m&&c._m.key.startsWith('n:')?normN_(c.mention):'').filter(Boolean));
+    gc.forEach(c=>{ if(c._m&&c._m.p) [c._m.p.ar,c._m.p.en].forEach(n=>{ if(n) mentionKeys.add(normN_(n)); }); });
+    gc.forEach(c=>{
+      const inv0=c.invoices[0]||{}; const ph=res(c.sender,inv0.pharmNo);
+      if(!ph.p) unknown[g+'|'+ph.name]={g,name:ph.name,n:((unknown[g+'|'+ph.name]||{}).n||0)+1};
+      let sup=null;
+      if(c.mention){ const m=c._m||res(c.mention); sup=(m.p&&(m.p.role==='sup'||m.p.role==='am'))?{key:m.key,name:m.name,p:m.p}:(m.p&&ph.p&&ph.p.sup&&idx.supByName.get(normN_(ph.p.sup)))?{key:hcId_(idx.supByName.get(normN_(ph.p.sup))),name:ph.p.sup,p:idx.supByName.get(normN_(ph.p.sup))}:m.p?null:(idx.supByName.get(normN_(c.mention))?{key:hcId_(idx.supByName.get(normN_(c.mention))),name:idx.supByName.get(normN_(c.mention)).alias||idx.supByName.get(normN_(c.mention)).en,p:idx.supByName.get(normN_(c.mention))}:{key:'n:'+normN_(c.mention),name:c.mention}); }
+      else if(ph.p&&ph.p.sup){ const sp=idx.supByName.get(normN_(ph.p.sup)); sup=sp?{key:hcId_(sp),name:sp.alias||sp.ar||sp.en,p:sp}:{key:'n:'+normN_(ph.p.sup),name:ph.p.sup}; }
+      const branch=inv0.branch||(ph.p&&ph.p.branch)||'';
+      const toks=[...new Set([ph.p&&ph.p.ar,fixName_(inv0.pharmacist||''),cleanSender_(c.sender),ph.p&&ph.p.en].filter(Boolean).map(s=>normN_(s).split(' ')[0]).filter(k=>k&&k.length>=3&&!/^\d+$/.test(k)))];
+      cases.push({c,g,ph,sup,branch,toks,replies:[],first:null,supT:null,net:c.invoices.reduce((s,v)=>s+(+v.total||0),0),units:c.invoices.reduce((s,v)=>s+(+v.units||0),0),hasInv:!!(c.invoices.length||c.aiFiles.length)});
+    });
+    const gcs=cases.filter(x=>x.g===g);
+    // رسائل الحالات نفسها لا تُحسب ردودًا
+    const own=m=>gcs.some(x=>x.c.sender===m.sender&&m.t>=x.c.t&&m.t<=x.c.lastT);
+    const from=gc.length?gc[0].t:null, to=gc.length?new Date(gc[gc.length-1].t.getTime()+win):null;
+    const msgs=from?GM.msgs.filter(m=>m.t>=from&&m.t<=to):[];
+    for(const m of msgs){
+      if(own(m)) continue; if(/This message was deleted|تم حذف هذه الرسالة|^\s*$/.test(m.body)) continue;
+      const who=res(m.sender); let role=who.p?who.p.role:'';
+      if(!role&&mentionKeys.has(normN_(cleanSender_(m.sender)))) role='sup';
+      if(role!=='sup'&&role!=='talent'&&role!=='am') continue;
+      const open=gcs.filter(x=>x.c.t<m.t&&m.t-x.c.t<=win);
+      if(!open.length) continue;
+      const notMine=x=>!x.replies.some(r=>r.key===who.key);
+      const words=new Set(WA.normA(m.body).split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>=3));
+      // 1) الرد يذكر اسم الصيدلي (برافو د أسامة)، 2) حالة من فريق المشرف أو ذكرته بالمنشن، 3) أقرب حالة خلال 3 ساعات
+      let tgt=open.filter(x=>notMine(x)&&x.toks.some(k=>words.has(k))).pop();
+      if(!tgt) tgt=open.filter(x=>notMine(x)&&x.sup&&x.sup.key===who.key).pop();
+      if(!tgt){ const recent=open.filter(x=>m.t-x.c.lastT<=3*3600000); tgt=recent.filter(x=>!x.replies.length).pop()||recent.filter(notMine).pop(); }
+      if(!tgt) continue;
+      const r={key:who.key,name:who.name,role,t:m.t,g}; tgt.replies.push(r); replies.push(Object.assign({x:tgt},r));
+      if(!tgt.first||m.t<tgt.first) tgt.first=m.t; if(tgt.sup&&tgt.sup.key===who.key&&!tgt.supT) tgt.supT=m.t;
+    }
+  }
+  const sel=cases.filter(x=>(!A.cat||(A.cat==='__none'?!x.c.cats.length:x.c.cats.includes(A.cat))));
+  return {groups,cases:sel,allCases:cases,replies:replies.filter(r=>sel.includes(r.x)),unknown:Object.values(unknown).sort((a,b)=>b.n-a.n)};
+}
+const mins_=ms=>Math.round(ms/60000);
+const fmtDur_=m=>m==null||!isFinite(m)?'—':(m<60?m+'د':Math.floor(m/60)+'س'+(m%60?' '+(m%60)+'د':''));
+const median_=a=>{ if(!a.length) return null; const s=a.slice().sort((x,y)=>x-y); const k=s.length>>1; return s.length%2?s[k]:Math.round((s[k-1]+s[k])/2); };
+const pct_=(a,b)=>b?Math.round(a*100/b):0;
+const money_=v=>Number(v||0).toLocaleString('en-US',{maximumFractionDigits:0});
+function anAgg(R){
+  const A=anState(), idx=hcIndex(); const C=R.cases;
+  const kpi=x=>{ const inv=x.filter(c=>c.hasInv).length, parsed=x.filter(c=>c.net>0), rep=x.filter(c=>c.first);
+    return {cases:x.length,ph:new Set(x.map(c=>c.ph.key)).size,br:new Set(x.map(c=>c.branch).filter(Boolean)).size,inv:pct_(inv,x.length),net:parsed.reduce((s,c)=>s+c.net,0),avg:parsed.length?Math.round(parsed.reduce((s,c)=>s+c.net,0)/parsed.length):0,
+      units:parsed.length?Math.round(parsed.reduce((s,c)=>s+c.units,0)/parsed.length*10)/10:0,rate:pct_(rep.length,x.length),med:median_(rep.map(c=>mins_(c.first-c.c.t))),un:x.length-rep.length,
+      talent:R.replies.filter(r=>r.role==='talent'&&x.includes(r.x)).length}; };
+  const groups=R.groups.map(g=>{ const x=C.filter(c=>c.g===g); const k=kpi(x);
+    if(idx.n){ const team=S.hc.people.filter(p=>p.role==='pharm'&&p.status==='active'&&hcGroupOf(p)===g); const part=new Set(x.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); k.team=team.length; k.part=team.filter(p=>part.has(hcId_(p))).length; }
+    return Object.assign({g},k); });
+  const sups={}; C.forEach(c=>{ const k=c.sup?c.sup.key:'—'; const s=sups[k]||(sups[k]={key:k,name:c.sup?c.sup.name:'بدون مشرف',p:c.sup&&c.sup.p,groups:new Set(),n:0,rep:0,t:[],any:0}); s.n++; s.groups.add(c.g); if(c.supT){ s.rep++; s.t.push(mins_(c.supT-c.c.t)); } if(c.first) s.any++; });
+  const supL=Object.values(sups).map(s=>{ let team=null,part=null; if(idx.n&&s.p){ const nm=new Set([normN_(s.p.ar),normN_(s.p.en),normN_(s.p.alias)].filter(Boolean)); const T=S.hc.people.filter(p=>p.role==='pharm'&&p.status==='active'&&nm.has(normN_(p.sup))&&R.groups.includes(hcGroupOf(p))); const P=new Set(C.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); team=T.length; part=T.filter(p=>P.has(hcId_(p))).length; }
+    let region=s.p?(s.p.region||''):''; if(team){ const rc={}; S.hc.people.filter(p=>p.role==='pharm'&&p.status==='active'&&[normN_(s.p.ar),normN_(s.p.en),normN_(s.p.alias)].includes(normN_(p.sup))&&p.region).forEach(p=>{ rc[p.region]=(rc[p.region]||0)+1; }); const top=Object.keys(rc).sort((a,b)=>rc[b]-rc[a])[0]; if(top) region=top; }
+    return Object.assign(s,{rate:pct_(s.rep,s.n),med:median_(s.t),region,team,part,groups:[...s.groups].sort().join(' · ')}); }).sort((a,b)=>b.n-a.n);
+  const tal={}; R.replies.filter(r=>r.role==='talent').forEach(r=>{ const t=tal[r.key]||(tal[r.key]={name:r.name,n:0,groups:new Set(),t:[]}); t.n++; t.groups.add(r.g); t.t.push(mins_(r.t-r.x.c.t)); });
+  const talL=Object.values(tal).map(t=>Object.assign(t,{groups:[...t.groups].sort().join(' · '),med:median_(t.t)})).sort((a,b)=>b.n-a.n);
+  const cats={}; C.forEach(c=>{ if(!c.c.cats.length) cats.__none=(cats.__none||0)+1; c.c.cats.forEach(k=>{ cats[k]=(cats[k]||0)+1; }); });
+  const phs={}; C.forEach(c=>{ const p=phs[c.ph.key]||(phs[c.ph.key]={name:c.ph.name,branch:c.branch,g:c.g,n:0,net:0}); p.n++; p.net+=c.net; if(!p.branch) p.branch=c.branch; });
+  const topPh=Object.values(phs).sort((a,b)=>b.n-a.n).slice(0,10);
+  let nonPart=[]; if(idx.n){ const P=new Set(C.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); nonPart=S.hc.people.filter(p=>p.role==='pharm'&&p.status==='active'&&R.groups.includes(hcGroupOf(p))&&!P.has(hcId_(p))); }
+  return {kpi:kpi(C),groups,sups:supL,tal:talL,cats,topPh,nonPart,un:C.filter(c=>!c.first).sort((a,b)=>b.c.t-a.c.t)};
+}
+function anChart(R){
+  const C=R.cases; if(!C.length) return '';
+  const d0=new Date(Math.min(...C.map(c=>c.c.t))), d1=new Date(Math.max(...C.map(c=>c.c.t))); d0.setHours(0,0,0,0); d1.setHours(0,0,0,0);
+  const days=[]; for(let d=new Date(d0);d<=d1;d.setDate(d.getDate()+1)) days.push(ymd_(d));
+  const pal=['#0b4f8a','#2fa37a','#e08a2c','#8e5bd1','#c0392b','#5f7d95'];
+  const ser=R.groups.map(g=>{ const m={}; C.filter(c=>c.g===g).forEach(c=>{ const k=ymd_(c.c.t); m[k]=(m[k]||0)+1; }); return {g,v:days.map(d=>m[d]||0)}; });
+  const max=Math.max(1,...ser.map(s=>Math.max(...s.v))); const W=640,H=180,L=30,T=12,B=150; const x=i=>days.length<2?(L+W)/2:L+i*(W-L-30)/(days.length-1), y=v=>B-(v/max)*(B-T);
+  let svg='<svg viewBox="0 0 '+W+' '+(H+10)+'" width="100%" height="200" role="img" aria-label="الحالات يوميًا لكل مجموعة" style="direction:ltr">';
+  [0,.5,1].forEach(f=>{ const v=Math.round(max*f); svg+='<line x1="'+L+'" x2="'+(W-10)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="4" y="'+(y(v)+4)+'" font-size="10" fill="var(--muted)">'+v+'</text>'; });
+  const step=Math.max(1,Math.ceil(days.length/8)); days.forEach((d,i)=>{ if(i%step===0) svg+='<text x="'+x(i)+'" y="'+(B+16)+'" font-size="10" fill="var(--muted)" text-anchor="middle">'+d.slice(5)+'</text>'; });
+  ser.forEach((s,i)=>{ svg+='<polyline fill="none" stroke="'+pal[i%pal.length]+'" stroke-width="2.2" points="'+s.v.map((v,j)=>x(j)+','+y(v)).join(' ')+'"><title>'+esc(s.g)+'</title></polyline>'; if(days.length===1) svg+='<circle cx="'+x(0)+'" cy="'+y(s.v[0])+'" r="4" fill="'+pal[i%pal.length]+'"/>'; });
+  svg+='</svg><div class="legend">'+ser.map((s,i)=>'<span><i style="background:'+pal[i%pal.length]+'"></i>'+esc(s.g)+'</span>').join('')+'</div>';
+  return svg;
+}
+function anRateCls(r){ return r>=80?'p-ok':r>=70?'p-wait':'p-no'; }
+async function anHist(){ if(S.anHist) return S.anHist; try{ S.anHist=(await call('anList',{})).items||[]; }catch(e){ S.anHist=[]; } return S.anHist; }
+function updateAn(){
+  const box=$('#anBox'); if(!box) return; const I=impState(), A=anState();
+  if(!I.cases.length||!I.groupMsgs){ box.innerHTML='<div class="empty">ارفع ملفات المجموعات واضغط «استخراج الحالات» في تبويب «استيراد الحالات» أولًا. التحليل يعمل على نفس الملفات والفترة.</div>'; return; }
+  if(!S.hc){ box.innerHTML='<p class="note">جارٍ تحميل قائمة الموظفين…</p>'; hcLoad().catch(()=>{ S.hc={meta:null,people:[]}; }).then(updateAn); return; }
+  if(!S.anHist){ anHist().then(updateAn); }
+  const R=anCompute(), G=anAgg(R), K=G.kpi; I.an={R,G};
+  const allG=Object.keys(I.groupMsgs).sort(); const cats=impCats();
+  const from=I.cases.length?ymd_(new Date(Math.min(...I.cases.map(c=>c.t)))):'', to=I.cases.length?ymd_(new Date(Math.max(...I.cases.map(c=>c.t)))):'';
+  // مقارنة بالشهر السابق من الملخصات المحفوظة
+  let cmp=''; const mon=to.slice(0,7); const prevM=(()=>{ const d=new Date(mon+'-01T00:00:00'); d.setMonth(d.getMonth()-1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); })();
+  const prev=(S.anHist||[]).find(h=>h.id===prevM); if(prev){ const pc=R.groups.reduce((s,g)=>s+((prev.groups||{})[g]?prev.groups[g].cases:0),0); if(pc){ const ch=Math.round((K.cases-pc)*100/pc); cmp='<i class="pill '+(ch>=0?'p-ok':'p-no')+'">'+(ch>=0?'▲ ':'▼ ')+Math.abs(ch)+'% عن '+prevM+'</i>'; } }
+  const kp=(l,v,s,c)=>'<div class="panel kpi" style="cursor:default"><span>'+l+'</span><b'+(c?' style="color:'+c+'"':'')+'>'+v+'</b><span style="font-weight:400;letter-spacing:0">'+s+'</span></div>';
+  const chip=(attr,val,label,n,on)=>'<label class="chip'+(on?' on':'')+'"><input type="checkbox" '+attr+'="'+esc(val)+'"'+(on?' checked':'')+'>'+esc(label)+(n!=null?' <b>'+n+'</b>':'')+'</label>';
+  const hasHc=!!hcIndex().n;
+  let h='<div class="bar" style="flex-wrap:wrap;gap:8px"><b>الفترة:</b> <span class="mono">'+from+' → '+to+'</span> <b style="margin-inline-start:10px">المجموعات:</b> '+allG.map(g=>chip('data-angrp',g,g,null,A.groups.has(g))).join('')+
+    ' <label class="f" style="display:inline-flex;gap:6px;align-items:center;margin:0">مدة الرد <select id="anWin">'+[6,12,24,48].map(v=>'<option value="'+v+'"'+(A.win===v?' selected':'')+'>'+v+' ساعة</option>').join('')+'</select></label>'+
+    '<span style="flex:1"></span><button class="btn" id="btnAnSave">💾 حفظ ملخص '+esc(mon)+'</button><button class="btn primary" id="btnAnXlsx">⬇ تصدير Excel</button></div>';
+  if(!hasHc) h+='<p class="note" style="color:var(--warn)">⚠️ لم تُرفع قائمة الموظفين بعد (المستخدمون والإعدادات). بدونها تظهر الأسماء كما في الواتساب، ويُعرف المشرف من المنشن فقط، ولا تُحسب ردود Talent ولا نسبة المشاركة.</p>';
+  if(A.cat) h+='<p class="note">مفلتر على التصنيف: <b>'+esc(A.cat==='__none'?'غير مصنّف':A.cat)+'</b> <button class="btn" data-ancat="">إلغاء الفلتر</button></p>';
+  h+='<div class="kpis">'+kp('إجمالي الحالات',K.cases,cmp||(K.ph+' صيدلي'),'')+kp('صيادلة مشاركون',K.ph,'في '+K.br+' فرعًا')+kp('حالات بفاتورة',K.inv+'%','صافي المقروء منها '+money_(K.net)+' ر.س')+kp('متوسط الفاتورة',money_(K.avg),'ر.س · '+K.units+' قطعة')+
+    kp('نسبة الرد',K.rate+'%',K.un+' حالة بلا رد',K.rate>=80?'var(--good)':K.rate>=70?'var(--warn)':'var(--bad)')+kp('وسيط وقت الرد',fmtDur_(K.med),'ردود Talent: '+K.talent)+'</div>';
+  const catMax=Math.max(1,...Object.values(G.cats));
+  h+='<div class="grid2"><section class="panel sec"><h3>الحالات يوميًا لكل مجموعة</h3>'+anChart(R)+'</section><section class="panel sec"><h3>توزيع الحالات على التصنيفات</h3>'+
+    cats.map(c=>({n:c.n,v:G.cats[c.n]||0})).concat([{n:'__none',v:G.cats.__none||0}]).filter(x=>x.v).sort((a,b)=>b.v-a.v).map(x=>'<button class="hb'+(A.cat===x.n?' on':'')+'" data-ancat="'+esc(x.n)+'"><span class="l">'+esc(x.n==='__none'?'غير مصنّف':x.n)+'</span><span class="t"><i style="width:'+Math.round(x.v*100/catMax)+'%"></i></span><span class="v">'+x.v+'</span></button>').join('')+
+    '<p class="note">الحالة قد تأخذ أكثر من تصنيف. اضغط التصنيف لفلترة كل الجداول.</p></section></div>';
+  h+='<section class="panel sec"><h3>مقارنة المجموعات</h3><div class="tw"><table><thead><tr><th>المجموعة</th><th>الحالات</th><th>صيادلة</th>'+(hasHc?'<th>المشاركة</th>':'')+'<th>بفاتورة</th><th>صافي الفواتير</th><th>متوسط الفاتورة</th><th>نسبة الرد</th><th>وسيط وقت الرد</th><th>ردود Talent</th><th>بلا رد</th></tr></thead><tbody>'+
+    G.groups.map(x=>'<tr><td><b>'+esc(x.g)+'</b></td><td class="num">'+x.cases+'</td><td class="num">'+x.ph+'</td>'+(hasHc?'<td class="num">'+(x.team?x.part+' من '+x.team+' ('+pct_(x.part,x.team)+'%)':'—')+'</td>':'')+'<td class="num">'+x.inv+'%</td><td class="num">'+money_(x.net)+'</td><td class="num">'+money_(x.avg)+'</td><td><span class="pill '+anRateCls(x.rate)+'">'+x.rate+'%</span></td><td class="num">'+fmtDur_(x.med)+'</td><td class="num">'+x.talent+'</td><td class="num">'+x.un+'</td></tr>').join('')+'</tbody></table></div>';
+  const hist=(S.anHist||[]).slice().sort((a,b)=>a.id.localeCompare(b.id)).slice(-6);
+  if(hist.length) h+='<p class="note" style="margin-top:10px"><b>الملخصات المحفوظة:</b></p><div class="tw"><table><thead><tr><th>الشهر</th>'+allG.map(g=>'<th>'+esc(g)+': حالات / رد</th>').join('')+'</tr></thead><tbody>'+hist.map(m=>'<tr><td class="mono">'+esc(m.id)+'</td>'+allG.map(g=>{ const v=(m.groups||{})[g]; return '<td class="num">'+(v?v.cases+' / '+v.rate+'%':'—')+'</td>'; }).join('')+'</tr>').join('')+'</tbody></table></div>';
+  h+='</section>';
+  h+='<div class="grid2"><section class="panel sec"><h3>أداء المشرفين في الرد</h3><div class="tw"><table><thead><tr><th>المشرف</th><th>المنطقة</th><th>المجموعات</th><th>حالات فريقه</th><th>ردّ عليها</th><th>نسبة الرد</th><th>وسيط الوقت</th>'+(hasHc?'<th>مشاركة الفريق</th>':'')+'</tr></thead><tbody>'+
+    G.sups.map(s=>'<tr class="clickable'+(A.sup===s.key?' sel':'')+'" data-ansup="'+esc(s.key)+'"><td>'+esc(s.name)+'</td><td>'+esc(s.region||'—')+'</td><td>'+esc(s.groups)+'</td><td class="num">'+s.n+'</td><td class="num">'+s.rep+'</td><td><span class="pill '+anRateCls(s.rate)+'">'+s.rate+'%</span></td><td class="num">'+fmtDur_(s.med)+'</td>'+(hasHc?'<td class="num">'+(s.team?s.part+' من '+s.team:'—')+'</td>':'')+'</tr>').join('')+'</tbody></table></div><p class="note">«ردّ عليها» = ردّ المشرف نفسه. اضغط اسم المشرف لعرض حالاته التي بلا رد.</p></section>'+
+    '<section class="panel sec"><h3>ردود فريق Talent</h3>'+(G.tal.length?'<div class="tw"><table><thead><tr><th>العضو</th><th>حالات ردّ عليها</th><th>المجموعات</th><th>وسيط الوقت</th></tr></thead><tbody>'+G.tal.map(t=>'<tr><td>'+esc(t.name)+'</td><td class="num">'+t.n+'</td><td>'+esc(t.groups)+'</td><td class="num">'+fmtDur_(t.med)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">'+(hasHc?'لا توجد ردود من فريق Talent في الفترة.':'تحتاج قائمة الموظفين لتمييز فريق Talent.')+'</div>')+
+    '<h3 style="margin-top:14px">أكثر الصيادلة مشاركة</h3>'+G.topPh.map(p=>'<div class="hb static"><span class="l">'+esc(p.name)+(p.branch?' · '+esc(p.branch):'')+'</span><span class="t"><i style="width:'+Math.round(p.n*100/G.topPh[0].n)+'%;background:#2fa37a"></i></span><span class="v">'+p.n+'</span></div>').join('')+'</section></div>';
+  let un=G.un; if(A.sup) un=un.filter(c=>(c.sup?c.sup.key:'—')===A.sup);
+  const supName=A.sup?((G.sups.find(s=>s.key===A.sup)||{}).name||''):'';
+  const shown=A.showAllUn?un:un.slice(0,30);
+  h+='<section class="panel sec"><h3>حالات بلا رد <span class="pill p-no">'+un.length+'</span>'+(A.sup?' — '+esc(supName)+' <button class="btn" data-ansup="">عرض الكل</button>':'')+'</h3>'+(un.length?'<div class="tw"><table><thead><tr><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>الفرع</th><th>المشرف</th><th>التصنيف</th><th>النص</th><th></th></tr></thead><tbody>'+
+    shown.map(c=>'<tr><td>'+esc(c.g)+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.c.t)+' '+hm_(c.c.t)+'</td><td>'+esc(c.ph.name)+'</td><td class="num">'+esc(c.branch||'—')+'</td><td>'+esc(c.sup?c.sup.name:'—')+'</td><td>'+c.c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')+'</td><td style="max-width:300px;font-size:12.5px">'+esc((c.c.text||'(بدون نص)').slice(0,110))+'</td><td><button class="btn" data-anpick="'+esc(c.c.key)+'"'+(I.sel.has(c.c.key)?' disabled':'')+'>'+(I.sel.has(c.c.key)?'محددة للاستيراد':'تحديد للاستيراد')+'</button></td></tr>').join('')+'</tbody></table></div>'+(un.length>shown.length?'<div class="actions"><button class="btn" id="btnAnMoreUn">عرض الكل ('+un.length+')</button></div>':''):'<div class="empty">كل الحالات تم الرد عليها 👏</div>')+'</section>';
+  if(hasHc&&G.nonPart.length) h+='<section class="panel sec"><details><summary style="cursor:pointer;font-weight:700">صيادلة لم يشاركوا في الفترة: '+G.nonPart.length+' (حسب قائمة الموظفين للمجموعات المحمّلة)</summary><div class="tw" style="margin-top:8px"><table><thead><tr><th>الاسم</th><th>الفرع</th><th>المجموعة</th><th>المشرف</th></tr></thead><tbody>'+G.nonPart.slice(0,300).map(p=>'<tr><td>'+esc(p.ar||p.en)+'</td><td class="num">'+esc(p.branch)+'</td><td>'+esc(p.group)+'</td><td>'+esc(p.sup)+'</td></tr>').join('')+'</tbody></table></div></details></section>';
+  if(R.unknown.length) h+='<section class="panel sec"><details><summary style="cursor:pointer;font-weight:700">مرسلون غير موجودين في قائمة الموظفين: '+R.unknown.length+'</summary><p class="note">أضف أرقامهم أو أسماءهم للقائمة حتى تُنسب حالاتهم للمشرف الصحيح. رفع تصدير الويب مع تصدير الجوال يظهر أرقام الجوالات ويحسّن الربط.</p><div class="tw"><table><thead><tr><th>الاسم في الواتساب</th><th>المجموعة</th><th>الحالات</th></tr></thead><tbody>'+R.unknown.slice(0,200).map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.g)+'</td><td class="num">'+u.n+'</td></tr>').join('')+'</tbody></table></div></details></section>';
+  h+='<p class="note">طريقة احتساب الرد: أي رسالة من مشرف أو Talent أو مدير منطقة خلال '+A.win+' ساعة بعد الحالة تُنسب أولًا لحالة ذكرته بالمنشن أو تتبع فريقه، ثم لحالة ذُكر اسم صيدليها في الرد، ثم لأقرب حالة خلال 3 ساعات لم يُرد عليها. التصدير لا يحفظ الرسالة المقتبسة، فالنسبة تقديرية ودقيقة في الغالب.</p>';
+  box.innerHTML=h;
+}
+async function anSave(){
+  const I=impState(); if(!I.an) return; const {R,G}=I.an; const to=ymd_(new Date(Math.max(...R.cases.map(c=>c.c.t))));
+  const groups={}; G.groups.forEach(x=>{ groups[x.g]={cases:x.cases,ph:x.ph,inv:x.inv,net:Math.round(x.net),avg:x.avg,rate:x.rate,med:x.med,talent:x.talent,un:x.un,team:x.team||0,part:x.part||0}; });
+  const sups=G.sups.slice(0,80).map(s=>({name:s.name,n:s.n,rep:s.rep,rate:s.rate,med:s.med}));
+  const r=await call('anSave',{month:to.slice(0,7),from:ymd_(new Date(Math.min(...R.cases.map(c=>c.c.t)))),to,groups,sups,cat:anState().cat||''});
+  S.anHist=null; toast('حُفظ ملخص '+r.id+' للمجموعات: '+Object.keys(groups).join('، ')); updateAn();
+}
+async function anXlsx(){
+  const I=impState(); if(!I.an) return; const {R,G}=I.an; const X=await xlsxLib(); const wb=X.utils.book_new();
+  const add=(name,aoa)=>X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(aoa),name);
+  const K=G.kpi;
+  add('الملخص',[['المؤشر','القيمة'],['الحالات',K.cases],['صيادلة مشاركون',K.ph],['فروع',K.br],['حالات بفاتورة %',K.inv],['صافي الفواتير المقروءة',Math.round(K.net)],['متوسط الفاتورة',K.avg],['متوسط القطع',K.units],['نسبة الرد %',K.rate],['وسيط وقت الرد (دقيقة)',K.med],['حالات بلا رد',K.un],['ردود Talent',K.talent],['مدة احتساب الرد (ساعة)',anState().win]]);
+  add('المجموعات',[['المجموعة','الحالات','صيادلة','فريق المجموعة','شاركوا','بفاتورة %','صافي الفواتير','متوسط الفاتورة','نسبة الرد %','وسيط وقت الرد (د)','ردود Talent','بلا رد']].concat(G.groups.map(x=>[x.g,x.cases,x.ph,x.team||'',x.part||'',x.inv,Math.round(x.net),x.avg,x.rate,x.med,x.talent,x.un])));
+  add('المشرفون',[['المشرف','المنطقة','المجموعات','حالات فريقه','ردّ عليها','نسبة الرد %','وسيط الوقت (د)','حجم الفريق','شاركوا']].concat(G.sups.map(s=>[s.name,s.region,s.groups,s.n,s.rep,s.rate,s.med,s.team==null?'':s.team,s.part==null?'':s.part])));
+  add('Talent',[['العضو','حالات ردّ عليها','المجموعات','وسيط الوقت (د)']].concat(G.tal.map(t=>[t.name,t.n,t.groups,t.med])));
+  add('الحالات',[['المجموعة','التاريخ','الوقت','الصيدلي','الفرع','المشرف','التصنيفات','صافي الفاتورة','القطع','عدد الردود','أول رد بعد (د)','رد المشرف بعد (د)','من ردّ','النص']].concat(R.cases.map(c=>[c.g,ymd_(c.c.t),hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',c.c.cats.join('، '),c.net?Math.round(c.net*100)/100:'',c.units||'',c.replies.length,c.first?mins_(c.first-c.c.t):'',c.supT?mins_(c.supT-c.c.t):'',[...new Set(c.replies.map(r=>r.name))].join('، '),(c.c.text||'').slice(0,1000)])));
+  add('بلا رد',[['المجموعة','التاريخ','الصيدلي','الفرع','المشرف','النص']].concat(G.un.map(c=>[c.g,ymd_(c.c.t)+' '+hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',(c.c.text||'').slice(0,500)])));
+  if(G.nonPart.length) add('لم يشاركوا',[['الاسم','الفرع','المجموعة','المشرف']].concat(G.nonPart.map(p=>[p.ar||p.en,p.branch,p.group,p.sup])));
+  if(R.unknown.length) add('غير معروفين',[['الاسم في الواتساب','المجموعة','الحالات']].concat(R.unknown.map(u=>[u.name,u.g,u.n])));
+  wb.Workbook={Views:[{RTL:true}]};
+  await saveFile('تحليل_المجموعات_'+R.groups.join('-')+'_'+new Date().toISOString().slice(0,10)+'.xlsx',new Blob([X.write(wb,{type:'array',bookType:'xlsx'})],{type:'application/octet-stream'}));
 }
 
 /* ---------- Shell ---------- */
@@ -2099,7 +2426,7 @@ function mountRules(){
 /* ---------- Log & settings ---------- */
 function mountUsers(){ $('#main').innerHTML=usersHtml(); }
 function mountLog(){
-  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">تصنيفات استيراد الواتساب</h2><div class="panel sec" id="icBox"></div><h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
+  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">قائمة الموظفين (مرجع تحليل الواتساب)</h2><div class="panel sec" id="hcBox"></div><h2 class="sh">تصنيفات استيراد الواتساب</h2><div class="panel sec" id="icBox"></div><h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
 }
 function updateDeleted(){
   const box=$('#delBox'); if(!box) return; const L=S.deleted||[];
@@ -2108,7 +2435,7 @@ function updateDeleted(){
     L.map(x=>'<tr><td class="mono">'+esc(x.id)+'</td><td>'+esc(x.pharmacist||'—')+' / '+esc(x.branch||'—')+'</td><td>'+esc(x.reviewerName||'—')+'</td><td>'+esc(x.deletedBy)+'</td><td class="mono">'+esc(String(x.deletedAt).slice(0,10))+'</td><td>'+esc(x.deleteReason)+'</td><td><button class="btn" data-restore="'+esc(x.id)+'">استرجاع</button></td></tr>').join('')+'</tbody></table></div>';
 }
 function updateLog(){
-  updateDeleted(); updateIc();
+  updateDeleted(); updateIc(); updateHc();
   const ab=$('#aiBox');
   if(ab){
     const srcAr={backend:'متصل بـ Claude عبر الخادم',claude:'متصل بـ Claude (داخل Claude)',endpoint:'متصل عبر خادم القسم التقني',none:'غير متصل في هذه النسخة'}[S.settings.aiSource||'none'];
@@ -2427,6 +2754,16 @@ document.addEventListener('click',e=>{
   if(t.id==='btnRejectOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return decide('reject'); }
   if(t.id==='btnReopen'){S.rail.mode='reopen';return refreshEditor();}
   if(t.id==='btnReopenOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return reopen(); }
+  if(t.dataset&&t.dataset.imptab){ S.impTab=t.dataset.imptab; return mountImport(); }
+  if(t.dataset&&t.dataset.ancat!==undefined){ const A=anState(); A.cat=A.cat===t.dataset.ancat?'':t.dataset.ancat; return updateAn(); }
+  if(t.dataset&&t.dataset.ansup!==undefined){ anState().sup=t.dataset.ansup; return updateAn(); }
+  if(t.dataset&&t.dataset.anpick){ impState().sel.add(t.dataset.anpick); toast('حُددت الحالة. حلّلها من «استيراد الحالات» لتُضاف لصندوق الوارد.'); return updateAn(); }
+  if(t.id==='btnAnMoreUn'){ anState().showAllUn=true; return updateAn(); }
+  if(t.id==='btnAnXlsx'){ if(S.busy) return; S.busy=true; return anXlsx().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
+  if(t.id==='btnAnSave'){ if(S.busy) return; S.busy=true; return anSave().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
+  if(t.id==='btnHcDown'){ return hcDownload().catch(e=>toast(e.message,true)); }
+  if(t.id==='btnHcCancel'){ S.hcPending=null; return updateHc(); }
+  if(t.id==='btnHcSave'){ if(S.busy||!S.hcPending) return; S.busy=true; t.disabled=true; const L=S.hcPending.people; return call('hcSave',{people:L}).then(r=>{ S.hcPending=null; S.hc=null; S.hcIdx=null; toast('حُفظت قائمة الموظفين ('+r.count+' شخص).'); return hcLoad(true); }).then(updateHc).catch(e=>{ toast(e.message,true); t.disabled=false; }).then(()=>{S.busy=false;}); }
   if(t.id==='btnImpExtract') return impExtract();
   if(t.id==='btnImpRun') return impRun();
   if(t.id==='btnImpStop'){ impState().stop=true; return; }
@@ -2472,9 +2809,13 @@ document.addEventListener('input',e=>{
   if(el.dataset.f){ S.draft[el.dataset.f]=el.value; refreshEditor(); return touch(); }
   if(el.dataset.reason){ S.draft.reasons[el.dataset.reason]=el.value; refreshEditor(); return touch(); }
 });
+document.addEventListener('click',e=>{ const tr=e.target.closest&&e.target.closest('tr[data-ansup]'); if(!tr||e.target.closest('button')) return; const A=anState(); A.sup=A.sup===tr.dataset.ansup?'':tr.dataset.ansup; updateAn(); });
 document.addEventListener('toggle',e=>{ if(e.target&&e.target.id==='inboxPanel') S.inboxOpen=e.target.open; },true);
 document.addEventListener('change',e=>{
   const el=e.target;
+  if(el.id==='hcFile'&&el.files&&el.files[0]){ const f=el.files[0]; el.value=''; return hcOnFile(f); }
+  if(el.dataset&&el.dataset.angrp){ const A=anState(); el.checked?A.groups.add(el.dataset.angrp):A.groups.delete(el.dataset.angrp); return updateAn(); }
+  if(el.id==='anWin'){ anState().win=+el.value||24; return updateAn(); }
   if(el.id==='impFiles'&&el.files&&el.files.length){ const fs=[...el.files]; el.value=''; return impLoadFiles(fs); }
   if(el.dataset&&el.dataset.impgsel!==undefined){ const I=impState(); I.srcs[+el.dataset.impgsel].group=el.value; I.cases=[]; I.sel=new Set(); return updateImport(); }
   if(el.id==='impFrom'||el.id==='impTo'){ const I=impState(); I[el.id==='impFrom'?'from':'to']=el.value; return; }
