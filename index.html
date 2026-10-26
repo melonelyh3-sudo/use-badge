@@ -1703,16 +1703,22 @@ async function hcParse(file){
     out.push(p);
   });
   read(main,'pharm');
+  // في الـ Headcount الرسمي: أسطر المشرفين مكتوب في عمود المدينة «Supervisors»
+  out.forEach(p=>{ if(p.role==='pharm'&&/^(supervisors?|المشرفين|مشرفين|مشرف)$/i.test(p.region.trim())){ p.role='sup'; p.region=''; } });
   // ملف الـ Headcount الرسمي لا يحتوي المشرفين كأسطر: نضيفهم من عمودي المشرف ومدير المنطقة (بدون جوال)
   // المشرف ومدير المنطقة موجودون غالبًا كسطر عادي باسمهم الكامل (Dr. Mahmoud Rizk ← Mahmoud Fathi Rizk Laila): نربطهم بالاسم الأول + باقي الأسماء
-  const toks=x=>normN_(x).split(' ').filter(Boolean);
+  // مطابقة تقبل اختلاف التهجئة بالإنجليزي (Bediwy/Badawi، Siddeg/Siddiq، Elmahdy/Al-Mahdi، Mohamed/Muhammad)
+  const skel=w=>w.replace(/^(al|el)(?=[a-z]{3})/,'').replace(/ph/g,'f').replace(/[qgc]/g,'k').replace(/[aeiouyw]/g,'').replace(/(.)\1+/g,'$1');
+  const ntoks=x=>{ const t=normN_(x).normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/-/g,' ').split(' ').filter(Boolean); const o=[]; for(let i=0;i<t.length;i++){ const w=t[i]; if(/^(al|el)$/.test(w)) continue; if(/^(abd|abdel|abdul|abdal|abu|abo|abul)$/.test(w)&&t[i+1]){ o.push(w+t[++i]); continue; } o.push(w); } return o.map(w=>/[a-z]/.test(w)?skel(w):w).filter(Boolean); };
   const lev=(a,b)=>{ if(Math.abs(a.length-b.length)>1) return 9; const d=[...Array(b.length+1).keys()]; for(let i=1;i<=a.length;i++){ let prev=d[0]; d[0]=i; for(let j=1;j<=b.length;j++){ const t=d[j]; d[j]=Math.min(d[j]+1,d[j-1]+1,prev+(a[i-1]===b[j-1]?0:1)); prev=t; } } return d[b.length]; };
-  const nameMatch=(short,full)=>{ const st=toks(short), ft=toks(full); if(!st.length||!ft.length||st[0]!==ft[0]) return false; if(st.length===1) return false; return st.slice(1).every(t=>ft.slice(1).some(x=>x===t||(t.length>=4&&lev(t,x)<=1))); };
+  const nameMatch=(short,full,fz)=>{ const st=ntoks(short), ft=ntoks(full); if(st.length<2||!ft.length||st[0]!==ft[0]) return false; return st.slice(1).every(t=>ft.slice(1).some(x=>x===t||(fz&&t.length>=3&&lev(t,x)<=1))); };
   const linked=new Set();
-  [['sup','sup'],['am','am']].forEach(([fld,role])=>{ [...new Set(out.filter(p=>p.role==='pharm'&&p[fld]).map(p=>p[fld]))].forEach(nm=>{
-    const ref=out.find(p=>p[fld]===nm); let c=out.filter(p=>p.role==='pharm'&&!linked.has(p)&&(nameMatch(nm,p.en)||nameMatch(nm,p.ar)));
+  [false,true].forEach(fz=>[['sup','sup'],['am','am']].forEach(([fld,role])=>{ [...new Set(out.filter(p=>p.role==='pharm'&&p[fld]).map(p=>p[fld]))].forEach(nm=>{
+    if(out.some(p=>p.alias===nm)) return;
+    const ref=out.find(p=>p[fld]===nm); const m=p=>!linked.has(p)&&(nameMatch(nm,p.en,fz)||nameMatch(nm,p.ar,fz));
+    let c=out.filter(p=>p.role===role&&m(p)); if(!c.length) c=out.filter(p=>p.role==='pharm'&&m(p));
     // عند تشابه الأسماء: سطر المشرف نفسه لا يكون له مشرف، ثم نفس الـ District
-    if(c.length>1){ const b=c.filter(p=>!p.sup); if(b.length) c=b; } if(c.length>1){ const b=c.filter(p=>p.group===ref.group); if(b.length) c=b; } if(c.length===1){ c[0].role=role; c[0].alias=nm; linked.add(c[0]); } }); });
+    if(c.length>1){ const b=c.filter(p=>!p.sup); if(b.length) c=b; } if(c.length>1){ const b=c.filter(p=>p.group===ref.group); if(b.length) c=b; } if(c.length===1){ c[0].role=role; c[0].alias=nm; linked.add(c[0]); } }); }));
   const have=new Set(out.filter(p=>p.role!=='pharm').map(p=>normN_(p.alias||p.en||p.ar)));
   const virt=(name,role,p)=>{ const k=normN_(name); if(!k||have.has(k)) return; have.add(k); out.push({emp:'',ar:'',en:name,phone:'',branch:'',group:p.group,role,sup:role==='sup'?'':'',region:p.region,am:role==='sup'?p.am:'',status:'active',join:'',virtual:true}); };
   out.filter(p=>p.role==='pharm').forEach(p=>{ if(p.sup) virt(p.sup,'sup',p); if(p.am) virt(p.am,'am',p); });
