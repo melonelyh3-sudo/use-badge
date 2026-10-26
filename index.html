@@ -202,6 +202,7 @@ button.kpi[aria-pressed="true"] span,button.kpi[aria-pressed="true"] b{color:#ff
 .seg button[aria-pressed="true"][data-v="Y"]{background:var(--navy);color:#fff}
 @media (max-width:820px){#pList section{grid-template-columns:1fr!important}}
 @media (max-width:640px){.topbar{padding:12px 16px}.topbar h1{font-size:18px}.tab{padding:8px 12px}}
+.chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:4px 10px;margin:3px 2px;cursor:pointer;font-size:13px;background:var(--surface)}.chip input{margin:0}.chip.on{background:var(--brand-soft);border-color:var(--brand)}.chip b{font-size:11px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -217,6 +218,17 @@ button.kpi[aria-pressed="true"] span,button.kpi[aria-pressed="true"] b{color:#ff
 <script>
 (function(){
 'use strict';
+const IMPORT_CATS_DEFAULT=[
+ {n:'العناية بالبشرة',k:'بشره, بشرت, حبوب, حب الشباب, تصبغ, كلف, رؤس سوداء, رؤوس سوداء, تجاعيد, واقي, واقي شمس, غسول, مرطب, ترطيب, سيروم, ليزر, نضاره, هالات, bioderma, sebium, photoderm, pigmentbio, cicabio, atoderm, cerave, la roche, laroche, effaclar, anthelios, melamedic, mela b3, vichy, liftactiv, eucerin, avene, svr, cetaphil, topicrem, topicream, babe, uriage, isdin, ducray, avoquin, derma pella, maxon, colladerm, micellar, ميسيلار, spf, sunscreen, sunfluid, serum, cleanser, retinol, niacinamide'},
+ {n:'الشعر',k:'شعر, تساقط, قشره, صلع, حواجب, فروه الراس, priorin, glopriorin, بريورين, mostal, موستال, cystine, سيستين, dercos, ديكروس, biotin, بيوتين, shampoo, شامبو, jozour, جذور'},
+ {n:'الفيتامينات والمكملات',k:'فيتامين, مكمل, مكملات, اوميجا, اوميغا, زنك, ماغنيسيوم, مغنيسيوم, كالسيوم, حديد, جلوفيت, سنتروم, جاميسون, رويال جيلي, نيوروبيون, omega, glovit, jamieson, centrum, vitalife, supra, neurobion, methycobal, prima d3, vitamin, zinc, magnesium, co-q10, coq10, redoxon, royal jelly, dorofen, دوروفين, vita-c'},
+ {n:'النوم',k:'نوم, ارق, سهر, ميلاتونين, melatonin, zzzquil, melfast, ملفاست'},
+ {n:'صحة الرجل',k:'انتصاب, منوي, منويه, تستوستيرون, الهرمون الذكري, سنافي, snafi, نمر رويال, nemr, durex, ديوركس, x-hero, gentaplex, ارجينين, arginine, جنسنج, ginseng, منشط'},
+ {n:'الأم والطفل',k:'طفل, اطفال, ابنه, ابنها, رضيع, حامل, حفاض, حفاضات, baby, kids, junior, omega mind, اوميجا مايند, nyda, قمل'},
+ {n:'الفم والأسنان',k:'اسنان, لثه, فرشه اسنان, معجون, غسول الفم, sensodyn, sensodyne, oral-b, colgate, gengigel, avohex, crest'},
+ {n:'الألم والأدوية بدون وصفة',k:'مسكن, صداع, كدمه, زور, التهاب الحلق, بنادول, panadol, reparil, ريباريل, roxonin, strepsils, ستربسلس, neo healar, نيوهيلار, mebo'},
+ {n:'وصفتي',k:'وصفه, وصفتي, روشته, تامين, wasfaty'}
+];
 document.documentElement.dir='rtl';
 document.documentElement.lang='ar';
 
@@ -224,7 +236,7 @@ const RES_AR={'Met':'متحققة','Not Met':'غير متحققة','N/A':'لا �
 const RES_CLS={'Met':'Met','Not Met':'NotMet','N/A':'NA','Incomplete':'Incomplete'};
 const STATUS={Returned:['معادة للتصحيح','p-no'],Pending:['بانتظار الاعتماد','p-wait'],Approved:['معتمدة','p-ok'],Rejected:['مرفوضة','p-no']};
 const CYCLE=[['25 → 1','الاختيار','EGY Team'],['2','المراجعة الأولية','KSA Team'],['4','الاعتماد','KSA Team'],['4 → 8','التصميم','EGY Team'],['8','المراجعة النهائية','KSA Team'],['10','الإرسال للنشر','KSA Team']];
-const ACT_AR={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار',deleted:'حذف حالة',restored:'استرجاع حالة محذوفة',edited:'تعديل من المعتمد',decision_changed:'تغيير القرار'};
+const ACT_AR={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار',import:'استيراد من الواتساب',inbox_take:'أخذ حالة من صندوق الوارد',inbox_dismiss:'استبعاد من صندوق الوارد',inbox_back:'إرجاع لصندوق الوارد',deleted:'حذف حالة',restored:'استرجاع حالة محذوفة',edited:'تعديل من المعتمد',decision_changed:'تغيير القرار'};
 const FIELD_AR={month:'الشهر',pharmacist:'اسم الصيدلي',branch:'الفرع',supervisor:'المشرف',summary:'ملخص الحالة',startPoint:'نقطة البداية',outcome:'النتيجة',situation:'وصف الموقف',products:'المنتجات',answers:'إجابات الأسئلة',reasons:'أدلة الشارات',invoiceTotal:'صافي الفاتورة',invoiceCount:'عدد القطع',invoiceItems:'أصناف الفاتورة',invoiceNote:'ملاحظة الفاتورة'};
 const STAGE_KEYS=['selected','design','final','sent','published'];
 const STAGE_AR={selected:'مختارة',design:'قيد التصميم',final:'مراجعة نهائية',sent:'أُرسلت للنشر',published:'نُشرت'};
@@ -301,7 +313,7 @@ async function bk(op,body,tries){
 const Store=(()=>{
   let kind=null, db=null, mem=new Map(), snap=null, snapAt=0, snapP=null, batch=null;
   // البيانات الثقيلة (صور منتجات البوستات) لا تُحمَّل مع كل فتح، بل عند الحاجة فقط
-  const HEAVY=['postimgs']; const heavy={}; let heavyOk=true;
+  const HEAVY=['postimgs','inboxd']; const heavy={}; let heavyOk=true;
   const isHeavy=c=>kind==='remote'&&HEAVY.indexOf(c)>=0;
   async function heavyGet(c,ids){
     heavy[c]=heavy[c]||{}; const need=ids.map(String).filter(id=>!(id in heavy[c]));
@@ -652,7 +664,7 @@ const DEFAULT_BADGES=[
 ];
 const DEFAULT_STRENGTH={USE:'كشف الاحتياج الحقيقي',OFFERS:'الاستفادة من العروض',COMPLETE:'تقديم حل متكامل',CROSS:'البيع المتقاطع المناسب',WASFATY:'توظيف وصفتي'};
 const STAGES=['selected','design','final','sent','published'];
-const SET_DEFAULT={bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
+const SET_DEFAULT={importCats:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
 const now_=()=>new Date().toISOString();
 const today_=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const rid=()=>Math.random().toString(36).slice(2,10);
@@ -763,7 +775,7 @@ const STYLE_EXAMPLES=[
   'تم توضيح أهمية استكمال العلاج بروتين يومي مناسب لدعم النتائج وتقليل ظهور الحبوب.',
   'تم شرح طريقة استخدام المنتجات والتأكد من فهم العميلة للروتين، مع الاتفاق على متابعة النتائج.']}
 ];
-function aiPrompt_(text,badges,inv){
+function aiPrompt_(text,badges,inv,invText){
   const ex=STYLE_EXAMPLES.map((e,i)=>'مثال '+(i+1)+':\nstartPoint: '+e.startPoint+'\noutcome: '+e.outcome+'\nsituation:\n- '+e.situation.join('\n- ')).join('\n\n');
   const lines=['أنت تساعد فريق إدارة المواهب في صيدلية المتحدة على تجهيز بوست «أفضل مشاركات الصيادلة» من نص كتبه صيدلي عن حالة حقيقية مع عميل، وعلى تقييم الحالة.',
     'اعتمد فقط على ما ورد صراحةً في نص الصيدلي. لا تخترع أي معلومة أو منتج أو تفصيلة غير مكتوبة.','',
@@ -779,7 +791,9 @@ function aiPrompt_(text,badges,inv){
     'أمثلة من البوستات المنشورة (للأسلوب):',ex,'',
     'ثانيًا — لكل سؤال أدناه أعد: code، وquote (اقتباس حرفي قصير لا يزيد عن 12 كلمة من النص نفسه يدعم إجابتك، أو نص فارغ إن لم يوجد)، وanswer (Y أو N بناءً على الاقتباس، أو unclear إن لم يذكر النص إجابة واضحة).','',
     'نص الصيدلي:',text,''];
-  if(inv) lines.push('مرفق مع الطلب '+(inv==='pdf'?'ملف PDF':'صورة')+' لفاتورة البيع الخاصة بهذه الحالة. اقرأها واستخدمها كالتالي:',
+  if(invText) lines.push('فاتورة/فواتير البيع لهذه الحالة (أصناف مستخرجة آليًا من ملف الفاتورة):',invText,'');
+  if(inv||invText) lines.push((inv?'مرفق مع الطلب '+(inv==='pdf'?'ملف PDF':'صورة')+' لفاتورة البيع الخاصة بهذه الحالة (قد تحتوي الصورة أكثر من فاتورة، مفصولة بخط).':'استخدم أصناف الفاتورة أعلاه')+' كالتالي:',
+    'إذا وُجدت أكثر من فاتورة فاجمع صافي فواتير البيع، واستبعد فاتورة التأمين أو الوصفة المدفوعة من شركة التأمين.',
     'invoiceItems: أسماء الأصناف المباعة كما هي مطبوعة في الفاتورة (مع الكمية إن ظهرت، مثل «… × 2»). تجاهل اسم العميل ورقم جواله وأي بيانات شخصية أو تأمينية ولا تكتبها إطلاقًا. إن تعذّرت قراءة الفاتورة أعد قائمة فارغة.',
     'invoiceNote: جملة أو جملتان عن مدى تطابق الفاتورة مع نص الصيدلي (مثلًا: منتجات ذُكرت في النص وغير موجودة في الفاتورة، أو العكس، أو عرض/خصم ظاهر في الفاتورة). إن كانت مطابقة فاكتب ذلك باختصار. إن كانت غير مقروءة فاذكر ذلك.',
     'invoiceTotal: صافي الفاتورة (المبلغ النهائي المدفوع بعد الخصومات والضريبة) كرقم فقط بدون عملة. إن لم يظهر بوضوح أعد 0.',
@@ -788,7 +802,7 @@ function aiPrompt_(text,badges,inv){
     'الأسئلة: يجوز الاستناد إلى الفاتورة كدليل (مثل بيع منتج مكمّل أو استخدام عرض)، وعندها اجعل quote يبدأ بـ «الفاتورة:» ثم اسم الصنف.','');
   lines.push('الأسئلة:');
   badges.forEach(b=>{ lines.push('# '+b.name); (b.qs||[]).forEach(q=>lines.push(q.c+': '+q.q+' (نعم عندما: '+(q.y||'—')+' | لا عندما: '+(q.n||'—')+')')); });
-  lines.push('','أعد النتيجة ككائن JSON واحد فقط بالمفاتيح startPoint وoutcome وsituation وproducts وsuggestions'+(inv?' وinvoiceItems وinvoiceNote وinvoiceTotal وinvoiceCount':'')+'.');
+  lines.push('','أعد النتيجة ككائن JSON واحد فقط بالمفاتيح startPoint وoutcome وsituation وproducts وsuggestions'+((inv||invText)?' وinvoiceItems وinvoiceNote وinvoiceTotal وinvoiceCount':'')+'.');
   return lines.join('\n');
 }
 // رقم موجب ضمن حد معقول، وإلا فارغ
@@ -807,7 +821,7 @@ function aiApply_(obj,badges,text,inv){
   return {invoiceItems,invoiceNote:inv?String(obj.invoiceNote||'').trim().slice(0,400):'',invoiceTotal:inv?num_(obj.invoiceTotal,0,1000000,2):'',invoiceCount:inv?num_(obj.invoiceCount,0,500,0):'',suggestions:out,startPoint:String(obj.startPoint||'').trim().slice(0,400),outcome:String(obj.outcome||'').trim().slice(0,400),situation:clean_(obj.situation,6,260),products};
 }
 const aiUse={};
-function aiThrottle_(u){ const h=Math.floor(Date.now()/3600000), k=u.id+':'+h; aiUse[k]=(aiUse[k]||0)+1; if(aiUse[k]>20) throw err('تجاوزت الحد المسموح (20 اقتراحًا كل ساعة). حاول لاحقًا.'); }
+function aiThrottle_(u,bulk){ const h=Math.floor(Date.now()/3600000), k=u.id+':'+h, lim=(bulk&&u.role==='admin')?400:20; aiUse[k]=(aiUse[k]||0)+1; if(aiUse[k]>lim) throw err('تجاوزت الحد المسموح ('+lim+' تحليلًا كل ساعة). حاول لاحقًا.'); }
 
 async function audit_(u,caseId,action,note){
   const m=today_().slice(0,7); const doc=(await Store.get('audit',m))||{month:m,items:[]};
@@ -845,6 +859,9 @@ const ACTIONS={
     const ids={}; cases.forEach(c=>{ids[c.id]=1;});
     const decisions={}; allDec.forEach(d=>{ if(ids[d.caseId]) decisions[d.caseId]=decOut_(d); });
     const out={user:{id:u.id,name:u.name,role:u.role},badges:await allBadges_(),cases,decisions,settings:await settings_()};
+    const inb=await Store.list('inbox');
+    out.inbox=inb.filter(x=>x.status==='new'||(admin&&x.status==='taken')||(x.status==='taken'&&x.takenBy===u.id)).map(x=>Object.assign({},x,{key:undefined}));
+    if(admin) out.inboxKeys=inb.map(x=>x.key);
     if(admin){
       const au=[]; (await Store.list('audit')).sort((a,b)=>a.month<b.month?-1:1).forEach(d=>au.push(...(d.items||[])));
       out.audit=au.slice(-150).reverse();
@@ -872,10 +889,12 @@ const ACTIONS={
       reviewerId:old?old.reviewerId:u.id,reviewerName:old?old.reviewerName:u.name,summary:String(p.summary||'').slice(0,5000),
       startPoint:String(p.startPoint||'').slice(0,400),outcome:String(p.outcome||'').slice(0,400),situation:clean_(p.situation,6,400),products:clean_(p.products,8,80),
       invoiceItems:clean_(p.invoiceItems,20,120),invoiceNote:String(p.invoiceNote||'').slice(0,400),invoiceTotal:num_(p.invoiceTotal,0,1000000,2),invoiceCount:num_(p.invoiceCount,0,500,0),
+      source:String(p.source||(old&&old.source)||'').slice(0,200),inboxId:String(p.inboxId||(old&&old.inboxId)||'').slice(0,60),
       answers,reasons,results:r,metCount:metCount_(r),nominated:true,submittedAt:now_(),createdAt:old?old.createdAt:now_(),updatedAt:now_(),example:old?!!old.example:false};
     const miss=issues_(rec,r,badges,await settings_(),null); if(miss.length) throw err(miss[0]);
     await Store.put('cases',id,rec);
     await Store.put('decisions',id,{caseId:id,status:'Pending',approverId:'',approverName:'',approvedAt:'',rejectReason:'',returnReason:'',results:null,metCount:0,updatedAt:now_(),postStage:'',featured:false,featuredNote:''});
+    if(rec.inboxId){ const ib=await Store.get('inbox',rec.inboxId); if(ib&&ib.status!=='done'){ ib.status='done'; ib.caseId=id; await Store.put('inbox',rec.inboxId,ib); } }
     await audit_(u,id,old?'resubmitted':'submitted','');
     return {id,results:r,metCount:rec.metCount,updatedAt:rec.updatedAt,status:'Pending'};
   }),
@@ -889,6 +908,36 @@ const ACTIONS={
     const dec={caseId:c.id,status:approve?'Approved':'Rejected',approverId:u.id,approverName:u.name,approvedAt:approve?today_():'',rejectReason:approve?'':String(p.reason).trim().slice(0,1000),results:r,metCount:metCount_(r),updatedAt:now_(),postStage:'',featured:false,featuredNote:''};
     await Store.put('decisions',c.id,dec); await audit_(u,c.id,approve?'approved':'rejected',approve?'':dec.rejectReason);
     return decOut_(dec);
+  }); },
+  // ---- صندوق الوارد من الواتساب ----
+  inboxAdd:(u,p)=>{ needAdmin_(u); const items=Array.isArray(p.items)?p.items.slice(0,20):[]; if(!items.length) throw err('لا توجد حالات.'); return withLock_(async()=>{
+    let n=0; const S_=(v,m)=>String(v==null?'':v).slice(0,m);
+    for(const it of items){
+      const l=it.light||{}, d=it.detail||{}; const id=S_(l.id,60); if(!/^wa[a-z0-9]{4,40}$/.test(id)) continue;
+      const old=await Store.get('inbox',id); if(old&&old.status!=='new'&&old.status!=='dismissed') continue;
+      const light={id,key:S_(l.key,200),group:S_(l.group,10),date:S_(l.date,10),time:S_(l.time,5),sender:S_(l.sender,80),pharmacist:S_(l.pharmacist,120),pharmNo:S_(l.pharmNo,12),branch:S_(l.branch,10),
+        mention:S_(l.mention,60),cats:clean_(l.cats,12,40),preview:S_(l.preview,160),total:num_(l.total,0,1000000,2),units:num_(l.units,0,500,0),attN:+l.attN||0,attMissing:+l.attMissing||0,dup:+l.dup||0,
+        hasAI:!!l.hasAI,aiErr:S_(l.aiErr,200),status:'new',createdAt:now_(),createdBy:u.name,takenBy:'',takenByName:''};
+      const detail={id,text:S_(d.text,8000),invoices:(Array.isArray(d.invoices)?d.invoices:[]).slice(0,6).map(v=>({branch:S_(v.branch,10),invoice:S_(v.invoice,30),date:S_(v.date,30),pharmacist:S_(v.pharmacist,120),pharmNo:S_(v.pharmNo,12),
+          total:num_(v.total,0,1000000,2),units:num_(v.units,0,500,0),discount:num_(v.discount,0,1000000,2),items:(Array.isArray(v.items)?v.items:[]).slice(0,40).map(i=>({name:S_(i.name,120),qty:+i.qty||1,disc:+i.disc||0,net:+i.net||0}))})),
+        atts:(Array.isArray(d.atts)?d.atts:[]).slice(0,12).map(a=>({name:S_(a.name,120),kind:S_(a.kind,10),missing:!!a.missing,parsed:!!a.parsed})),ai:d.ai&&typeof d.ai==='object'?JSON.parse(JSON.stringify(d.ai).slice(0,30000)):null};
+      await Store.put('inbox',id,light); await Store.put('inboxd',id,detail); n++;
+    }
+    await audit_(u,'','import','استيراد من الواتساب: '+n+' حالة إلى صندوق الوارد');
+    return {added:n};
+  }); },
+  inboxTake:(u,p)=>withLock_(async()=>{
+    const id=String(p.id||''); const x=await Store.get('inbox',id); if(!x) throw err('الحالة غير موجودة في صندوق الوارد.');
+    if(x.status==='taken'&&x.takenBy!==u.id) throw err('أخذ هذه الحالة '+(x.takenByName||'مقيّم آخر')+'.');
+    if(x.status==='done'||x.status==='dismissed') throw err('هذه الحالة لم تعد في صندوق الوارد.');
+    x.status='taken'; x.takenBy=u.id; x.takenByName=u.name; x.takenAt=now_(); await Store.put('inbox',id,x);
+    const detail=await Store.get('inboxd',id); await audit_(u,'','inbox_take',x.group+' '+x.date+' '+x.time+' · '+x.sender);
+    return {item:Object.assign({},x,{key:undefined}),detail};
+  }),
+  inboxSet:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+    const id=String(p.id||''); const x=await Store.get('inbox',id); if(!x) throw err('الحالة غير موجودة.');
+    const st=p.status==='dismissed'?'dismissed':'new'; x.status=st; x.takenBy=''; x.takenByName=''; await Store.put('inbox',id,x);
+    await audit_(u,'',st==='dismissed'?'inbox_dismiss':'inbox_back',x.group+' '+x.date+' '+x.time+' · '+x.sender); return {ok:true};
   }); },
   // تعديل المعتمد لحالة مُرسلة (أي وضع): تُحفظ التعديلات ويُسجَّل من عدّل ومتى وما الحقول التي تغيّرت.
   adminEditCase:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
@@ -999,11 +1048,13 @@ const ACTIONS={
     ['sep','reqQuote','reqBadge','aiOn'].forEach(k=>{ if(k in p) s[k]=!!p[k]; });
     if('brandPrimary' in p){ if(!isHex_(p.brandPrimary)) throw err('لون غير صالح.'); s.brandPrimary=p.brandPrimary; }
     if('brandAccent' in p){ if(!isHex_(p.brandAccent)) throw err('لون غير صالح.'); s.brandAccent=p.brandAccent; }
+    if('importCats' in p&&p.importCats!=null){ const L=Array.isArray(p.importCats)?p.importCats:null; if(!L||L.length>30) throw err('قائمة التصنيفات غير صالحة.');
+      s.importCats=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
     if('bestCount' in p){ const n=parseInt(p.bestCount,10); if(!(n>=1&&n<=20)) throw err('عدد أفضل المشاركات بين 1 و20.'); s.bestCount=n; }
     if('brandLogo' in p){ const lg=String(p.brandLogo||''); if(lg&&(lg.indexOf('data:image/')!==0||lg.length>60000)) throw err('صورة الشعار غير صالحة أو كبيرة جدًا.'); s.brandLogo=lg; }
     delete s.aiEnabled; delete s.aiSource;
     await Store.put('settings','main',s);
-    await audit_(u,'','settings',JSON.stringify(Object.assign({},p,{aiEnabled:undefined,aiSource:undefined,brandLogo:('brandLogo' in p)?(p.brandLogo?'(صورة)':'(إزالة)'):undefined})));
+    await audit_(u,'','settings',JSON.stringify(Object.assign({},p,{importCats:('importCats' in p)?'(تصنيفات الاستيراد: '+(s.importCats||[]).length+')':undefined,aiEnabled:undefined,aiSource:undefined,brandLogo:('brandLogo' in p)?(p.brandLogo?'(صورة)':'(إزالة)'):undefined})));
     return settings_();
   }); },
   addUser:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
@@ -1047,8 +1098,10 @@ const ACTIONS={
   },
   aiSuggest: async(u,p)=>{
     const set=await settings_(); if(!set.aiEnabled) throw err('الذكاء الاصطناعي غير مفعّل.');
-    aiThrottle_(u);
-    const text=String(p.text||'').trim();
+    aiThrottle_(u,!!p.bulk);
+    const invText=String(p.invoiceText||'').trim().slice(0,5000);
+    let text=String(p.text||'').trim();
+    if(!text&&(invText||p.file)) text='(لم يكتب الصيدلي نصًا مع هذه الحالة؛ المتاح هو الفاتورة فقط. لا تفترض حوارًا لم يُذكر.)';
     if(!text) throw err('لا يوجد نص لتحليله.');
     if(text.length>8000) throw err('النص طويل جدًا (الحد 8000 حرف). اختصره ثم أعد المحاولة.');
     const all=await activeBadges_(); const badges=(p.badgeKeys&&p.badgeKeys.length)?all.filter(b=>p.badgeKeys.indexOf(b.key)>=0):all;
@@ -1062,7 +1115,8 @@ const ACTIONS={
     }
     // علامات " و \ في نص الصيدلي قد تكسر صيغة JSON عند اقتباسها، فتُستبدل في النص المُرسل فقط (النص الأصلي في الحالة لا يتغير).
     const safeText=text.replace(/"/g,'”').replace(/\\/g,'/');
-    const result=aiApply_(await AI.analyze(aiPrompt_(safeText,badges,file&&file.kind),aiSchema_(!!file),file),badges,text,!!file);
+    const hasInv=!!file||!!invText;
+    const result=aiApply_(await AI.analyze(aiPrompt_(safeText,badges,file&&file.kind,invText),aiSchema_(hasInv),file),badges,text+'\n'+invText,hasInv);
     await audit_(u,p.caseId||'','ai_suggest','اقتراحات AI: '+result.suggestions.length+' إجابة'+(file?' (مع قراءة الفاتورة)':''));
     return result;
   },
@@ -1116,7 +1170,7 @@ function errText(c){
 async function load(){
   const d=await call('bootstrap');
   S.me={id:d.user.id,name:d.user.name,role:d.user.role,canEdit:d.user.role==='admin',canWrite:true};
-  S.badges=d.badges||[]; S.cases=new Map((d.cases||[]).map(c=>[c.id,c])); S.dec=new Map(Object.entries(d.decisions||{})); S.deleted=d.deleted||[];
+  S.badges=d.badges||[]; S.cases=new Map((d.cases||[]).map(c=>[c.id,c])); S.dec=new Map(Object.entries(d.decisions||{})); S.deleted=d.deleted||[]; S.inbox=d.inbox||[]; S.inboxKeys=d.inboxKeys||[];
   S.settings=Object.assign({sep:true,reqQuote:true,reqBadge:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'},d.settings||{}); applyBrand(); S.audit=d.audit||[]; S.users=d.users||[];
 }
 async function reload(){ await load(); onData(); }
@@ -1194,9 +1248,357 @@ function issuesFor(id,c,forApproval){
   return out;
 }
 
+/* ===== WhatsApp import core (no UI) ===== */
+const WA=(()=>{
+  const LIB={jszip:'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+             pdf:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+             pdfw:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'};
+  const loaded={};
+  function loadScript(src){ if(loaded[src]) return loaded[src]; loaded[src]=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=()=>res(); s.onerror=()=>{ delete loaded[src]; rej(new Error('تعذر تحميل مكتبة لازمة للاستيراد. تحقق من الإنترنت.')); }; document.head.appendChild(s); }); return loaded[src]; }
+  async function libs(){ await loadScript(LIB.jszip); await loadScript(LIB.pdf); if(window.pdfjsLib&&!pdfjsLib.GlobalWorkerOptions.workerSrc) pdfjsLib.GlobalWorkerOptions.workerSrc=LIB.pdfw; }
+
+  /* ---------- chat text ---------- */
+  const AR_DIG='٠١٢٣٤٥٦٧٨٩', FA_DIG='۰۱۲۳۴۵۶۷۸۹';
+  const toLatin=s=>s.replace(/[٠-٩]/g,d=>AR_DIG.indexOf(d)).replace(/[۰-۹]/g,d=>FA_DIG.indexOf(d));
+  const INV=/[‎‏‪-‮⁦-⁩⁨⁩﻿]/g;
+  const RX_IOS=/^\[(\d{1,4})[\/.\-](\d{1,2})[\/.\-](\d{1,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?[Mm]\.?|ص|م)?\]\s(.+?):\s?([\s\S]*)$/;
+  const RX_AND=/^(\d{1,4})[\/.\-](\d{1,2})[\/.\-](\d{1,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?[Mm]\.?|ص|م)?\s[-–]\s(.+?):\s([\s\S]*)$/;
+  const RX_AND_SYS=/^(\d{1,4})[\/.\-](\d{1,2})[\/.\-](\d{1,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?[Mm]\.?|ص|م)?\s[-–]\s/;
+  function parseChat(txt){
+    const lines=txt.replace(/\r/g,'').split('\n'); const raw=[]; let cur=null;
+    for(let line of lines){
+      const L=toLatin(line.replace(INV,'')).replace(/،/g,',');
+      let m=L.match(RX_IOS)||L.match(RX_AND);
+      // الأرقام العربية تُحوَّل للمطابقة فقط؛ نص الرسالة يبقى كما هو (أسماء الملفات قد تحتوي أرقامًا عربية)
+      if(m){ const orig=line.replace(INV,''); cur={a:+m[1],b:+m[2],y:+m[3],h:+m[4],mi:+m[5],s:+(m[6]||0),ap:m[7]||'',sender:orig.slice(L.length-m[9].length-m[8].length-2,L.length-m[9].length-2).trim()||m[8].trim(),body:orig.slice(L.length-m[9].length)}; raw.push(cur); continue; }
+      if(RX_AND_SYS.test(L)){ cur={sys:true,body:L}; raw.push(cur); continue; }
+      if(cur) cur.body+='\n'+line.replace(INV,'');
+    }
+    // dd/mm or mm/dd?
+    let dm=true; for(const r of raw){ if(r.sys) continue; if(r.a>12&&r.a<=31){dm=true;break;} if(r.b>12&&r.b<=31){dm=false;break;} }
+    const out=[];
+    for(const r of raw){ if(r.sys) continue;
+      let day=dm?r.a:r.b, mon=dm?r.b:r.a, yr=r.y<100?2000+r.y:r.y; if(r.a>31){ yr=r.a; mon=r.b; day=r.y; }
+      let h=r.h; const ap=r.ap.toLowerCase().replace(/\./g,''); if(ap==='pm'||ap==='م'){ if(h<12) h+=12; } else if((ap==='am'||ap==='ص')&&h===12) h=0;
+      const t=new Date(yr,mon-1,day,h,r.mi,r.s);
+      out.push({t, sender:r.sender.replace(/^~\s*/,'').replace(/\s+/g,' ').trim(), body:r.body});
+    }
+    return out;
+  }
+  const isSystem=b=>/joined using|created group|created this group|added|left$|removed|changed the (subject|group)|This message was deleted|تم حذف هذه الرسالة|انضم|غادر|أضاف|Messages and calls are end-to-end/i.test(b)&&b.length<160;
+  function attachmentsOf(body){
+    const atts=[]; let text=body;
+    text=text.replace(/<attached:\s*([^>]+)>/g,(m,f)=>{ atts.push({name:f.trim(),omitted:false}); return ' '; });
+    text=text.replace(/^(.+?\.(?:pdf|jpe?g|png|webp|heic|opus|mp4|docx?|xlsx?))\s*\((?:file attached|ملف مرفق)\)/gim,(m,f)=>{ atts.push({name:f.trim(),omitted:false}); return ' '; });
+    text=text.replace(/^(.+?)\s*•\s*\d+\s*(?:pages?|صفحات|صفحة)?\s*document omitted/gim,(m,f)=>{ atts.push({name:f.trim(),omitted:true}); return ' '; });
+    text=text.replace(/\b(image|video|audio|GIF|sticker|document) omitted\b/gi,(m,k)=>{ if(!/sticker/i.test(k)) atts.push({name:'('+k+')',omitted:true}); return ' '; });
+    text=text.replace(/<Media omitted>|<الوسائط غير مضمنة>|‏?<تم استبعاد الوسائط>/g,()=>{ atts.push({name:'(وسائط)',omitted:true}); return ' '; });
+    // iOS document caption: "file.pdf • 2 pages"
+    text=text.replace(/^\s*[^\n]{1,120}?\.(?:pdf|jpe?g|png)\s*•\s*\d+\s*(?:pages?|صفحات|صفحة)\s*/gim,' ');
+    text=text.replace(/<This message was edited>|<تم تعديل هذه الرسالة>/g,' ');
+    const kind=n=>/\.pdf$/i.test(n)?'pdf':/\.(jpe?g|png|webp|heic)$/i.test(n)?'image':/sticker|\.webp$/i.test(n)?'sticker':'other';
+    return {text:text.replace(/[ \t]+\n/g,'\n').trim(), atts:atts.map(a=>Object.assign(a,{kind:/sticker/i.test(a.name)?'sticker':kind(a.name)})).filter(a=>a.kind!=='sticker'&&a.kind!=='other'||a.omitted&&!/sticker/i.test(a.name))};
+  }
+  const MENTION=/@\s*~?\s*([^@\n]{2,40}?)(?=\s*(?:$|\n|@|[,.،🙏]))/u;
+  function stripMentions(t){ return t.replace(/@\s*~?[^\s@][^@\n]{0,38}?(?=\s*(?:$|\n|@))/gu,' ').replace(/@\d{6,}/g,' ').trim(); }
+  function mentionOf(t){ const m=t.replace(INV,'').match(/@\s*~?\s*([A-Za-z؀-ۿ][^@\n]{1,38}?)\s*(?:$|\n|@|🙏)/u); return m?m[1].trim():''; }
+
+  /* ---------- segmentation ---------- */
+  function segment(msgs){
+    const cases=[]; const last={}; // sender -> open case
+    const WINDOW=3*60*1000, SAME=5*1000, MIN=50;
+    for(const m of msgs){
+      if(isSystem(m.body)) continue;
+      const {text,atts}=attachmentsOf(m.body);
+      const plain=stripMentions(text); const men=mentionOf(text);
+      const letters=(plain.match(/[\p{L}\p{N}]/gu)||[]).length;
+      const hasAtt=atts.length>0, longText=letters>=MIN;
+      let c=last[m.sender]; const gap=c?(m.t-c.lastT):Infinity;
+      if(!hasAtt&&!longText){ // short: mention-only joins open case, others are chatter/replies
+        if(c&&gap<=WINDOW&&men&&plain.length<25){ c.mention=c.mention||men; c.lastT=m.t; }
+        continue;
+      }
+      let join=false;
+      if(c&&gap<=WINDOW){
+        if(longText&&!c.text) join=true;                       // file first, then the text
+        else if(hasAtt&&!longText&&(!c.text||gap<=SAME)) join=true;   // more files, or a file sent with the text
+        else if(hasAtt&&!longText&&c.text&&!c.atts.length) join=true; // text first, then the file
+      }
+      if(!join){ c={sender:m.sender,t:m.t,lastT:m.t,text:'',mention:'',atts:[]}; cases.push(c); last[m.sender]=c; }
+      if(longText) c.text=(c.text?c.text+'\n':'')+text.replace(/@\s*~?\s*/g,'@').trim();
+      if(men&&!c.mention) c.mention=men;
+      atts.forEach(a=>c.atts.push(a)); c.lastT=m.t;
+    }
+    // duplicates: same sender + same text within 10 minutes → merge (keep first)
+    const out=[];
+    for(const c of cases){
+      const n=stripMentions(c.text).replace(/\s+/g,' ').slice(0,300);
+      const d=n.length>=40&&out.find(x=>x.sender===c.sender&&Math.abs(x.t-c.t)<=10*60*1000&&stripMentions(x.text).replace(/\s+/g,' ').slice(0,300)===n);
+      if(d){ d.dupCount=(d.dupCount||1)+1; continue; }
+      out.push(c);
+    }
+    return out;
+  }
+
+  /* ---------- PDF invoices ---------- */
+  async function pdfLines(data){
+    const doc=await pdfjsLib.getDocument({data, isEvalSupported:false}).promise; const lines=[];
+    for(let p=1;p<=Math.min(doc.numPages,4);p++){
+      const pg=await doc.getPage(p); const tc=await pg.getTextContent(); const rows=[];
+      tc.items.forEach(it=>{ if(!it.str||!it.str.trim()) return; const y=it.transform[5], x=it.transform[4]; let r=rows.find(r=>Math.abs(r.y-y)<2.5); if(!r){ r={y,parts:[]}; rows.push(r); } r.parts.push({x,s:it.str}); });
+      rows.sort((a,b)=>b.y-a.y).forEach(r=>{ const s=r.parts.sort((a,b)=>a.x-b.x).map(p=>p.s).join(' ').replace(INV,'').replace(/\s+/g,' ').trim(); if(s) lines.push(s); });
+    }
+    return {doc, lines};
+  }
+  const NUM='-?\\d+(?:\\.\\d+)?';
+  function parseInvoice(L){
+    if(!L.some(l=>/Invoice No/.test(l))) return null;
+    const o={branch:'',invoice:'',date:'',pharmacist:'',pharmNo:'',items:[],total:null};
+    L.forEach((l,i)=>{
+      let m;
+      if(!o.branch&&(m=l.match(/United [Pp]harmacy\s*(\d+)/))) o.branch=m[1];
+      if(!o.invoice&&(m=l.match(/Invoice No\.?\s*:?\s*(\d{10,})/))) o.invoice=m[1];
+      if(!o.date&&(m=l.match(/Date\s*:?\s*(\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}\s*[AP]M)/))) o.date=m[1];
+      if(!o.pharmNo&&(m=l.match(/Pharmacist No\s*:?\s*(\d+)/))) o.pharmNo=m[1];
+      if(!o.pharmacist&&/Pharmacist\s*:/.test(l)&&!/Pharmacist No/.test(l)){
+        let nm=l.split(/Pharmacist\s*:/)[1].split(':')[0].replace(/إسم الصيدلي|ﺇﺳﻢ ﺍﻟﺼﻴﺪﻟﻲ/g,'').trim();
+        if(!nm){ const ex=[]; if(i>0&&/[A-Za-z]/.test(L[i-1])&&!/Date|Invoice/.test(L[i-1])) ex.push(L[i-1]); if(L[i+1]&&/[A-Za-z]/.test(L[i+1])&&!/Pharmacist No/.test(L[i+1])) ex.push(L[i+1]); nm=ex.join(' '); }
+        o.pharmacist=nm;
+      }
+      if(o.total==null&&/^Total Amount/.test(l)){ for(let k=i;k<Math.min(i+6,L.length);k++){ const mm=L[k].match(new RegExp('(?:^|:\\s*)('+NUM+')\\s*$')); if(mm&&k>i||mm&&/\d\s*$/.test(l)&&k===i){ o.total=parseFloat(mm[1]); break; } } }
+    });
+    // items: blocks between header and totals, closed by "Gross Discount VAT Net Total" + numbers line
+    const st=L.findIndex(l=>/^Product\b/.test(l)); let blk=[];
+    for(let i=st<0?0:st+1;i<L.length;i++){
+      const l=L[i]; if(/^Amount Before|^Total Amount|^Total Discount/.test(l)) break;
+      if(/Gross\s+Discount\s+VAT/.test(l)){
+        const nums=(L[i+1]||'').split(' ').filter(x=>/^-?\d+(\.\d+)?%?$/.test(x));
+        let name=[], qty=null;
+        blk.forEach(b=>{ if(!/[A-Za-z]/.test(b)||/^[A-Z]{2}\d{3,5}$/.test(b)||b==='EA'||/^ﺍﻟﺼﻨﻒ|^الصنف/.test(b)) return;
+          let b2=b.replace(/\bEA\b/g,'').replace(/[؀-ۿﭐ-﻿].*$/,'').trim(); if(!b2) return;
+          const m=b2.match(/^(.*?)\s+(\d+)$/); if(m&&qty==null&&m[1].length>2){ name.push(m[1]); qty=+m[2]; } else name.push(b2.replace(new RegExp('\\s+'+NUM+'$'),'')); });
+        const nm=name.join(' ').replace(/\s+(?:\d{5,6}|[0-9A-Z]{6})$/,'').replace(/\s+/g,' ').trim();
+        const v=nums.filter(x=>!/%$/.test(x)); // gross, disc, vat, net
+        if(nm) o.items.push({name:nm, qty:qty||1, disc:+(v[1]||0), net:+(v[v.length-1]||0)});
+        blk=[]; i++; continue;
+      }
+      blk.push(l);
+    }
+    const sum=Math.round(o.items.reduce((a,x)=>a+x.net,0)*100)/100;
+    if(o.total==null) o.total=sum;
+    o.units=o.items.reduce((a,x)=>a+x.qty,0); o.discount=Math.round(o.items.reduce((a,x)=>a+x.disc,0)*100)/100; o.itemsSum=sum;
+    return o;
+  }
+  async function renderPdfPages(doc,maxPages,width){
+    const out=[]; for(let p=1;p<=Math.min(doc.numPages,maxPages);p++){ const pg=await doc.getPage(p); const v0=pg.getViewport({scale:1}); const v=pg.getViewport({scale:width/v0.width}); const c=document.createElement('canvas'); c.width=Math.round(v.width); c.height=Math.round(v.height); const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); await pg.render({canvasContext:g,viewport:v}).promise; out.push(c); } return out;
+  }
+
+  /* ---------- categories ---------- */
+  const normA=s=>String(s||'').toLowerCase().replace(/[ً-ْـ]/g,'').replace(/[إأآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/\s+/g,' ');
+  function categorize(text,items,cats){
+    const hay=' '+normA(text+' '+(items||[]).map(i=>i.name).join(' '))+' ';
+    const words=' '+hay.replace(/[^\p{L}\p{N}\s\-+]/gu,' ').replace(/\s+/g,' ')+' ';
+    return cats.filter(c=>String(c.k||'').split(/[,،\n]/).map(x=>normA(x).trim()).filter(x=>x.length>=2).some(k=>k.length<=3?words.includes(' '+k+' '):hay.includes(k))).map(c=>c.n);
+  }
+
+  /* ---------- load ZIP files ---------- */
+  async function readZip(file, onProgress){
+    await libs();
+    const zip=await JSZip.loadAsync(file);
+    const names=Object.keys(zip.files);
+    const chatName=names.find(n=>/(^|\/)_chat\.txt$/i.test(n))||names.find(n=>/\.txt$/i.test(n));
+    if(!chatName) throw new Error('الملف '+file.name+' لا يحتوي على نص المحادثة (_chat.txt). صدّر الدردشة من واتساب كما هي.');
+    const msgs=parseChat(await zip.file(chatName).async('string'));
+    const byBase={}; names.forEach(n=>{ byBase[n.split('/').pop()]=n; });
+    return {file, zip, msgs, byBase, group:(file.name.match(/\bD\s?(\d)\b/i)||[])[1]?('D'+(file.name.match(/\bD\s?(\d)\b/i)[1])):''};
+  }
+  async function buildCases(src, from, to, cats, onProgress){
+    const msgs=src.msgs.filter(m=>(!from||m.t>=from)&&(!to||m.t<=to));
+    const cs=segment(msgs); let i=0;
+    for(const c of cs){
+      c.group=src.group; c.invoices=[]; c.aiFiles=[];
+      for(const a of c.atts){
+        const entry=!a.omitted&&src.byBase[a.name]; a.entry=entry||''; if(a.omitted||!entry){ a.missing=true; continue; }
+        if(a.kind==='pdf'){
+          try{ const data=await src.zip.file(entry).async('uint8array'); const {lines}=await pdfLines(data.slice());
+            const inv=parseInvoice(lines); if(inv&&inv.items.length){ inv.file=a.name; c.invoices.push(inv); a.parsed=true; } else c.aiFiles.push(a);
+          }catch(e){ c.aiFiles.push(a); }
+        } else if(a.kind==='image') c.aiFiles.push(a);
+      }
+      const items=[].concat(...c.invoices.map(v=>v.items));
+      c.cats=categorize(c.text, items, cats);
+      c.total=c.invoices.length?Math.round(c.invoices.reduce((s,v)=>s+v.total,0)*100)/100:null;
+      c.units=c.invoices.reduce((s,v)=>s+v.units,0)||null;
+      c.key=[c.group,c.t.toISOString().slice(0,16),normA(c.sender)].join('|');
+      if(onProgress) onProgress(++i, cs.length);
+    }
+    return cs;
+  }
+  // one JPEG for the AI made of all non-text invoice images / scanned PDF pages
+  async function aiImage(src, c){
+    const canv=[];
+    for(const a of c.aiFiles.slice(0,4)){
+      const data=await src.zip.file(a.entry).async('uint8array');
+      if(a.kind==='pdf'){ try{ const doc=await pdfjsLib.getDocument({data:data.slice(),isEvalSupported:false}).promise; (await renderPdfPages(doc,2,900)).forEach(x=>canv.push(x)); }catch(e){} }
+      else { const url=URL.createObjectURL(new Blob([data])); try{ const im=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; }); const k=Math.min(1,900/im.width); const cv=document.createElement('canvas'); cv.width=Math.round(im.width*k); cv.height=Math.round(im.height*k); const g=cv.getContext('2d'); g.drawImage(im,0,0,cv.width,cv.height); canv.push(cv); }catch(e){} finally{ URL.revokeObjectURL(url); } }
+    }
+    if(!canv.length) return null;
+    const W=900, H=Math.min(7000,canv.reduce((s,x)=>s+Math.round(x.height*W/x.width)+12,0));
+    const out=document.createElement('canvas'); out.width=W; out.height=H; const g=out.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,W,H);
+    let y=0; for(const x of canv){ const h=Math.round(x.height*W/x.width); if(y>=H) break; g.drawImage(x,0,y,W,h); y+=h+12; g.fillStyle='#999'; g.fillRect(0,y-7,W,2); }
+    return {mediaType:'image/jpeg', data:out.toDataURL('image/jpeg',0.8).split(',')[1]};
+  }
+  function invoiceText(c){
+    return c.invoices.map((v,i)=>'فاتورة '+(i+1)+' (فرع '+(v.branch||'—')+'):\n'+v.items.map(x=>'- '+x.name+' × '+x.qty+' | الصافي '+x.net+(x.disc?' | خصم '+x.disc:'')).join('\n')+'\nصافي الفاتورة: '+v.total).join('\n\n');
+  }
+  return {libs, readZip, buildCases, aiImage, invoiceText, parseChat, segment, parseInvoice, pdfLines, categorize, normA};
+})();
+
+/* ===== WhatsApp import UI + inbox ===== */
+const IMP_GROUPS=['D1','D2','D3','D4'];
+function impState(){ if(!S.imp) S.imp={srcs:[],cases:[],sel:new Set(),f:{cats:new Set(),groups:new Set(),inv:false,hideOld:true},busy:false,stop:false,log:[],msg:''}; return S.imp; }
+const fixName_=s=>{ s=String(s||'').normalize('NFKC').replace(/\s+/g,' ').trim(); if(/^(?:[؀-ۿ]\s)+[؀-ۿ]$/.test(s)) s=s.split(' ').reverse().join(''); return s; };
+const cleanSender_=s=>String(s||'').replace(/[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}☀-➿]/gu,'').trim();
+function hashId_(s){ let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return 'wa'+h.toString(36)+s.length.toString(36); }
+const ymd_=t=>t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+const hm_=t=>String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
+function impCats(){ return (S.settings.importCats&&S.settings.importCats.length)?S.settings.importCats:IMPORT_CATS_DEFAULT; }
+
+function mountImport(){
+  impState();
+  $('#main').innerHTML=
+  '<section class="panel sec"><h3>1) ملفات تصدير المجموعات</h3>'+
+  '<p class="note" style="margin:0 0 10px">صدّر كل مجموعة من واتساب مع الوسائط (ZIP)، ثم اختر الملفات كلها معًا. تتم القراءة على جهازك ولا يُرفع الملف للخادم. التصدير من Android أدق، لأن iPhone لا يحفظ النص المكتوب مع ملف الـ PDF.</p>'+
+  '<div class="actions"><label class="btn primary">📁 اختيار ملفات ZIP<input type="file" id="impFiles" accept=".zip,application/zip" multiple hidden></label><span class="note" id="impLoadMsg"></span></div>'+
+  '<div id="impSrcs" style="margin-top:10px"></div></section>'+
+  '<section class="panel sec" id="impStep2" hidden><h3>2) الفلترة والاختيار</h3><div id="impFilters"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="impSelAllBox" aria-label="تحديد الكل"></th><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>نص الحالة</th><th>المرفقات</th><th>الفاتورة</th><th>الحالة</th></tr></thead><tbody id="impRows"></tbody></table></div></section>'+
+  '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><button class="btn primary" id="btnImpRun"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><div id="impLog" style="margin-top:10px"></div></section>';
+  updateImport();
+}
+function impFiltered(){
+  const I=impState(), oldKeys=new Set((S.inboxKeys||[]));
+  return I.cases.filter(c=>(!I.f.groups.size||I.f.groups.has(c.group))&&(!I.f.cats.size||c.cats.some(x=>I.f.cats.has(x))||(I.f.cats.has('__none')&&!c.cats.length))&&(!I.f.inv||c.invoices.length||c.aiFiles.length)&&(!I.f.hideOld||!oldKeys.has(c.key)));
+}
+function updateImport(){
+  const I=impState(); if(!$('#impSrcs')) return;
+  const lm=$('#impLoadMsg'); if(lm) lm.textContent=I.msg||'';
+  $('#impSrcs').innerHTML=I.srcs.length?'<div class="tw"><table><thead><tr><th>الملف</th><th>المجموعة</th><th>الرسائل</th><th>الفترة في الملف</th><th></th></tr></thead><tbody>'+I.srcs.map((s,i)=>{ const a=s.msgs[0], b=s.msgs[s.msgs.length-1];
+      return '<tr><td>'+esc(s.file.name)+'</td><td><select data-impgsel="'+i+'">'+IMP_GROUPS.concat(['أخرى']).map(g=>'<option'+(s.group===g?' selected':'')+'>'+g+'</option>').join('')+'</select></td><td class="num">'+s.msgs.length+'</td><td class="mono">'+(a?ymd_(a.t)+' → '+ymd_(b.t):'—')+'</td><td><button class="btn" data-impdel="'+i+'">إزالة</button></td></tr>'; }).join('')+'</tbody></table></div>'+
+    '<div class="grid" style="margin-top:10px;max-width:640px"><label class="f">من تاريخ<input type="date" id="impFrom" value="'+esc(I.from||'')+'"></label><label class="f">إلى تاريخ<input type="date" id="impTo" value="'+esc(I.to||'')+'"></label></div>'+
+    '<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnImpExtract"'+(I.busy?' disabled':'')+'>استخراج الحالات</button><span class="note" id="impExtractMsg">'+esc(I.extractMsg||'')+'</span></div>':'';
+  const s2=$('#impStep2'), s3=$('#impStep3'); s2.hidden=s3.hidden=!I.cases.length; if(!I.cases.length) return;
+  const cats=impCats(), cnt={}; let none=0; I.cases.forEach(c=>{ c.cats.forEach(x=>{cnt[x]=(cnt[x]||0)+1;}); if(!c.cats.length) none++; });
+  const gcnt={}; I.cases.forEach(c=>{ gcnt[c.group]=(gcnt[c.group]||0)+1; });
+  const chip=(attr,val,label,n,on)=>'<label class="chip'+(on?' on':'')+'"><input type="checkbox" '+attr+'="'+esc(val)+'"'+(on?' checked':'')+'>'+esc(label)+' <b>'+n+'</b></label>';
+  $('#impFilters').innerHTML='<div><b style="font-size:13px">التصنيف:</b> '+cats.map(c=>chip('data-impcat',c.n,c.n,cnt[c.n]||0,I.f.cats.has(c.n))).join('')+chip('data-impcat','__none','غير مصنّف',none,I.f.cats.has('__none'))+'<span class="note"> (بدون اختيار = الكل)</span></div>'+
+    '<div style="margin-top:6px"><b style="font-size:13px">المجموعة:</b> '+Object.keys(gcnt).sort().map(g=>chip('data-impgrp',g,g,gcnt[g],I.f.groups.has(g))).join('')+
+    ' <label class="chip"><input type="checkbox" id="impInvOnly"'+(I.f.inv?' checked':'')+'>بفاتورة فقط</label><label class="chip"><input type="checkbox" id="impHideOld"'+(I.f.hideOld?' checked':'')+'>إخفاء المستوردة سابقًا</label></div>';
+  const rows=impFiltered(); const oldKeys=new Set(S.inboxKeys||[]);
+  $('#impRows').innerHTML=rows.length?rows.map(c=>{ const nm=c.invoices[0]&&fixName_(c.invoices[0].pharmacist);
+    const att=c.atts.map(a=>a.missing?'<span class="pill p-no" title="'+esc(a.name)+'">✖ ناقص</span>':a.parsed?'<span class="pill p-ok" title="'+esc(a.name)+'">✔ فاتورة</span>':'<span class="pill p-wait" title="'+esc(a.name)+'">🖼 '+(a.kind==='pdf'?'PDF ممسوح':'صورة')+'</span>').join(' ')||'—';
+    const st=I.done&&I.done[c.key]?'<span class="pill p-ok">أُضيفت</span>':oldKeys.has(c.key)?'<span class="pill p-na">مستوردة سابقًا</span>':'<span class="pill p-na">جديدة</span>';
+    return '<tr><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+(nm?'<div class="note" style="margin:0">'+esc(nm)+(c.invoices[0].branch?' · فرع '+esc(c.invoices[0].branch):'')+'</div>':'')+'</td><td>'+esc(c.mention||'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+'</td><td style="max-width:340px;font-size:12.5px" title="'+esc(c.text)+'">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+att+'</td><td class="num">'+(c.total!=null?c.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="10"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
+  const sab=$('#impSelAllBox'); if(sab){ sab.checked=rows.length>0&&rows.every(c=>I.sel.has(c.key)); }
+  const n=[...I.sel].filter(k=>I.cases.some(c=>c.key===k)).length;
+  const rb=$('#btnImpRun'); rb.textContent=I.busy?'جارٍ التحليل…':'حلّل المختار وأضفه لصندوق الوارد ('+n+')'; rb.disabled=I.busy||!n;
+  $('#btnImpStop').hidden=!I.busy;
+  $('#impLog').innerHTML=I.log.length?'<div class="note" style="margin:0 0 6px">'+esc(I.progress||'')+'</div><ul class="issues" style="max-height:220px;overflow:auto">'+I.log.slice(-40).map(l=>'<li style="color:'+(l.bad?'var(--bad)':'inherit')+'">'+esc(l.t)+'</li>').join('')+'</ul>':'';
+}
+async function impLoadFiles(files){
+  const I=impState(); I.busy=true; I.msg='جارٍ قراءة الملفات…'; updateImport();
+  try{
+    for(const f of files){
+      if(I.srcs.some(s=>s.file.name===f.name&&s.file.size===f.size)) continue;
+      I.msg='جارٍ قراءة '+f.name+'…'; updateImport();
+      const src=await WA.readZip(f); if(!src.group) src.group='أخرى'; I.srcs.push(src);
+    }
+    const all=[].concat(...I.srcs.map(s=>s.msgs)); if(all.length){ const last=all.reduce((a,m)=>m.t>a?m.t:a,all[0].t); const first=new Date(last.getFullYear(),last.getMonth(),1); if(!I.from) I.from=ymd_(first); if(!I.to) I.to=ymd_(last); }
+    I.msg='تمت قراءة '+I.srcs.length+' ملف. حدّد الفترة ثم اضغط «استخراج الحالات».';
+  }catch(e){ I.msg=''; toast(e.message||'تعذرت قراءة الملف.',true); }
+  I.busy=false; updateImport();
+}
+async function impExtract(){
+  const I=impState(); if(I.busy||!I.srcs.length) return; I.busy=true; I.cases=[]; I.sel=new Set(); I.extractMsg='جارٍ استخراج الحالات وقراءة الفواتير…'; updateImport();
+  try{
+    const from=I.from?new Date(I.from+'T00:00:00'):null, to=I.to?new Date(I.to+'T23:59:59'):null; const cats=impCats(); let all=[];
+    for(const s of I.srcs){ const cs=await WA.buildCases(s,from,to,cats,(i,n)=>{ const m=$('#impExtractMsg'); if(m) m.textContent=s.group+': قراءة الحالة '+i+' من '+n+'…'; }); cs.forEach(c=>{ c.src=s; c.group=s.group; c.key=[c.group,c.t.toISOString().slice(0,16),WA.normA(c.sender)].join('|'); }); all=all.concat(cs); }
+    all.sort((a,b)=>a.t-b.t); I.cases=all;
+    const inv=all.filter(c=>c.invoices.length).length;
+    I.extractMsg='استُخرجت '+all.length+' حالة، منها '+inv+' بفاتورة مقروءة. اختر التصنيفات ثم حدّد الحالات.';
+  }catch(e){ I.extractMsg=''; toast(e.message||'تعذر الاستخراج.',true); }
+  I.busy=false; updateImport();
+}
+async function impRun(){
+  const I=impState(); if(I.busy) return; const todo=I.cases.filter(c=>I.sel.has(c.key)&&!(I.done&&I.done[c.key])); if(!todo.length) return;
+  I.busy=true; I.stop=false; I.log=[]; I.done=I.done||{}; let ok=0;
+  for(let k=0;k<todo.length;k++){
+    if(I.stop){ I.log.push({t:'أُوقف التحليل. أُضيفت '+ok+' حالة.'}); break; }
+    const c=todo[k]; I.progress='الحالة '+(k+1)+' من '+todo.length+'…'; updateImport();
+    const label=cleanSender_(c.sender)+' · '+ymd_(c.t)+' '+hm_(c.t);
+    try{
+      let ai=null, aiErr='';
+      const invText=c.invoices.length?WA.invoiceText(c):'';
+      const canAI=S.settings.aiEnabled&&(c.text||invText||c.aiFiles.length);
+      if(canAI){
+        const file=c.aiFiles.length?await WA.aiImage(c.src,c):null;
+        try{ ai=await call('aiSuggest',{caseId:'',bulk:true,text:c.text||'',invoiceText:invText,file:file||undefined}); }catch(e){ if(e.code==='auth') return logout(true); aiErr=e.message||'تعذر التحليل'; }
+      }
+      const parsedTotal=c.total||0, parsedUnits=c.units||0;
+      const total=Math.round((parsedTotal+(ai&&c.aiFiles.length&&+ai.invoiceTotal||0))*100)/100||null;
+      const units=(parsedUnits+(ai&&c.aiFiles.length&&+ai.invoiceCount||0))||null;
+      const inv0=c.invoices[0]||{};
+      const light={id:hashId_(c.key),key:c.key,group:c.group,date:ymd_(c.t),time:hm_(c.t),sender:cleanSender_(c.sender),pharmacist:fixName_(inv0.pharmacist||''),pharmNo:inv0.pharmNo||'',branch:inv0.branch||'',
+        mention:c.mention||'',cats:c.cats,preview:(c.text||'').slice(0,160),total,units,attN:c.atts.length,attMissing:c.atts.filter(a=>a.missing).length,dup:c.dupCount||0,hasAI:!!ai,aiErr};
+      const detail={id:light.id,text:c.text||'',invoices:c.invoices.map(v=>({branch:v.branch,invoice:v.invoice,date:v.date,pharmacist:fixName_(v.pharmacist),pharmNo:v.pharmNo,total:v.total,units:v.units,discount:v.discount,items:v.items})),
+        atts:c.atts.map(a=>({name:a.name,kind:a.kind,missing:!!a.missing,parsed:!!a.parsed})),ai};
+      await call('inboxAdd',{items:[{light,detail}]});
+      I.done[c.key]=1; ok++; I.log.push({t:'✔ '+label+(ai?'':' — أُضيفت بدون تحليل: '+(aiErr||'لا يوجد نص أو فاتورة'))+(c.atts.some(a=>a.missing)?' (مرفق ناقص)':''),bad:!ai});
+    }catch(e){ I.log.push({t:'✖ '+label+': '+(e.message||'خطأ'),bad:true}); }
+  }
+  I.busy=false; I.progress='انتهى: أُضيفت '+ok+' حالة لصندوق الوارد.'; try{ await load(); }catch(e){} updateImport(); toast(I.progress);
+}
+
+/* ----- inbox (cases tab) ----- */
+function inboxHtml(){
+  const admin=adminMode(); const L=(S.inbox||[]).filter(x=>x.status==='new'||admin&&x.status==='taken');
+  if(!L.length) return '';
+  const nNew=L.filter(x=>x.status==='new').length; const f=S.inboxCat||'';
+  const cats=[...new Set([].concat(...L.map(x=>x.cats||[])))];
+  const rows=L.filter(x=>!f||(x.cats||[]).includes(f)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  return '<details class="panel sec" id="inboxPanel"'+(S.inboxOpen?' open':'')+'><summary style="cursor:pointer;font-weight:700">📥 صندوق الوارد من الواتساب: '+nNew+' حالة جديدة</summary>'+
+   '<div class="bar" style="margin-top:10px"><select id="inboxCat" aria-label="التصنيف"><option value="">كل التصنيفات</option>'+cats.map(c=>'<option'+(c===f?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select><span class="note">خذ الحالة لتقييمها؛ تتحول لمسودة باسمك وفيها اقتراحات الذكاء الاصطناعي، ثم راجعها وأرسلها للاعتماد.</span></div>'+
+   '<div class="tw"><table><thead><tr><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>النص</th><th>الفاتورة</th><th></th></tr></thead><tbody>'+
+   rows.map(x=>'<tr><td>'+esc(x.group)+'</td><td class="mono" style="white-space:nowrap">'+esc(x.date)+'<br>'+esc(x.time)+'</td><td>'+esc(x.pharmacist||x.sender)+(x.branch?'<div class="note" style="margin:0">فرع '+esc(x.branch)+'</div>':'')+'</td><td>'+esc(x.mention||'—')+'</td><td>'+(x.cats||[]).map(c=>'<span class="pill p-na" style="margin:1px">'+esc(c)+'</span>').join(' ')+'</td><td style="max-width:320px;font-size:12.5px">'+(x.preview?esc(x.preview)+'…':'<span class="note">بدون نص</span>')+(x.hasAI?'':'<div class="note" style="margin:0;color:var(--warn)">بدون تحليل AI</div>')+'</td><td class="num">'+(x.total?Number(x.total).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td><td style="white-space:nowrap">'+
+     (x.status==='new'?'<button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>'+(admin?' <button class="btn" data-inbdis="'+esc(x.id)+'">استبعاد</button>':''):'<span class="pill p-wait">مع '+esc(x.takenByName||'—')+'</span>'+(admin?' <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':''))+'</td></tr>').join('')+'</tbody></table></div></details>';
+}
+async function inboxTake(id){
+  if(S.busy) return; S.busy=true;
+  try{
+    const r=await call('inboxTake',{id}); const x=r.item, dt=r.detail||{}, ai=dt.ai||{};
+    const d=newDraft(); d.month=(x.date||'').slice(0,7)||d.month; d.pharmacist=x.pharmacist||x.sender||''; d.branch=x.branch||''; d.supervisor=x.mention||''; d.summary=dt.text||'';
+    d.inboxId=x.id; d.source='واتساب '+x.group+' · '+x.date+' '+x.time+' · '+x.sender+((dt.atts||[]).some(a=>a.missing)?' · ⚠️ مرفق ناقص في التصدير':'');
+    const codeToBadge={}; activeBadges().forEach(b=>(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;})); d.aiCodes=[];
+    (ai.suggestions||[]).forEach(s=>{ d.answers[s.code]=s.answer; d.aiCodes.push(s.code); const bk=codeToBadge[s.code]; if(bk&&s.quote&&!d.reasons[bk]) d.reasons[bk]=s.quote; });
+    d.startPoint=ai.startPoint||''; d.outcome=ai.outcome||''; d.situation=(ai.situation||[]).slice(0,6); d.products=(ai.products||[]).slice(0,8);
+    const parsedItems=[].concat(...(dt.invoices||[]).map(v=>v.items.map(i=>i.name+(i.qty>1?' × '+i.qty:''))));
+    d.invoiceItems=(ai.invoiceItems&&ai.invoiceItems.length?ai.invoiceItems:parsedItems).slice(0,20); d.invoiceNote=ai.invoiceNote||'';
+    d.invoiceTotal=x.total||''; d.invoiceCount=x.units||'';
+    putDraft(d); S.busy=false; await load().catch(()=>{}); toast('أصبحت الحالة مسودة باسمك. راجع الاقتراحات ثم أرسلها للاعتماد.'); return openDraft(d.localKey);
+  }catch(e){ if(e.code==='auth') return logout(true); toast(e.message,true); }
+  S.busy=false;
+}
+
+/* ----- import categories editor (settings) ----- */
+function updateIc(){
+  const box=$('#icBox'); if(!box) return; if(!S.icEdit) S.icEdit=JSON.parse(JSON.stringify(impCats()));
+  box.innerHTML='<p class="note" style="margin:0 0 10px">تُصنَّف حالات الواتساب تلقائيًا عند الاستيراد إذا ظهرت أي كلمة من كلمات التصنيف في نص الحالة أو أصناف الفاتورة. اكتب الكلمات مفصولة بفواصل (عربي أو إنجليزي، أسماء منتجات أو أعراض). الحالة قد تأخذ أكثر من تصنيف.</p>'+
+   S.icEdit.map((c,i)=>'<div class="grid" style="grid-template-columns:200px 1fr auto;align-items:start;margin-bottom:8px"><input type="text" data-icn="'+i+'" value="'+esc(c.n)+'" placeholder="اسم التصنيف"><textarea data-ick="'+i+'" rows="2" placeholder="كلمات مفتاحية مفصولة بفواصل">'+esc(c.k)+'</textarea><button class="btn bad" data-icdel="'+i+'" aria-label="حذف التصنيف">×</button></div>').join('')+
+   '<div class="actions"><button class="btn" id="btnIcAdd">+ تصنيف</button><button class="btn primary" id="btnIcSave">حفظ التصنيفات</button><button class="btn" id="btnIcReset">استعادة الافتراضي</button></div>';
+}
+
 /* ---------- Shell ---------- */
 function tabsFor(){
-  return adminMode()?[['cases','الاعتماد والحالات'],['posts','بوستات الشهر'],['badges','الشارات'],['dash','لوحة المتابعة'],['log','المستخدمون والإعدادات']]:[['cases','حالاتي'],['posts','بوستات الشهر']];
+  return adminMode()?[['cases','الاعتماد والحالات'],['posts','بوستات الشهر'],['badges','الشارات'],['dash','لوحة المتابعة'],['imp','استيراد الواتساب'],['log','المستخدمون والإعدادات']]:[['cases','حالاتي'],['posts','بوستات الشهر']];
 }
 function hexMix_(hex,pct){ const h=hex.replace('#',''); const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); const mix=(v)=>Math.round(v*pct+255*(1-pct)); return 'rgb('+mix(r)+','+mix(g)+','+mix(b)+')'; }
 function applyBrand(){
@@ -1223,6 +1625,7 @@ function mount(){
   else if(S.view==='post') mountPost();
   else if(S.view==='posts') mountPosts();
   else if(S.view==='best') mountBest();
+  else if(S.view==='imp') mountImport();
   else mountLog();
   update();
 }
@@ -1234,6 +1637,7 @@ function update(){
   else if(S.view==='posts') updatePosts();
   else if(S.view==='users') updateUsers();
   else if(S.view==='best') updateBest();
+  else if(S.view==='imp') updateImport();
 }
 
 /* ---------- Cases list ---------- */
@@ -1247,7 +1651,7 @@ function matchStatus(id,c,f){
 }
 function mountCases(){
   const admin=adminMode();
-  $('#main').innerHTML=
+  $('#main').innerHTML='<div id="inboxBox"></div>'+
   '<div class="kpis" id="cKpis"></div>'+
   '<div class="bar"><select id="fMonth" aria-label="الشهر"></select>'+
   '<select id="fStatus" aria-label="الحالة"><option value="all">كل الحالات</option><option value="Returned">معادة للتصحيح</option><option value="Pending">بانتظار الاعتماد</option>'+(admin?'<option value="Ready">جاهزة للاعتماد</option>':'')+'<option value="Approved">معتمدة</option>'+(admin?'<option value="Featured">أفضل المشاركات</option>':'')+'<option value="Rejected">مرفوضة</option></select>'+
@@ -1270,6 +1674,7 @@ function dotsFor(id,c){
 function pastPick(id,c){ const nm=(c.pharmacist||'').trim(); if(!nm) return ''; const ms=[...S.cases.entries()].filter(([i,x])=>i!==id&&x.month!==c.month&&(x.pharmacist||'').trim()===nm&&(S.dec.get(i)||{}).featured).map(([i,x])=>monthLabel(x.month)); return [...new Set(ms)].join('، '); }
 function updateCases(){
   const sel=$('#fMonth'); if(!sel) return; const admin=adminMode();
+  const ib=$('#inboxBox'); if(ib&&!S.preview) ib.innerHTML=inboxHtml();
   const ms=allMonths(); if(S.filters.month!=='all'&&!ms.includes(S.filters.month)) S.filters.month='all';
   sel.innerHTML='<option value="all">كل الأشهر</option>'+ms.map(m=>'<option value="'+m+'">'+esc(monthLabel(m))+'</option>').join(''); sel.value=S.filters.month;
   const vis=visibleCases(); const cnt={all:vis.length,Pending:0,Ready:0,Approved:0,Rejected:0,Featured:0,Nominated:0,Returned:0};
@@ -1300,7 +1705,7 @@ function draftsKey(){ return 'useb_drafts_'+(S.me.id||'x'); }
 function getDrafts(){ try{ return JSON.parse(localStorage.getItem(draftsKey())||'{}')||{}; }catch(e){ return {}; } }
 function putDraft(d){ try{ const all=getDrafts(); all[d.id||d.localKey]=Object.assign({},d,{savedAt:new Date().toISOString()}); localStorage.setItem(draftsKey(),JSON.stringify(all)); return true; }catch(e){ return false; } }
 function dropDraft(key){ try{ const all=getDrafts(); delete all[key]; localStorage.setItem(draftsKey(),JSON.stringify(all)); }catch(e){} }
-function openDraft(key){ const d=getDrafts()[key]; if(!d) return; if(S.view!=='cases'){S.view='cases';renderShell();} S.rail={reason:'',mode:''}; S.draft=JSON.parse(JSON.stringify(d)); S.isNew=!d.id; S.openId=d.id||key; S.saveState='local'; S.saveErr=''; S.railErr=''; S.aiCodes=new Set(); S.aiErr=''; mount(); window.scrollTo(0,0); }
+function openDraft(key){ const d=getDrafts()[key]; if(!d) return; if(S.view!=='cases'){S.view='cases';renderShell();} S.rail={reason:'',mode:''}; S.draft=JSON.parse(JSON.stringify(d)); S.isNew=!d.id; S.openId=d.id||key; S.saveState='local'; S.saveErr=''; S.railErr=''; S.aiCodes=new Set(d.aiCodes||[]); S.aiErr=''; mount(); window.scrollTo(0,0); }
 function newDraft(){
   const d=new Date(); const pm=new Date(d.getFullYear(),d.getMonth()-1,1); const month=pm.getFullYear()+'-'+String(pm.getMonth()+1).padStart(2,'0');
   return {localKey:'n'+Date.now().toString(36),id:'',month,pharmacist:'',branch:'',supervisor:'',summary:'',answers:{},reasons:{},startPoint:'',outcome:'',situation:[],products:[],reviewerId:S.me.id,reviewerName:S.me.name||''};
@@ -1346,7 +1751,7 @@ function mountEditor(){
   '<label class="f">عدد المنتجات (القطع)<input type="text" inputmode="numeric" data-f="invoiceCount" value="'+esc(d.invoiceCount==null?'':d.invoiceCount)+'" placeholder="مثال: 4"></label></div>'+
   '<label class="f" style="margin-top:12px">ملخص الحالة (كما كتبه الصيدلي)<textarea data-f="summary" rows="4">'+esc(d.summary)+'</textarea></label>'+
   (S.settings.aiEnabled?'<div class="actions" style="margin-top:10px"><button class="btn" id="btnAiSuggest"'+(locked()?' disabled':'')+'>✨ اقترح الإجابات من النص أعلاه</button><label class="btn" id="invPick"'+(locked()?' hidden':'')+'>📎 إرفاق الفاتورة (اختياري)<input type="file" id="invFile" accept="image/jpeg,image/png,image/webp,application/pdf" hidden></label><span class="note" id="invName"></span><span class="note" id="aiStatus" style="margin-inline-start:8px"></span></div><div id="aiErrBox"></div><p class="note" style="margin-top:4px">الفاتورة صورة أو PDF، تُقرأ مع النص عند الضغط على «اقترح» ولا تُحفظ في المنصة. يُرجى قصّ اسم العميل ورقم جواله قبل الرفع.</p><div id="invBox">'+invBoxHtml(d)+'</div><p class="note" style="margin-top:6px">يقترح الذكاء الاصطناعي إجابات الأسئلة، ونقطة البداية والنتيجة ووصف الموقف في محتوى البوست أدناه — كل ذلك من نص ملخص الحالة، ويملأ فقط ما هو فارغ. راجع كل شيء قبل الحفظ.</p>':(adminMode()?'<p class="note" style="margin-top:10px">اقتراح الإجابات بالذكاء الاصطناعي غير متاح حاليًا. راجع تبويب «السجل والإعدادات».</p>':''))+
-  '<p class="note">المقيّم: <b>'+esc(d.reviewerName||S.me.name)+'</b></p></section>'+
+  (d.source?'<p class="note" style="color:var(--brand)">📥 مستوردة من '+esc(d.source)+'</p>'+(String(d.summary||'').trim()?'':'<p class="note" style="color:var(--warn)">⚠️ نص الحالة غير موجود في ملف التصدير (واتساب الآيفون لا يصدّر النص المكتوب مع ملف PDF). انسخه من المجموعة إلى «ملخص الحالة».</p>'):'')+'<p class="note">المقيّم: <b>'+esc(d.reviewerName||S.me.name)+'</b></p></section>'+
   '<section class="panel sec"><h3>محتوى البوست</h3><p class="note" style="margin:0 0 10px">يُستخدم لتوليد بوست الشهر بعد الاعتماد. اكتب ما حدث فعلًا كما في نص الحالة.</p><div class="grid"><label class="f">نقطة البداية<textarea data-f="startPoint" rows="2">'+esc(d.startPoint||'')+'</textarea></label><label class="f">النتيجة<textarea data-f="outcome" rows="2">'+esc(d.outcome||'')+'</textarea></label></div><h3 style="margin-top:14px">وصف الموقف (نقاط محددة من الحالة، حتى 6)</h3><div id="lSituation">'+listHtml('situation')+'</div><h3 style="margin-top:14px">المنتجات المذكورة (حتى 8)</h3><div id="lProducts">'+listHtml('products')+'</div></section>'+cards+'</div>'+
   '<aside class="ed-rail" id="rail"></aside></div>';
   $('#main').querySelectorAll('[data-reason]').forEach(t=>{t.value=(d.reasons||{})[t.dataset.reason]||'';});
@@ -1466,7 +1871,7 @@ async function runAiSuggest(){
 }
 let saveTimer=null, chain=Promise.resolve();
 function payload(d){
-  return {id:d.id||'',month:d.month,pharmacist:d.pharmacist,branch:d.branch,supervisor:d.supervisor||'',summary:d.summary,answers:d.answers,reasons:d.reasons,startPoint:d.startPoint||'',outcome:d.outcome||'',situation:d.situation||[],products:d.products||[],invoiceItems:d.invoiceItems||[],invoiceNote:d.invoiceNote||'',invoiceTotal:d.invoiceTotal==null?'':d.invoiceTotal,invoiceCount:d.invoiceCount==null?'':d.invoiceCount};
+  return {id:d.id||'',month:d.month,pharmacist:d.pharmacist,branch:d.branch,supervisor:d.supervisor||'',summary:d.summary,answers:d.answers,reasons:d.reasons,startPoint:d.startPoint||'',outcome:d.outcome||'',situation:d.situation||[],products:d.products||[],invoiceItems:d.invoiceItems||[],invoiceNote:d.invoiceNote||'',invoiceTotal:d.invoiceTotal==null?'':d.invoiceTotal,invoiceCount:d.invoiceCount==null?'':d.invoiceCount,source:d.source||'',inboxId:d.inboxId||''};
 }
 function touch(){
   if(locked()||!S.draft||S.adminEdit) return; clearTimeout(saveTimer);
@@ -1659,7 +2064,7 @@ function mountRules(){
 /* ---------- Log & settings ---------- */
 function mountUsers(){ $('#main').innerHTML=usersHtml(); }
 function mountLog(){
-  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
+  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">تصنيفات استيراد الواتساب</h2><div class="panel sec" id="icBox"></div><h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
 }
 function updateDeleted(){
   const box=$('#delBox'); if(!box) return; const L=S.deleted||[];
@@ -1668,7 +2073,7 @@ function updateDeleted(){
     L.map(x=>'<tr><td class="mono">'+esc(x.id)+'</td><td>'+esc(x.pharmacist||'—')+' / '+esc(x.branch||'—')+'</td><td>'+esc(x.reviewerName||'—')+'</td><td>'+esc(x.deletedBy)+'</td><td class="mono">'+esc(String(x.deletedAt).slice(0,10))+'</td><td>'+esc(x.deleteReason)+'</td><td><button class="btn" data-restore="'+esc(x.id)+'">استرجاع</button></td></tr>').join('')+'</tbody></table></div>';
 }
 function updateLog(){
-  updateDeleted();
+  updateDeleted(); updateIc();
   const ab=$('#aiBox');
   if(ab){
     const srcAr={backend:'متصل بـ Claude عبر الخادم',claude:'متصل بـ Claude (داخل Claude)',endpoint:'متصل عبر خادم القسم التقني',none:'غير متصل في هذه النسخة'}[S.settings.aiSource||'none'];
@@ -1987,6 +2392,16 @@ document.addEventListener('click',e=>{
   if(t.id==='btnRejectOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return decide('reject'); }
   if(t.id==='btnReopen'){S.rail.mode='reopen';return refreshEditor();}
   if(t.id==='btnReopenOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return reopen(); }
+  if(t.id==='btnImpExtract') return impExtract();
+  if(t.id==='btnImpRun') return impRun();
+  if(t.id==='btnImpStop'){ impState().stop=true; return; }
+  if(t.dataset&&t.dataset.impdel!==undefined){ const I=impState(); I.srcs.splice(+t.dataset.impdel,1); I.cases=[]; I.sel=new Set(); return updateImport(); }
+  if(t.dataset&&t.dataset.take) return inboxTake(t.dataset.take);
+  if(t.dataset&&(t.dataset.inbdis||t.dataset.inbback)){ const id=t.dataset.inbdis||t.dataset.inbback; if(S.busy) return; S.busy=true; return call('inboxSet',{id,status:t.dataset.inbdis?'dismissed':'new'}).then(load).then(()=>{ S.inboxOpen=true; onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
+  if(t.id==='btnIcAdd'){ S.icEdit.push({n:'',k:''}); return updateIc(); }
+  if(t.dataset&&t.dataset.icdel!==undefined){ S.icEdit.splice(+t.dataset.icdel,1); return updateIc(); }
+  if(t.id==='btnIcReset'){ S.icEdit=JSON.parse(JSON.stringify(IMPORT_CATS_DEFAULT)); return updateIc(); }
+  if(t.id==='btnIcSave'){ const L=S.icEdit.filter(c=>c.n.trim()); if(S.busy) return; S.busy=true; return call('saveSettings',{importCats:L}).then(s=>{ S.settings=Object.assign({},S.settings,s); S.icEdit=null; toast('حُفظت التصنيفات ('+L.length+'). تُطبّق على الاستخراج القادم.'); updateIc(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.id==='btnAdminEdit') return enterAdminEdit();
   if(t.id==='btnAdminCancel') return cancelAdminEdit();
   if(t.id==='btnAdminSave') return saveAdminEdit();
@@ -2012,6 +2427,8 @@ document.addEventListener('input',e=>{
   if(el.id==='loginPin'){ el.value=el.value.replace(/\D/g,'').slice(0,6); return; }
   if(el.id==='fQ'){S.filters.q=el.value;return updateCases();}
   if(el.id==='railReason'){S.rail.reason=el.value;return;}
+  if(el.dataset&&el.dataset.icn!==undefined&&S.icEdit){ S.icEdit[+el.dataset.icn].n=el.value; return; }
+  if(el.dataset&&el.dataset.ick!==undefined&&S.icEdit){ S.icEdit[+el.dataset.ick].k=el.value; return; }
   if(el.id==='pickReason'&&S.pick){S.pick.reason=el.value;return;}
   if(el.dataset.bq&&S.bd) return bqSet(el);
   if(el.dataset.bf&&S.bd&&el.type!=='checkbox'&&el.tagName!=='SELECT'){S.bd[el.dataset.bf]=el.value;return;}
@@ -2020,8 +2437,19 @@ document.addEventListener('input',e=>{
   if(el.dataset.f){ S.draft[el.dataset.f]=el.value; refreshEditor(); return touch(); }
   if(el.dataset.reason){ S.draft.reasons[el.dataset.reason]=el.value; refreshEditor(); return touch(); }
 });
+document.addEventListener('toggle',e=>{ if(e.target&&e.target.id==='inboxPanel') S.inboxOpen=e.target.open; },true);
 document.addEventListener('change',e=>{
   const el=e.target;
+  if(el.id==='impFiles'&&el.files&&el.files.length){ const fs=[...el.files]; el.value=''; return impLoadFiles(fs); }
+  if(el.dataset&&el.dataset.impgsel!==undefined){ const I=impState(); I.srcs[+el.dataset.impgsel].group=el.value; I.cases=[]; I.sel=new Set(); return updateImport(); }
+  if(el.id==='impFrom'||el.id==='impTo'){ const I=impState(); I[el.id==='impFrom'?'from':'to']=el.value; return; }
+  if(el.dataset&&el.dataset.impcat){ const I=impState(); el.checked?I.f.cats.add(el.dataset.impcat):I.f.cats.delete(el.dataset.impcat); return updateImport(); }
+  if(el.dataset&&el.dataset.impgrp){ const I=impState(); el.checked?I.f.groups.add(el.dataset.impgrp):I.f.groups.delete(el.dataset.impgrp); return updateImport(); }
+  if(el.id==='impInvOnly'){ impState().f.inv=el.checked; return updateImport(); }
+  if(el.id==='impHideOld'){ impState().f.hideOld=el.checked; return updateImport(); }
+  if(el.dataset&&el.dataset.impsel){ const I=impState(); el.checked?I.sel.add(el.dataset.impsel):I.sel.delete(el.dataset.impsel); return updateImport(); }
+  if(el.id==='impSelAllBox'){ const I=impState(); impFiltered().forEach(c=>{ el.checked?I.sel.add(c.key):I.sel.delete(c.key); }); return updateImport(); }
+  if(el.id==='inboxCat'){ S.inboxCat=el.value; S.inboxOpen=true; return updateCases(); }
   if(el.id==='invFile'&&el.files&&el.files[0]&&S.draft){ const f=el.files[0]; el.value=''; prepInvoice(f).then(x=>{ x.draft=S.draft; S.invoice=x; invUi(); toast('أُرفقت الفاتورة. اضغط «اقترح» لقراءتها مع النص.'); }).catch(e=>toast(e.message,true)); return; }
   if(el.id==='stageSel'){ call('setPostStage',{id:S.draft.id,stage:el.value}).then(load).then(onData).catch(e=>{toast(e.message,true);}); return; }
   if(el.dataset&&el.dataset.pimg!==undefined&&el.files&&el.files[0]){ const i=+el.dataset.pimg, id=S.postId; resizeProduct(el.files[0]).then(u=>{ S.pimgs[i]=u; const pv=$('[data-pimgprev="'+i+'"]'); if(pv) pv.innerHTML='<img src="'+u+'" alt="" style="height:44px">'; renderPost(); const arr=[]; for(let k=0;k<8;k++) arr.push(S.pimgs[k]||''); return call('savePostImages',{id,imgs:arr}).then(()=>toast('حُفظت صورة المنتج.')); }).catch(e=>toast(e.message,true)); return; }
