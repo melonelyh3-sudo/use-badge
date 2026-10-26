@@ -1511,7 +1511,7 @@ const WA=(()=>{
 
 /* ===== WhatsApp import UI + inbox ===== */
 const IMP_GROUPS=['D1','D2','D3','D4','D5'];
-function impState(){ if(!S.imp) S.imp={srcs:[],cases:[],sel:new Set(),f:{cats:new Set(),groups:new Set(),inv:false,hideOld:true},busy:false,stop:false,log:[],msg:''}; return S.imp; }
+function impState(){ if(!S.imp) S.imp={srcs:[],cases:[],sel:new Set(),f:{cats:new Set(),groups:new Set(),att:new Set(),inv:false,hideOld:true},busy:false,stop:false,log:[],msg:''}; return S.imp; }
 const fixName_=s=>{ s=String(s||'').normalize('NFKC').replace(/\s+/g,' ').trim(); if(/^(?:[؀-ۿ]\s)+[؀-ۿ]$/.test(s)) s=s.split(' ').reverse().join(''); return s; };
 const cleanSender_=s=>String(s||'').replace(/[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}☀-➿]/gu,'').trim();
 function hashId_(s){ let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return 'wa'+h.toString(36)+s.length.toString(36); }
@@ -1532,8 +1532,11 @@ function mountImport(){
 }
 function impFiltered(){
   const I=impState(), oldKeys=new Set((S.inboxKeys||[]));
-  return I.cases.filter(c=>(!I.f.groups.size||I.f.groups.has(c.group))&&(!I.f.cats.size||c.cats.some(x=>I.f.cats.has(x))||(I.f.cats.has('__none')&&!c.cats.length))&&(!I.f.inv||c.invoices.length||c.aiFiles.length)&&(!I.f.hideOld||!oldKeys.has(c.key)));
+  return I.cases.filter(c=>(!I.f.groups.size||I.f.groups.has(c.group))&&(!I.f.cats.size||c.cats.some(x=>I.f.cats.has(x))||(I.f.cats.has('__none')&&!c.cats.length))&&(!I.f.inv||c.invoices.length||c.aiFiles.length)&&(!I.f.att.size||impAttKinds(c).some(k=>I.f.att.has(k)))&&(!I.f.hideOld||!oldKeys.has(c.key)));
 }
+// حالة مرفقات الحالة: missing ناقص من التصدير، parsed فاتورة مقروءة، scan صورة/PDF ممسوح، none بدون مرفق
+function impAttKinds(c){ if(!c.atts.length) return ['none']; const k=[]; if(c.atts.some(a=>a.missing)) k.push('missing'); if(c.atts.some(a=>a.parsed)) k.push('parsed'); if(c.atts.some(a=>!a.missing&&!a.parsed)) k.push('scan'); return k; }
+const IMP_ATT=[['missing','✖ مرفق ناقص'],['parsed','✔ فاتورة مقروءة'],['scan','🖼 صورة / PDF ممسوح'],['none','بدون مرفق']];
 function updateImport(){
   const I=impState(); if(!$('#impSrcs')) return;
   const lm=$('#impLoadMsg'); if(lm) lm.textContent=I.msg||'';
@@ -1547,10 +1550,12 @@ function updateImport(){
   const chip=(attr,val,label,n,on)=>'<label class="chip'+(on?' on':'')+'"><input type="checkbox" '+attr+'="'+esc(val)+'"'+(on?' checked':'')+'>'+esc(label)+' <b>'+n+'</b></label>';
   $('#impFilters').innerHTML='<div><b style="font-size:13px">التصنيف:</b> '+cats.map(c=>chip('data-impcat',c.n,c.n,cnt[c.n]||0,I.f.cats.has(c.n))).join('')+chip('data-impcat','__none','غير مصنّف',none,I.f.cats.has('__none'))+'<span class="note"> (بدون اختيار = الكل)</span></div>'+
     '<div style="margin-top:6px"><b style="font-size:13px">المجموعة:</b> '+Object.keys(gcnt).sort().map(g=>chip('data-impgrp',g,g,gcnt[g],I.f.groups.has(g))).join('')+
+    '</div><div style="margin-top:6px"><b style="font-size:13px">المرفقات:</b> '+IMP_ATT.map(([k,l])=>chip('data-impatt',k,l,I.cases.filter(c=>impAttKinds(c).includes(k)).length,I.f.att.has(k))).join('')+
     ' <label class="chip"><input type="checkbox" id="impInvOnly"'+(I.f.inv?' checked':'')+'>بفاتورة فقط</label><label class="chip"><input type="checkbox" id="impHideOld"'+(I.f.hideOld?' checked':'')+'>إخفاء المستوردة سابقًا</label></div>';
   const rows=impFiltered(); const oldKeys=new Set(S.inboxKeys||[]);
   $('#impRows').innerHTML=rows.length?rows.map(c=>{ const nm=c.invoices[0]&&fixName_(c.invoices[0].pharmacist);
-    const att=c.atts.map(a=>a.missing?'<span class="pill p-no" title="'+esc(a.name)+'">✖ ناقص</span>':a.parsed?'<span class="pill p-ok" title="'+esc(a.name)+'">✔ فاتورة</span>':'<span class="pill p-wait" title="'+esc(a.name)+'">🖼 '+(a.kind==='pdf'?'PDF ممسوح':'صورة')+'</span>').join(' ')||'—';
+    const miss=c.atts.filter(a=>a.missing);
+    const att=(miss.length?'<span class="pill p-no" title="'+esc(miss.map(a=>a.name).join('\n'))+'">✖ '+(miss.length>1?miss.length+' ':'')+'ناقص</span> ':'')+c.atts.filter(a=>!a.missing).map(a=>a.parsed?'<span class="pill p-ok" title="'+esc(a.name)+'">✔ فاتورة</span>':'<span class="pill p-wait" title="'+esc(a.name)+'">🖼 '+(a.kind==='pdf'?'PDF ممسوح':'صورة')+'</span>').join(' ')||'—';
     const st=I.done&&I.done[c.key]?'<span class="pill p-ok">أُضيفت</span>':oldKeys.has(c.key)?'<span class="pill p-na">مستوردة سابقًا</span>':'<span class="pill p-na">جديدة</span>';
     return '<tr><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+(nm?'<div class="note" style="margin:0">'+esc(nm)+(c.invoices[0].branch?' · فرع '+esc(c.invoices[0].branch):'')+'</div>':'')+'</td><td>'+esc(c.mention||'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+'</td><td style="max-width:340px;font-size:12.5px" title="'+esc(c.text)+'">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+att+'</td><td class="num">'+(c.total!=null?c.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="10"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
   const sab=$('#impSelAllBox'); if(sab){ sab.checked=rows.length>0&&rows.every(c=>I.sel.has(c.key)); }
@@ -2855,6 +2860,7 @@ document.addEventListener('change',e=>{
   if(el.dataset&&el.dataset.impgsel!==undefined){ const I=impState(); I.srcs[+el.dataset.impgsel].group=el.value; I.cases=[]; I.sel=new Set(); return updateImport(); }
   if(el.id==='impFrom'||el.id==='impTo'){ const I=impState(); I[el.id==='impFrom'?'from':'to']=el.value; return; }
   if(el.dataset&&el.dataset.impcat){ const I=impState(); el.checked?I.f.cats.add(el.dataset.impcat):I.f.cats.delete(el.dataset.impcat); return updateImport(); }
+  if(el.dataset&&el.dataset.impatt){ const I=impState(); el.checked?I.f.att.add(el.dataset.impatt):I.f.att.delete(el.dataset.impatt); return updateImport(); }
   if(el.dataset&&el.dataset.impgrp){ const I=impState(); el.checked?I.f.groups.add(el.dataset.impgrp):I.f.groups.delete(el.dataset.impgrp); return updateImport(); }
   if(el.id==='impInvOnly'){ impState().f.inv=el.checked; return updateImport(); }
   if(el.id==='impHideOld'){ impState().f.hideOld=el.checked; return updateImport(); }
