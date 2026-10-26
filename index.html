@@ -1263,6 +1263,7 @@ const WA=(()=>{
   const INV=/[‎‏‪-‮⁦-⁩⁨⁩﻿]/g;
   const RX_IOS=/^\[(\d{1,4})[\/.\-](\d{1,2})[\/.\-](\d{1,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?[Mm]\.?|ص|م)?\]\s(.+?):\s?([\s\S]*)$/;
   const RX_AND=/^(\d{1,4})[\/.\-](\d{1,2})[\/.\-](\d{1,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?[Mm]\.?|ص|م)?\s[-–]\s(.+?):\s([\s\S]*)$/;
+  const RX_IOS_SYS=/^\[\d{1,4}[\/.\-]\d{1,2}[\/.\-]\d{1,4},?\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:[AaPp]\.?[Mm]\.?|ص|م)?\]\s[-–]\s/;
   const RX_AND_SYS=/^(\d{1,4})[\/.\-](\d{1,2})[\/.\-](\d{1,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp]\.?[Mm]\.?|ص|م)?\s[-–]\s/;
   function parseChat(txt){
     const lines=txt.replace(/\r/g,'').split('\n'); const raw=[]; let cur=null;
@@ -1271,7 +1272,7 @@ const WA=(()=>{
       let m=L.match(RX_IOS)||L.match(RX_AND);
       // الأرقام العربية تُحوَّل للمطابقة فقط؛ نص الرسالة يبقى كما هو (أسماء الملفات قد تحتوي أرقامًا عربية)
       if(m){ const orig=line.replace(INV,''); cur={a:+m[1],b:+m[2],y:+m[3],h:+m[4],mi:+m[5],s:+(m[6]||0),ap:m[7]||'',sender:orig.slice(L.length-m[9].length-m[8].length-2,L.length-m[9].length-2).trim()||m[8].trim(),body:orig.slice(L.length-m[9].length)}; raw.push(cur); continue; }
-      if(RX_AND_SYS.test(L)){ cur={sys:true,body:L}; raw.push(cur); continue; }
+      if(RX_AND_SYS.test(L)||RX_IOS_SYS.test(L)){ cur={sys:true,body:L}; raw.push(cur); continue; }
       if(cur) cur.body+='\n'+line.replace(INV,'');
     }
     // dd/mm or mm/dd?
@@ -1285,9 +1286,10 @@ const WA=(()=>{
     }
     return out;
   }
-  const isSystem=b=>/joined using|created group|created this group|added|left$|removed|changed the (subject|group)|This message was deleted|تم حذف هذه الرسالة|انضم|غادر|أضاف|Messages and calls are end-to-end/i.test(b)&&b.length<160;
+  const isSystem=b=>/<message_history_notice|joined using|created group|created this group|added|left$|removed|changed the (subject|group)|This message was deleted|تم حذف هذه الرسالة|انضم|غادر|أضاف|Messages and calls are end-to-end/i.test(b)&&b.length<160;
   function attachmentsOf(body){
     const atts=[]; let text=body;
+    text=text.replace(/<(image|video|audio|GIF|sticker|document) omitted>/gi,(m,k)=>{ if(!/sticker/i.test(k)) atts.push({name:'('+k+')',omitted:true}); return ' '; });
     text=text.replace(/<attached:\s*([^>]+)>/g,(m,f)=>{ atts.push({name:f.trim(),omitted:false}); return ' '; });
     text=text.replace(/^(.+?\.(?:pdf|jpe?g|png|webp|heic|opus|mp4|docx?|xlsx?))\s*\((?:file attached|ملف مرفق)\)/gim,(m,f)=>{ atts.push({name:f.trim(),omitted:false}); return ' '; });
     text=text.replace(/^(.+?)\s*•\s*\d+\s*(?:pages?|صفحات|صفحة)?\s*document omitted/gim,(m,f)=>{ atts.push({name:f.trim(),omitted:true}); return ' '; });
@@ -1410,11 +1412,31 @@ const WA=(()=>{
     if(!chatName) throw new Error('الملف '+file.name+' لا يحتوي على نص المحادثة (_chat.txt). صدّر الدردشة من واتساب كما هي.');
     const msgs=parseChat(await zip.file(chatName).async('string'));
     const byBase={}; names.forEach(n=>{ byBase[n.split('/').pop()]=n; });
-    return {file, zip, msgs, byBase, group:(file.name.match(/\bD\s?(\d)\b/i)||[])[1]?('D'+(file.name.match(/\bD\s?(\d)\b/i)[1])):''};
+    const gm=file.name.match(/(?:^|[^A-Za-z0-9])D\s?(\d)(?![0-9])/i);
+    const media=names.some(n=>/\.(pdf|jpe?g|png|webp|heic)$/i.test(n));
+    return {file, zip, msgs, byBase, media, group:gm?'D'+gm[1]:''};
+  }
+  // تصدير الويب يحتفظ بالنص المكتوب مع الملف ولا يحتفظ بالملف، وتصدير الجوال العكس.
+  // نربط الرسالتين بالوقت نفسه (بالثانية) ونضيف النص لرسالة الجوال.
+  function mergeText(msgs, helpers){
+    const idx=new Map(); let filled=0; const names={};
+    helpers.forEach(h=>h.msgs.forEach(w=>{ if(!/omitted>/.test(w.body)) return; const k=w.t.getTime(); (idx.get(k)||idx.set(k,[]).get(k)).push(w); }));
+    const out=msgs.map(m=>{
+      const L=idx.get(m.t.getTime()); if(!L||!L.length) return m;
+      const a=attachmentsOf(m.body); if(!a.atts.length) return m;
+      const w=L.shift(); const cap=attachmentsOf(w.body).text; names[w.sender]=m.sender;
+      const plain=stripMentions(a.text), wp=stripMentions(cap);
+      if(wp.replace(/\s/g,'').length<=plain.replace(/\s/g,'').length) return m;
+      filled++; return Object.assign({},m,{body:m.body+'\n'+cap,web:true});
+    });
+    return {msgs:out, filled, names};
   }
   async function buildCases(src, from, to, cats, onProgress){
     const msgs=src.msgs.filter(m=>(!from||m.t>=from)&&(!to||m.t<=to));
     const cs=segment(msgs); let i=0;
+    // منشن بصيغة الويب (@~الاسم ثم النص مباشرة): نطابقه مع أسماء المشرفين الظاهرة في باقي الحالات
+    const known=[...new Set(cs.map(c=>c.mention).filter(Boolean))].sort((a,b)=>b.length-a.length);
+    cs.forEach(c=>{ if(c.mention||!c.text) return; const t=c.text.replace(INV,''); const k=known.find(n=>t.includes('@'+n)||t.includes('@~'+n)||t.includes('@ ~'+n)); if(k) c.mention=k; });
     for(const c of cs){
       c.group=src.group; c.invoices=[]; c.aiFiles=[];
       for(const a of c.atts){
@@ -1451,7 +1473,7 @@ const WA=(()=>{
   function invoiceText(c){
     return c.invoices.map((v,i)=>'فاتورة '+(i+1)+' (فرع '+(v.branch||'—')+'):\n'+v.items.map(x=>'- '+x.name+' × '+x.qty+' | الصافي '+x.net+(x.disc?' | خصم '+x.disc:'')).join('\n')+'\nصافي الفاتورة: '+v.total).join('\n\n');
   }
-  return {libs, readZip, buildCases, aiImage, invoiceText, parseChat, segment, parseInvoice, pdfLines, categorize, normA};
+  return {libs, mergeText, readZip, buildCases, aiImage, invoiceText, parseChat, segment, parseInvoice, pdfLines, categorize, normA};
 })();
 
 /* ===== WhatsApp import UI + inbox ===== */
@@ -1468,7 +1490,7 @@ function mountImport(){
   impState();
   $('#main').innerHTML=
   '<section class="panel sec"><h3>1) ملفات تصدير المجموعات</h3>'+
-  '<p class="note" style="margin:0 0 10px">صدّر كل مجموعة من واتساب مع الوسائط (ZIP)، ثم اختر الملفات كلها معًا. تتم القراءة على جهازك ولا يُرفع الملف للخادم. التصدير من Android أدق، لأن iPhone لا يحفظ النص المكتوب مع ملف الـ PDF.</p>'+
+  '<p class="note" style="margin:0 0 10px">لكل مجموعة: تصدير الجوال مع الوسائط (ZIP، فيه الفواتير) + تصدير الويب (ZIP نصي، فيه الكلام المكتوب مع الفواتير). اختر الملفات كلها معًا؛ تتعرف المنصة على مجموعة كل ملف وتدمج الاثنين بالوقت. تتم القراءة على جهازك ولا يُرفع أي ملف للخادم.</p>'+
   '<div class="actions"><label class="btn primary">📁 اختيار ملفات ZIP<input type="file" id="impFiles" accept=".zip,application/zip" multiple hidden></label><span class="note" id="impLoadMsg"></span></div>'+
   '<div id="impSrcs" style="margin-top:10px"></div></section>'+
   '<section class="panel sec" id="impStep2" hidden><h3>2) الفلترة والاختيار</h3><div id="impFilters"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="impSelAllBox" aria-label="تحديد الكل"></th><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>نص الحالة</th><th>المرفقات</th><th>الفاتورة</th><th>الحالة</th></tr></thead><tbody id="impRows"></tbody></table></div></section>'+
@@ -1482,8 +1504,8 @@ function impFiltered(){
 function updateImport(){
   const I=impState(); if(!$('#impSrcs')) return;
   const lm=$('#impLoadMsg'); if(lm) lm.textContent=I.msg||'';
-  $('#impSrcs').innerHTML=I.srcs.length?'<div class="tw"><table><thead><tr><th>الملف</th><th>المجموعة</th><th>الرسائل</th><th>الفترة في الملف</th><th></th></tr></thead><tbody>'+I.srcs.map((s,i)=>{ const a=s.msgs[0], b=s.msgs[s.msgs.length-1];
-      return '<tr><td>'+esc(s.file.name)+'</td><td><select data-impgsel="'+i+'">'+IMP_GROUPS.concat(['أخرى']).map(g=>'<option'+(s.group===g?' selected':'')+'>'+g+'</option>').join('')+'</select></td><td class="num">'+s.msgs.length+'</td><td class="mono">'+(a?ymd_(a.t)+' → '+ymd_(b.t):'—')+'</td><td><button class="btn" data-impdel="'+i+'">إزالة</button></td></tr>'; }).join('')+'</tbody></table></div>'+
+  $('#impSrcs').innerHTML=I.srcs.length?'<div class="tw"><table><thead><tr><th>الملف</th><th>النوع</th><th>المجموعة</th><th>الرسائل</th><th>الفترة في الملف</th><th></th></tr></thead><tbody>'+I.srcs.map((s,i)=>{ const a=s.msgs[0], b=s.msgs[s.msgs.length-1];
+      return '<tr><td>'+esc(s.file.name)+'</td><td>'+(s.media?'<span class="pill p-ok">مع الوسائط</span>':'<span class="pill p-na">نص فقط (ويب)</span>')+'</td><td><select data-impgsel="'+i+'">'+IMP_GROUPS.concat(['أخرى']).map(g=>'<option'+(s.group===g?' selected':'')+'>'+g+'</option>').join('')+'</select></td><td class="num">'+s.msgs.length+'</td><td class="mono">'+(a?ymd_(a.t)+' → '+ymd_(b.t):'—')+'</td><td><button class="btn" data-impdel="'+i+'">إزالة</button></td></tr>'; }).join('')+'</tbody></table></div>'+
     '<div class="grid" style="margin-top:10px;max-width:640px"><label class="f">من تاريخ<input type="date" id="impFrom" value="'+esc(I.from||'')+'"></label><label class="f">إلى تاريخ<input type="date" id="impTo" value="'+esc(I.to||'')+'"></label></div>'+
     '<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnImpExtract"'+(I.busy?' disabled':'')+'>استخراج الحالات</button><span class="note" id="impExtractMsg">'+esc(I.extractMsg||'')+'</span></div>':'';
   const s2=$('#impStep2'), s3=$('#impStep3'); s2.hidden=s3.hidden=!I.cases.length; if(!I.cases.length) return;
@@ -1521,10 +1543,18 @@ async function impExtract(){
   const I=impState(); if(I.busy||!I.srcs.length) return; I.busy=true; I.cases=[]; I.sel=new Set(); I.extractMsg='جارٍ استخراج الحالات وقراءة الفواتير…'; updateImport();
   try{
     const from=I.from?new Date(I.from+'T00:00:00'):null, to=I.to?new Date(I.to+'T23:59:59'):null; const cats=impCats(); let all=[];
-    for(const s of I.srcs){ const cs=await WA.buildCases(s,from,to,cats,(i,n)=>{ const m=$('#impExtractMsg'); if(m) m.textContent=s.group+': قراءة الحالة '+i+' من '+n+'…'; }); cs.forEach(c=>{ c.src=s; c.group=s.group; c.key=[c.group,c.t.toISOString().slice(0,16),WA.normA(c.sender)].join('|'); }); all=all.concat(cs); }
+    let filled=0;
+    for(const s0 of I.srcs){
+      const same=I.srcs.filter(x=>x.group===s0.group);
+      if(!s0.media&&same.some(x=>x.media)) continue;            // ملف نص فقط: يُستخدم لإكمال ملف الجوال
+      let s=s0; const helpers=same.filter(x=>x!==s0&&!x.media);
+      if(s0.media&&helpers.length){ const mg=WA.mergeText(s0.msgs,helpers); filled+=mg.msgs.filter(m=>m.web&&(!from||m.t>=from)&&(!to||m.t<=to)).length; s=Object.assign({},s0,{msgs:mg.msgs}); }
+      const cs=await WA.buildCases(s,from,to,cats,(i,n)=>{ const m=$('#impExtractMsg'); if(m) m.textContent=s.group+': قراءة الحالة '+i+' من '+n+'…'; });
+      cs.forEach(c=>{ c.src=s; c.group=s.group; c.key=[c.group,c.t.toISOString().slice(0,16),WA.normA(c.sender)].join('|'); }); all=all.concat(cs);
+    }
     all.sort((a,b)=>a.t-b.t); I.cases=all;
-    const inv=all.filter(c=>c.invoices.length).length;
-    I.extractMsg='استُخرجت '+all.length+' حالة، منها '+inv+' بفاتورة مقروءة. اختر التصنيفات ثم حدّد الحالات.';
+    const inv=all.filter(c=>c.invoices.length).length, noText=all.filter(c=>!c.text).length;
+    I.extractMsg='استُخرجت '+all.length+' حالة، منها '+inv+' بفاتورة مقروءة'+(filled?'، وأُكمل نص '+filled+' رسالة من تصدير الويب':'')+(noText?'. '+noText+' حالة بدون نص':'')+'. اختر التصنيفات ثم حدّد الحالات.';
   }catch(e){ I.extractMsg=''; toast(e.message||'تعذر الاستخراج.',true); }
   I.busy=false; updateImport();
 }
