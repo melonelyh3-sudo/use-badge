@@ -864,8 +864,8 @@ const ACTIONS={
     const decisions={}; allDec.forEach(d=>{ if(ids[d.caseId]) decisions[d.caseId]=decOut_(d); });
     const out={user:{id:u.id,name:u.name,role:u.role},badges:await allBadges_(),cases,decisions,settings:await settings_()};
     const inb=await Store.list('inbox');
-    out.inbox=inb.filter(x=>x.status==='new'||(admin&&x.status==='taken')||(x.status==='taken'&&x.takenBy===u.id)).map(x=>Object.assign({},x,{key:undefined}));
-    if(admin) out.inboxKeys=inb.map(x=>x.key);
+    out.inbox=inb.filter(x=>x.status==='new'||(admin&&(x.status==='taken'||x.status==='dismissed'))||(x.status==='taken'&&x.takenBy===u.id)).map(x=>Object.assign({},x,{key:undefined}));
+    if(admin){ out.inboxKeys=inb.map(x=>x.key); out.inboxDis=inb.filter(x=>x.status==='dismissed').map(x=>x.key); }
     if(admin){
       const au=[]; (await Store.list('audit')).sort((a,b)=>a.month<b.month?-1:1).forEach(d=>au.push(...(d.items||[])));
       out.audit=au.slice(-150).reverse();
@@ -951,13 +951,13 @@ const ACTIONS={
       const old=await Store.get('inbox',id); if(old&&old.status!=='new'&&old.status!=='dismissed') continue;
       const light={id,key:S_(l.key,200),group:S_(l.group,10),date:S_(l.date,10),time:S_(l.time,5),sender:S_(l.sender,80),pharmacist:S_(l.pharmacist,120),pharmNo:S_(l.pharmNo,12),branch:S_(l.branch,10),
         mention:S_(l.mention,60),cats:clean_(l.cats,12,40),preview:S_(l.preview,160),total:num_(l.total,0,1000000,2),units:num_(l.units,0,500,0),attN:+l.attN||0,attMissing:+l.attMissing||0,dup:+l.dup||0,
-        hasAI:!!l.hasAI,aiErr:S_(l.aiErr,200),status:'new',createdAt:now_(),createdBy:u.name,takenBy:'',takenByName:''};
+        hasAI:!!l.hasAI,aiErr:S_(l.aiErr,200),status:p.status==='dismissed'?'dismissed':'new',createdAt:now_(),createdBy:u.name,takenBy:'',takenByName:''};
       const detail={id,text:S_(d.text,8000),invoices:(Array.isArray(d.invoices)?d.invoices:[]).slice(0,6).map(v=>({branch:S_(v.branch,10),invoice:S_(v.invoice,30),date:S_(v.date,30),pharmacist:S_(v.pharmacist,120),pharmNo:S_(v.pharmNo,12),
           total:num_(v.total,0,1000000,2),units:num_(v.units,0,500,0),discount:num_(v.discount,0,1000000,2),items:(Array.isArray(v.items)?v.items:[]).slice(0,40).map(i=>({name:S_(i.name,120),qty:+i.qty||1,disc:+i.disc||0,net:+i.net||0}))})),
         atts:(Array.isArray(d.atts)?d.atts:[]).slice(0,12).map(a=>({name:S_(a.name,120),kind:S_(a.kind,10),missing:!!a.missing,parsed:!!a.parsed})),ai:d.ai&&typeof d.ai==='object'?JSON.parse(JSON.stringify(d.ai).slice(0,30000)):null};
       await Store.put('inbox',id,light); await Store.put('inboxd',id,detail); n++;
     }
-    await audit_(u,'','import','استيراد من الواتساب: '+n+' حالة إلى صندوق الوارد');
+    await audit_(u,'','import',p.status==='dismissed'?'استبعاد من الاستيراد: '+n+' حالة':'استيراد من الواتساب: '+n+' حالة إلى صندوق الوارد');
     return {added:n};
   }); },
   inboxTake:(u,p)=>withLock_(async()=>{
@@ -968,6 +968,9 @@ const ACTIONS={
     const detail=await Store.get('inboxd',id); await audit_(u,'','inbox_take',x.group+' '+x.date+' '+x.time+' · '+x.sender);
     return {item:Object.assign({},x,{key:undefined}),detail};
   }),
+  inboxSetMany:(u,p)=>{ needAdmin_(u); const ids=(Array.isArray(p.ids)?p.ids:[]).map(String).slice(0,500); const st=p.status==='dismissed'?'dismissed':'new'; return withLock_(async()=>{
+    let n=0; for(const id of ids){ const x=await Store.get('inbox',id); if(!x||x.status==='done'||x.status===st) continue; x.status=st; x.takenBy=''; x.takenByName=''; await Store.put('inbox',id,x); n++; }
+    await audit_(u,'',st==='dismissed'?'inbox_dismiss':'inbox_back',(st==='dismissed'?'استبعاد جماعي: ':'إرجاع جماعي للصندوق: ')+n+' حالة'); return {n}; }); },
   inboxSet:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
     const id=String(p.id||''); const x=await Store.get('inbox',id); if(!x) throw err('الحالة غير موجودة.');
     const st=p.status==='dismissed'?'dismissed':'new'; x.status=st; x.takenBy=''; x.takenByName=''; await Store.put('inbox',id,x);
@@ -1206,7 +1209,7 @@ function errText(c){
 async function load(){
   const d=await call('bootstrap');
   S.me={id:d.user.id,name:d.user.name,role:d.user.role,canEdit:d.user.role==='admin',canWrite:true};
-  S.badges=d.badges||[]; S.cases=new Map((d.cases||[]).map(c=>[c.id,c])); S.dec=new Map(Object.entries(d.decisions||{})); S.deleted=d.deleted||[]; S.inbox=d.inbox||[]; S.inboxKeys=d.inboxKeys||[];
+  S.badges=d.badges||[]; S.cases=new Map((d.cases||[]).map(c=>[c.id,c])); S.dec=new Map(Object.entries(d.decisions||{})); S.deleted=d.deleted||[]; S.inbox=d.inbox||[]; S.inboxKeys=d.inboxKeys||[]; S.inboxDis=d.inboxDis||[];
   S.settings=Object.assign({sep:true,reqQuote:true,reqBadge:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'},d.settings||{}); applyBrand(); S.audit=d.audit||[]; S.users=d.users||[];
 }
 async function reload(){ await load(); onData(); }
@@ -1556,7 +1559,7 @@ function mountImport(){
   '<div class="actions"><label class="btn primary">📁 اختيار ملفات ZIP<input type="file" id="impFiles" accept=".zip,application/zip" multiple hidden></label><span class="note" id="impLoadMsg"></span></div>'+
   '<div id="impSrcs" style="margin-top:10px"></div></section>'+
   '<section class="panel sec" id="impStep2" hidden><h3>2) الفلترة والاختيار</h3><div id="impFilters"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="impSelAllBox" aria-label="تحديد الكل"></th><th>الترشيح</th><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>نص الحالة</th><th>المرفقات</th><th>الفاتورة</th><th>الحالة</th></tr></thead><tbody id="impRows"></tbody></table></div></section>'+
-  '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><button class="btn primary" id="btnImpRun"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><div id="impLog" style="margin-top:10px"></div></section></div><div id="anBox"'+(S.impTab==='an'?'':' hidden')+'></div><div id="repBox"'+(S.impTab==='rep'?'':' hidden')+'></div>';
+  '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><button class="btn primary" id="btnImpRun"></button><button class="btn" id="btnImpExclude"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><p class="note" style="margin:6px 0 0">«استبعاد المحدد» يحفظ الحالات كمستبعدة فلا تظهر في الاستيراد القادم (مع «إخفاء المستوردة سابقًا»)، وتقدر ترجعها من صندوق الوارد ← المستبعدة.</p><div id="impLog" style="margin-top:10px"></div></section></div><div id="anBox"'+(S.impTab==='an'?'':' hidden')+'></div><div id="repBox"'+(S.impTab==='rep'?'':' hidden')+'></div>';
   updateImport(); if(S.impTab==='an') updateAn(); if(S.impTab==='rep') updateRep();
 }
 function impFiltered(){
@@ -1589,12 +1592,13 @@ function updateImport(){
   $('#impRows').innerHTML=rows.length?rows.map(c=>{ const nm=c.invoices[0]&&fixName_(c.invoices[0].pharmacist);
     const miss=c.atts.filter(a=>a.missing);
     const att=(miss.length?'<span class="pill p-no" title="'+esc(miss.map(a=>a.name).join('\n'))+'">✖ '+(miss.length>1?miss.length+' ':'')+'ناقص</span> ':'')+c.atts.map((a,ix)=>a.missing?'':'<button type="button" class="pill '+(a.parsed?'p-ok':'p-wait')+'" style="border:0;cursor:pointer;font:inherit;font-size:12px" data-impview="'+esc(c.key)+'|'+ix+'" title="اضغط لعرض الملف: '+esc(a.name)+'">'+(a.parsed?'✔ فاتورة':'🖼 '+(a.kind==='pdf'?'PDF ممسوح':'صورة'))+'</button>').join(' ')||'—';
-    const st=I.done&&I.done[c.key]?'<span class="pill p-ok">أُضيفت</span>':oldKeys.has(c.key)?'<span class="pill p-na">مستوردة سابقًا</span>':'<span class="pill p-na">جديدة</span>';
+    const st=(S.inboxDis||[]).includes(c.key)?'<span class="pill p-no">مستبعدة</span>':I.done&&I.done[c.key]?'<span class="pill p-ok">أُضيفت</span>':oldKeys.has(c.key)?'<span class="pill p-na">مستوردة سابقًا</span>':'<span class="pill p-na">جديدة</span>';
     const sc='<span class="pill '+(c.tier===3?'p-ok':c.tier===2?'p-wait':'p-na')+'" title="'+esc((c.why||[]).join(' · '))+'" style="white-space:nowrap">'+'⭐'.repeat(c.tier||1)+' '+(c.score||0)+'</span>'+((c.sigs||[]).length?'<div class="note" style="margin:2px 0 0;font-size:11px">'+esc(c.sigs.join(' · '))+'</div>':'');
     return '<tr><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td style="min-width:110px">'+sc+'</td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+(nm?'<div class="note" style="margin:0">'+esc(nm)+(c.invoices[0].branch?' · فرع '+esc(c.invoices[0].branch):'')+'</div>':'')+'</td><td>'+esc(c.mention||'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+'</td><td style="max-width:340px;font-size:12.5px" title="'+esc(c.text)+'">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+att+'</td><td class="num">'+(c.total!=null?c.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="11"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
   const sab=$('#impSelAllBox'); if(sab){ sab.checked=rows.length>0&&rows.every(c=>I.sel.has(c.key)); }
   const n=[...I.sel].filter(k=>I.cases.some(c=>c.key===k)).length;
   const rb=$('#btnImpRun'); rb.textContent=I.busy?'جارٍ التحليل…':'حلّل المختار وأضفه لصندوق الوارد ('+n+')'; rb.disabled=I.busy||!n;
+  const xb=$('#btnImpExclude'); if(xb){ xb.textContent='🚫 استبعاد المحدد ('+n+')'; xb.disabled=I.busy||!n; }
   $('#btnImpStop').hidden=!I.busy;
   $('#impLog').innerHTML=I.log.length?'<div class="note" style="margin:0 0 6px">'+esc(I.progress||'')+'</div><ul class="issues" style="max-height:220px;overflow:auto">'+I.log.slice(-40).map(l=>'<li style="color:'+(l.bad?'var(--bad)':'inherit')+'">'+esc(l.t)+'</li>').join('')+'</ul>':'';
 }
@@ -1634,6 +1638,26 @@ async function impExtract(){
   }catch(e){ I.extractMsg=''; toast(e.message||'تعذر الاستخراج.',true); }
   I.busy=false; updateImport();
 }
+function impPayload(c,ai,aiErr){
+      const parsedTotal=c.total||0, parsedUnits=c.units||0;
+      const total=Math.round((parsedTotal+(ai&&c.aiFiles.length&&+ai.invoiceTotal||0))*100)/100||null;
+      const units=(parsedUnits+(ai&&c.aiFiles.length&&+ai.invoiceCount||0))||null;
+      const inv0=c.invoices[0]||{};
+      const light={id:hashId_(c.key),key:c.key,group:c.group,date:ymd_(c.t),time:hm_(c.t),sender:cleanSender_(c.sender),pharmacist:fixName_(inv0.pharmacist||''),pharmNo:inv0.pharmNo||'',branch:inv0.branch||'',
+        mention:c.mention||'',cats:c.cats,preview:(c.text||'').slice(0,160),total,units,attN:c.atts.length,attMissing:c.atts.filter(a=>a.missing).length,dup:c.dupCount||0,hasAI:!!ai,aiErr};
+      const detail={id:light.id,text:c.text||'',invoices:c.invoices.map(v=>({branch:v.branch,invoice:v.invoice,date:v.date,pharmacist:fixName_(v.pharmacist),pharmNo:v.pharmNo,total:v.total,units:v.units,discount:v.discount,items:v.items})),
+        atts:c.atts.map(a=>({name:a.name,kind:a.kind,missing:!!a.missing,parsed:!!a.parsed})),ai};
+  return {light,detail};
+}
+async function impExclude(){
+  const I=impState(); if(I.busy) return; const todo=I.cases.filter(c=>I.sel.has(c.key)&&!(I.done&&I.done[c.key])); if(!todo.length) return;
+  if(!confirm('استبعاد '+todo.length+' حالة؟ لن تظهر في الاستيراد القادم، وتقدر ترجعها من صندوق الوارد.')) return;
+  I.busy=true; updateImport(); let n=0;
+  try{ for(let k=0;k<todo.length;k+=20){ const r=await call('inboxAdd',{status:'dismissed',items:todo.slice(k,k+20).map(c=>impPayload(c,null,''))}); n+=r.added||0; }
+    I.sel=new Set(); await load(); toast('استُبعدت '+n+' حالة.'); }
+  catch(e){ toast(e.message,true); }
+  I.busy=false; updateImport();
+}
 async function impRun(){
   const I=impState(); if(I.busy) return; const todo=I.cases.filter(c=>I.sel.has(c.key)&&!(I.done&&I.done[c.key])); if(!todo.length) return;
   I.busy=true; I.stop=false; I.log=[]; I.done=I.done||{}; let ok=0;
@@ -1649,14 +1673,7 @@ async function impRun(){
         const file=c.aiFiles.length?await WA.aiImage(c.src,c):null;
         try{ ai=await call('aiSuggest',{caseId:'',bulk:true,text:c.text||'',invoiceText:invText,file:file||undefined}); }catch(e){ if(e.code==='auth') return logout(true); aiErr=e.message||'تعذر التحليل'; }
       }
-      const parsedTotal=c.total||0, parsedUnits=c.units||0;
-      const total=Math.round((parsedTotal+(ai&&c.aiFiles.length&&+ai.invoiceTotal||0))*100)/100||null;
-      const units=(parsedUnits+(ai&&c.aiFiles.length&&+ai.invoiceCount||0))||null;
-      const inv0=c.invoices[0]||{};
-      const light={id:hashId_(c.key),key:c.key,group:c.group,date:ymd_(c.t),time:hm_(c.t),sender:cleanSender_(c.sender),pharmacist:fixName_(inv0.pharmacist||''),pharmNo:inv0.pharmNo||'',branch:inv0.branch||'',
-        mention:c.mention||'',cats:c.cats,preview:(c.text||'').slice(0,160),total,units,attN:c.atts.length,attMissing:c.atts.filter(a=>a.missing).length,dup:c.dupCount||0,hasAI:!!ai,aiErr};
-      const detail={id:light.id,text:c.text||'',invoices:c.invoices.map(v=>({branch:v.branch,invoice:v.invoice,date:v.date,pharmacist:fixName_(v.pharmacist),pharmNo:v.pharmNo,total:v.total,units:v.units,discount:v.discount,items:v.items})),
-        atts:c.atts.map(a=>({name:a.name,kind:a.kind,missing:!!a.missing,parsed:!!a.parsed})),ai};
+      const {light,detail}=impPayload(c,ai,aiErr);
       await call('inboxAdd',{items:[{light,detail}]});
       I.done[c.key]=1; ok++; I.log.push({t:'✔ '+label+(ai?'':' — أُضيفت بدون تحليل: '+(aiErr||'لا يوجد نص أو فاتورة'))+(c.atts.some(a=>a.missing)?' (مرفق ناقص)':''),bad:!ai});
     }catch(e){ I.log.push({t:'✖ '+label+': '+(e.message||'خطأ'),bad:true}); }
@@ -1728,16 +1745,19 @@ function updateSc(){
 
 /* ----- inbox (cases tab) ----- */
 function inboxHtml(){
-  const admin=adminMode(); const L=(S.inbox||[]).filter(x=>x.status==='new'||admin&&x.status==='taken');
-  if(!L.length) return '';
-  const nNew=L.filter(x=>x.status==='new').length; const f=S.inboxCat||'';
+  const admin=adminMode(); const stF=admin?(S.inboxSt||'open'):'open'; const all=(S.inbox||[]);
+  const L=all.filter(x=>stF==='dismissed'?x.status==='dismissed':(x.status==='new'||admin&&x.status==='taken'));
+  if(!all.some(x=>x.status==='new'||x.status==='taken'||(admin&&x.status==='dismissed'))) return '';
+  const sel=S.inboxSel||(S.inboxSel=new Set()); [...sel].forEach(id=>{ if(!L.some(x=>x.id===id)) sel.delete(id); });
+  const nNew=all.filter(x=>x.status==='new').length, nDis=all.filter(x=>x.status==='dismissed').length; const f=S.inboxCat||'';
   const cats=[...new Set([].concat(...L.map(x=>x.cats||[])))];
   const rows=L.filter(x=>!f||(x.cats||[]).includes(f)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   return '<details class="panel sec" id="inboxPanel"'+(S.inboxOpen?' open':'')+'><summary style="cursor:pointer;font-weight:700">📥 صندوق الوارد من الواتساب: '+nNew+' حالة جديدة</summary>'+
-   '<div class="bar" style="margin-top:10px"><select id="inboxCat" aria-label="التصنيف"><option value="">كل التصنيفات</option>'+cats.map(c=>'<option'+(c===f?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select><span class="note">خذ الحالة لتقييمها؛ تتحول لمسودة باسمك وفيها اقتراحات الذكاء الاصطناعي، ثم راجعها وأرسلها للاعتماد.</span></div>'+
-   '<div class="tw"><table><thead><tr><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>النص</th><th>الفاتورة</th><th></th></tr></thead><tbody>'+
-   rows.map(x=>'<tr><td>'+esc(x.group)+'</td><td class="mono" style="white-space:nowrap">'+esc(x.date)+'<br>'+esc(x.time)+'</td><td>'+esc(x.pharmacist||x.sender)+(x.branch?'<div class="note" style="margin:0">فرع '+esc(x.branch)+'</div>':'')+'</td><td>'+esc(x.mention||'—')+'</td><td>'+(x.cats||[]).map(c=>'<span class="pill p-na" style="margin:1px">'+esc(c)+'</span>').join(' ')+'</td><td style="max-width:320px;font-size:12.5px">'+(x.preview?esc(x.preview)+'…':'<span class="note">بدون نص</span>')+(x.hasAI?'':'<div class="note" style="margin:0;color:var(--warn)">بدون تحليل AI</div>')+'</td><td class="num">'+(x.total?Number(x.total).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td><td style="white-space:nowrap">'+
-     (x.status==='new'?'<button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>'+(admin?' <button class="btn" data-inbdis="'+esc(x.id)+'">استبعاد</button>':''):'<span class="pill p-wait">مع '+esc(x.takenByName||'—')+'</span>'+(admin?' <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':''))+'</td></tr>').join('')+'</tbody></table></div></details>';
+   '<div class="bar" style="margin-top:10px">'+(admin?'<select id="inboxSt" aria-label="الحالة"><option value="open"'+(stF==='open'?' selected':'')+'>الجديدة ومع المقيّمين</option><option value="dismissed"'+(stF==='dismissed'?' selected':'')+'>المستبعدة ('+nDis+')</option></select>':'')+'<select id="inboxCat" aria-label="التصنيف"><option value="">كل التصنيفات</option>'+cats.map(c=>'<option'+(c===f?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select><span class="note">خذ الحالة لتقييمها؛ تتحول لمسودة باسمك وفيها اقتراحات الذكاء الاصطناعي، ثم راجعها وأرسلها للاعتماد.</span></div>'+
+   (admin?'<div class="actions" style="margin:8px 0">'+(stF==='dismissed'?'<button class="btn primary" id="btnInbBulkBack"'+(sel.size?'':' disabled')+'>↩ إرجاع المحدد للصندوق ('+sel.size+')</button>':'<button class="btn" id="btnInbBulkDis"'+(sel.size?'':' disabled')+'>🚫 استبعاد المحدد ('+sel.size+')</button><button class="btn" id="btnInbBulkBack"'+([...sel].some(id=>(L.find(x=>x.id===id)||{}).status==='taken')?'':' disabled')+'>↩ إرجاع المحدد للصندوق</button>')+'</div>':'')+
+   '<div class="tw"><table><thead><tr>'+(admin?'<th style="width:34px"><input type="checkbox" id="inboxAll" aria-label="تحديد الكل"'+(rows.length&&rows.every(x=>sel.has(x.id))?' checked':'')+'></th>':'')+'<th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>النص</th><th>الفاتورة</th><th></th></tr></thead><tbody>'+
+   rows.map(x=>'<tr>'+(admin?'<td><input type="checkbox" data-inbsel="'+esc(x.id)+'"'+(sel.has(x.id)?' checked':'')+'></td>':'')+'<td>'+esc(x.group)+'</td><td class="mono" style="white-space:nowrap">'+esc(x.date)+'<br>'+esc(x.time)+'</td><td>'+esc(x.pharmacist||x.sender)+(x.branch?'<div class="note" style="margin:0">فرع '+esc(x.branch)+'</div>':'')+'</td><td>'+esc(x.mention||'—')+'</td><td>'+(x.cats||[]).map(c=>'<span class="pill p-na" style="margin:1px">'+esc(c)+'</span>').join(' ')+'</td><td style="max-width:320px;font-size:12.5px">'+(x.preview?esc(x.preview)+'…':'<span class="note">بدون نص</span>')+(x.hasAI?'':'<div class="note" style="margin:0;color:var(--warn)">بدون تحليل AI</div>')+'</td><td class="num">'+(x.total?Number(x.total).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td><td style="white-space:nowrap">'+
+     (x.status==='dismissed'?'<span class="pill p-no">مستبعدة</span> <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':x.status==='new'?'<button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>'+(admin?' <button class="btn" data-inbdis="'+esc(x.id)+'">استبعاد</button>':''):'<span class="pill p-wait">مع '+esc(x.takenByName||'—')+'</span>'+(admin?' <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':''))+'</td></tr>').join('')+'</tbody></table></div></details>';
 }
 async function inboxTake(id){
   if(S.busy) return; S.busy=true;
@@ -2973,6 +2993,9 @@ document.addEventListener('click',e=>{
   if(t.id==='btnImpRun') return impRun();
   if(t.id==='btnImpStop'){ impState().stop=true; return; }
   if(t.dataset&&t.dataset.impdel!==undefined){ const I=impState(); I.srcs.splice(+t.dataset.impdel,1); I.cases=[]; I.sel=new Set(); return updateImport(); }
+  if(t.id==='btnImpExclude') return impExclude();
+  if(t.id==='btnInbBulkDis'||t.id==='btnInbBulkBack'){ const ids=[...(S.inboxSel||[])]; if(!ids.length||S.busy) return; const dis=t.id==='btnInbBulkDis'; if(dis&&!confirm('استبعاد '+ids.length+' حالة من صندوق الوارد؟')) return;
+    S.busy=true; return call('inboxSetMany',{ids,status:dis?'dismissed':'new'}).then(r=>{ toast((dis?'استُبعدت ':'أُرجعت للصندوق ')+r.n+' حالة.'); S.inboxSel=new Set(); return load(); }).then(()=>{ S.inboxOpen=true; onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.dataset&&t.dataset.take) return inboxTake(t.dataset.take);
   if(t.dataset&&(t.dataset.inbdis||t.dataset.inbback)){ const id=t.dataset.inbdis||t.dataset.inbback; if(S.busy) return; S.busy=true; return call('inboxSet',{id,status:t.dataset.inbdis?'dismissed':'new'}).then(load).then(()=>{ S.inboxOpen=true; onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.dataset&&t.dataset.impview) return impView(t.dataset.impview);
@@ -3041,6 +3064,9 @@ document.addEventListener('change',e=>{
   if(el.id==='impHideOld'){ impState().f.hideOld=el.checked; return updateImport(); }
   if(el.dataset&&el.dataset.impsel){ const I=impState(); el.checked?I.sel.add(el.dataset.impsel):I.sel.delete(el.dataset.impsel); return updateImport(); }
   if(el.id==='impSelAllBox'){ const I=impState(); impFiltered().forEach(c=>{ el.checked?I.sel.add(c.key):I.sel.delete(c.key); }); return updateImport(); }
+  if(el.id==='inboxSt'){ S.inboxSt=el.value; S.inboxSel=new Set(); S.inboxOpen=true; return updateCases(); }
+  if(el.dataset&&el.dataset.inbsel){ const s_=S.inboxSel||(S.inboxSel=new Set()); el.checked?s_.add(el.dataset.inbsel):s_.delete(el.dataset.inbsel); S.inboxOpen=true; return updateCases(); }
+  if(el.id==='inboxAll'){ const s_=S.inboxSel||(S.inboxSel=new Set()); el.closest('table').querySelectorAll('[data-inbsel]').forEach(b=>{ el.checked?s_.add(b.dataset.inbsel):s_.delete(b.dataset.inbsel); }); S.inboxOpen=true; return updateCases(); }
   if(el.id==='inboxCat'){ S.inboxCat=el.value; S.inboxOpen=true; return updateCases(); }
   if(el.id==='invFile'&&el.files&&el.files[0]&&S.draft){ const f=el.files[0]; el.value=''; prepInvoice(f).then(x=>{ x.draft=S.draft; S.invoice=x; invUi(); toast('أُرفقت الفاتورة. اضغط «اقترح» لقراءتها مع النص.'); }).catch(e=>toast(e.message,true)); return; }
   if(el.id==='stageSel'){ call('setPostStage',{id:S.draft.id,stage:el.value}).then(load).then(onData).catch(e=>{toast(e.message,true);}); return; }
