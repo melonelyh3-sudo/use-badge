@@ -1935,6 +1935,14 @@ async function hcDownload(){
 }
 
 /* ----- analysis ----- */
+// مطابقة الاسم الأول بين العربي والإنجليزي (اسامة ↔ Osama، احمد ↔ Ahmed، حامد ↔ Hamed):
+// هيكل الحروف الساكنة + هل يبدأ الاسم بحرف علة (ا/ع ↔ a/e/i/o)
+const AR2L={'ب':'b','ت':'t','ث':'t','ج':'k','ح':'h','خ':'k','د':'d','ذ':'d','ر':'r','ز':'z','س':'s','ش':'s','ص':'s','ض':'d','ط':'t','ظ':'z','غ':'k','ف':'f','ق':'k','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','ة':'h','ڤ':'f','گ':'k','چ':'k','پ':'b'};
+const NAME_STOP=/^(ممتاز|ممتازه|ينور|تسلم|ايدك|ايديك|يديك|برافو|براڤو|الله|اللهم|شاء|ماشاء|احسنت|دكتور|دكتوره|يادكتور|يادكتوره|مجهود|رائع|شكرا|عليك|عليكي|بارك|حلو|جميل|جدا|دايما|كالعاده|المعتاد|تعامل|ترشيحات|اختيارات|الحاله|مشاركه|ماقصرت|متالق|مبدع|عاش|بطل|تمام|حاضر|اكيد|nice|good|great|well|done|bravo|excellent)$/;
+function nameKey_(w){ w=String(w||'').toLowerCase().trim(); if(!w) return ''; let v,sk;
+  if(/[\u0600-\u06FF]/.test(w)){ w=WA.normA(w); if(NAME_STOP.test(w)) return ''; v=/^[اعء]/.test(w); sk=[...w].map(ch=>AR2L[ch]||'').join(''); }
+  else{ w=w.replace(/[^a-z]/g,''); if(!w||NAME_STOP.test(w)) return ''; v=/^[aeiou]/.test(w); sk=w.replace(/^(al|el)(?=[a-z]{3})/,'').replace(/ph/g,'f').replace(/kh|gh/g,'k').replace(/sh/g,'s').replace(/th/g,'t').replace(/dh/g,'d').replace(/[qgcj]/g,'k').replace(/[aeiouyw]/g,''); }
+  sk=sk.replace(/(.)\1+/g,'$1').replace(/h$/,''); return sk.length>=2?(v?'v':'c')+sk:''; }
 // المجموعة في القائمة قد تكون D4 أو اسم الـ District (Dr. Deiaa) الموجود في اسم ملف التصدير
 function hcGroupOf(p){ const I=impState(); const G=Object.keys(I.groupMsgs||{}); if(!p.group) return ''; if(G.includes(p.group)) return p.group; const k=normN_(p.group); if(k.length<3) return '';
   return G.find(g=>((I.groupNames||{})[g]||'').split(' ').join(' ').includes(k))||''; }
@@ -1959,7 +1967,7 @@ function anResolver(group,names){
 function anCompute(){
   const I=impState(), A=anState(), win=AN_WIN; const idx=hcIndex();
   const groups=Object.keys(I.groupMsgs||{}).filter(g=>!A.groups.size||A.groups.has(g)).sort();
-  const cases=[], replies=[], unknown={};
+  const cases=[], replies=[], unknown={}, unkRep={}, talMsg={}, talByGroup={};
   for(const g of groups){
     const GM=I.groupMsgs[g], res=anResolver(g,GM.names);
     const gc=I.cases.filter(c=>c.group===g).sort((a,b)=>a.t-b.t);
@@ -1977,27 +1985,37 @@ function anCompute(){
       if(c.mention){ const m=c._m||res(c.mention); sup=(m.p&&(m.p.role==='sup'||m.p.role==='am'))?{key:m.key,name:m.name,p:m.p}:(m.p&&ph.p&&ph.p.sup&&idx.supByName.get(normN_(ph.p.sup)))?{key:hcId_(idx.supByName.get(normN_(ph.p.sup))),name:ph.p.sup,p:idx.supByName.get(normN_(ph.p.sup))}:m.p?null:(idx.supByName.get(normN_(c.mention))?{key:hcId_(idx.supByName.get(normN_(c.mention))),name:idx.supByName.get(normN_(c.mention)).alias||idx.supByName.get(normN_(c.mention)).en,p:idx.supByName.get(normN_(c.mention))}:{key:m.key,name:m.name}); }
       else if(ph.p&&ph.p.sup){ const sp=idx.supByName.get(normN_(ph.p.sup)); sup=sp?{key:hcId_(sp),name:sp.alias||sp.ar||sp.en,p:sp}:{key:'n:'+normN_(ph.p.sup),name:ph.p.sup}; }
       const branch=inv0.branch||(ph.p&&ph.p.branch)||'';
-      const toks=[...new Set([ph.p&&ph.p.ar,fixName_(inv0.pharmacist||''),cleanSender_(c.sender),ph.p&&ph.p.en].filter(Boolean).map(s=>normN_(s).split(' ')[0]).filter(k=>k&&k.length>=3&&!/^\d+$/.test(k)))];
-      cases.push({c,g,ph,sup,branch,toks,replies:[],first:null,supT:null,net:c.invoices.reduce((s,v)=>s+(+v.total||0),0),units:c.invoices.reduce((s,v)=>s+(+v.units||0),0),hasInv:!!(c.invoices.length||c.aiFiles.length)});
+      const nmSrc=[ph.p&&ph.p.ar,fixName_(inv0.pharmacist||''),cleanSender_(c.sender),ph.p&&ph.p.en].filter(Boolean);
+      const toks=[...new Set(nmSrc.map(s=>normN_(s).split(' ')[0]).filter(k=>k&&k.length>=3&&!/^\d+$/.test(k)))];
+      const nk=[...new Set(nmSrc.map(s=>nameKey_(normN_(s).split(' ')[0])).filter(Boolean))];
+      cases.push({c,g,ph,sup,branch,toks,nk,replies:[],first:null,supT:null,net:c.invoices.reduce((s,v)=>s+(+v.total||0),0),units:c.invoices.reduce((s,v)=>s+(+v.units||0),0),hasInv:!!(c.invoices.length||c.aiFiles.length)});
     });
     const gcs=cases.filter(x=>x.g===g);
     // رسائل الحالات نفسها لا تُحسب ردودًا
     const own=m=>gcs.some(x=>x.c.sender===m.sender&&m.t>=x.c.t&&m.t<=x.c.lastT);
     const from=gc.length?gc[0].t:null, to=gc.length?new Date(gc[gc.length-1].t.getTime()+win):null;
-    const msgs=from?GM.msgs.filter(m=>m.t>=from&&m.t<=to):[];
+    const msgs=from?GM.msgs.filter(m=>m.t>=from&&m.t<=to):[]; const caseSenders=new Set(gc.map(c=>c.sender));
+    // ردود Talent: كل رسالة مكتوبة (ولو حرف أو إيموجي) خلال الفترة، عدا المحذوفة والستيكر والرسائل التي فيها روابط
+    const pf=I.from?new Date(I.from+'T00:00:00'):(gc[0]&&gc[0].t), pt=I.to?new Date(I.to+'T23:59:59'):(gc.length?new Date(gc[gc.length-1].t.getTime()+86400000):null);
+    if(pf&&pt) GM.msgs.forEach(m=>{ if(m.t<pf||m.t>pt) return; const b=m.body||''; if(/This message was deleted|تم حذف هذه الرسالة|https?:\/\/|www\./i.test(b)) return;
+      const txt=b.replace(/<attached:[^>]*>|<[a-z]+ omitted>|\b(?:image|video|audio|GIF|sticker|document) omitted\b|<This message was edited>|<تم تعديل هذه الرسالة>/gi,'').trim(); if(!txt) return;
+      const w=res(m.sender); if(!w.p||w.p.role!=='talent') return;
+      const t=talMsg[w.key]||(talMsg[w.key]={key:w.key,name:w.name,m:0,groups:new Set()}); t.m++; t.groups.add(g); talByGroup[g]=(talByGroup[g]||0)+1; });
     for(const m of msgs){
       if(own(m)) continue; if(/This message was deleted|تم حذف هذه الرسالة|^\s*$/.test(m.body)) continue;
       const who=res(m.sender); let role=who.p?who.p.role:'';
       if(!role&&mentionKeys.has(normN_(cleanSender_(m.sender)))) role='sup';
+      if(!role&&!who.p&&!caseSenders.has(m.sender)&&PRAISE_RX.test(m.body)&&m.body.length<300){ const k=g+'|'+who.key; const u=unkRep[k]||(unkRep[k]={g,name:who.name,phone:who.phone||(isPhone_(m.sender)?phoneKey_(m.sender):''),n:0}); u.n++; }
       if(role!=='sup'&&role!=='talent'&&role!=='am') continue;
       const open=gcs.filter(x=>x.c.t<m.t&&m.t-x.c.t<=win);
       if(!open.length) continue;
       const notMine=x=>!x.replies.some(r=>r.key===who.key);
       const words=new Set(WA.normA(m.body).split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>=3));
+      const wkeys=new Set([...words].map(nameKey_).filter(Boolean));
       // خلال 24 ساعة: 1) الرد يذكر اسم الصيدلي، 2) حالة من فريق المشرف أو ذكرته بالمنشن، 3) أقرب حالة خلال 3 ساعات
       // ثم الردود المتأخرة (حتى 7 أيام): بالاسم ثم بالمشرف المسؤول، مع تفضيل الحالة التي لم يُرد عليها
       const day=open.filter(x=>m.t-x.c.t<=86400000);
-      const byName=L=>L.filter(x=>notMine(x)&&x.toks.some(k=>words.has(k))), bySup=L=>L.filter(x=>notMine(x)&&x.sup&&x.sup.key===who.key);
+      const byName=L=>L.filter(x=>notMine(x)&&(x.toks.some(k=>words.has(k))||x.nk.some(k=>wkeys.has(k)))), bySup=L=>L.filter(x=>notMine(x)&&x.sup&&x.sup.key===who.key);
       const pick=L=>L.filter(x=>!x.replies.length).pop()||L.pop();
       let tgt=byName(day).pop()||bySup(day).pop();
       if(!tgt){ const recent=open.filter(x=>m.t-x.c.lastT<=3*3600000); tgt=recent.filter(x=>!x.replies.length).pop()||recent.filter(notMine).pop(); }
@@ -2008,7 +2026,7 @@ function anCompute(){
     }
   }
   const sel=cases.filter(x=>(!A.cat||(A.cat==='__none'?!x.c.cats.length:x.c.cats.includes(A.cat))));
-  return {groups,cases:sel,allCases:cases,replies:replies.filter(r=>sel.includes(r.x)),unknown:Object.values(unknown).sort((a,b)=>b.n-a.n)};
+  return {groups,cases:sel,allCases:cases,replies:replies.filter(r=>sel.includes(r.x)),unknown:Object.values(unknown).sort((a,b)=>b.n-a.n),unkRep:Object.values(unkRep).filter(u=>u.n>=2).sort((a,b)=>b.n-a.n),talMsg,talByGroup};
 }
 const mins_=ms=>Math.round(ms/60000);
 const fmtDur_=m=>m==null||!isFinite(m)?'—':(m<60?m+'د':m<1440?Math.floor(m/60)+'س'+(m%60?' '+(m%60)+'د':''):Math.floor(m/1440)+' يوم'+(Math.floor(m%1440/60)?' '+Math.floor(m%1440/60)+'س':''));
@@ -2028,13 +2046,16 @@ function anAgg(R){
   const supL=Object.values(sups).map(s=>{ let team=null,part=null; if(idx.n&&s.p){ const nm=new Set([normN_(s.p.ar),normN_(s.p.en),normN_(s.p.alias)].filter(Boolean)); const T=hcAll().filter(p=>p.role==='pharm'&&p.status==='active'&&nm.has(normN_(p.sup))&&R.groups.includes(hcGroupOf(p))); const P=new Set(C.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); team=T.length; part=T.filter(p=>P.has(hcId_(p))).length; }
     let region=s.p?(s.p.region||''):''; if(team){ const rc={}; hcAll().filter(p=>p.role==='pharm'&&p.status==='active'&&[normN_(s.p.ar),normN_(s.p.en),normN_(s.p.alias)].includes(normN_(p.sup))&&p.region).forEach(p=>{ rc[p.region]=(rc[p.region]||0)+1; }); const top=Object.keys(rc).sort((a,b)=>rc[b]-rc[a])[0]; if(top) region=top; }
     return Object.assign(s,{rate:pct_(s.rep,s.n),med:median_(s.t),region,team,part,groups:[...s.groups].sort().join(' · ')}); }).sort((a,b)=>b.n-a.n);
-  const tal={}; R.replies.filter(r=>r.role==='talent').forEach(r=>{ const t=tal[r.key]||(tal[r.key]={name:r.name,n:0,groups:new Set(),t:[]}); t.n++; t.groups.add(r.g); t.t.push(mins_(r.t-r.x.c.t)); });
-  const talL=Object.values(tal).map(t=>Object.assign(t,{groups:[...t.groups].sort().join(' · '),med:median_(t.t)})).sort((a,b)=>b.n-a.n);
+  const tal={}; Object.values(R.talMsg||{}).forEach(x=>{ tal[x.key]={name:x.name,m:x.m,n:0,groups:new Set(x.groups),t:[]}; });
+  R.replies.filter(r=>r.role==='talent').forEach(r=>{ const t=tal[r.key]||(tal[r.key]={name:r.name,m:0,n:0,groups:new Set(),t:[]}); t.n++; t.groups.add(r.g); t.t.push(mins_(r.t-r.x.c.t)); });
+  const talL=Object.values(tal).map(t=>Object.assign(t,{groups:[...t.groups].sort().join(' · '),med:median_(t.t)})).sort((a,b)=>b.m-a.m||b.n-a.n);
+  const tbg=R.talByGroup||{}; groups.forEach(x=>{ x.talent=tbg[x.g]||0; });
   const cats={}; C.forEach(c=>{ if(!c.c.cats.length) cats.__none=(cats.__none||0)+1; c.c.cats.forEach(k=>{ cats[k]=(cats[k]||0)+1; }); });
   const phs={}; C.forEach(c=>{ const p=phs[c.ph.key]||(phs[c.ph.key]={name:c.ph.name,branch:c.branch,g:c.g,n:0,net:0}); p.n++; p.net+=c.net; if(!p.branch) p.branch=c.branch; });
   const topPh=Object.values(phs).sort((a,b)=>b.n-a.n).slice(0,10);
   let nonPart=[]; if(idx.n){ const P=new Set(C.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); nonPart=hcAll().filter(p=>p.role==='pharm'&&p.status==='active'&&R.groups.includes(hcGroupOf(p))&&!P.has(hcId_(p))); }
-  return {kpi:kpi(C),groups,sups:supL,tal:talL,cats,topPh,nonPart,un:C.filter(c=>!c.first).sort((a,b)=>b.c.t-a.c.t)};
+  const kAll=kpi(C); kAll.talent=Object.values(R.talByGroup||{}).reduce((a,b)=>a+b,0);
+  return {kpi:kAll,groups,sups:supL,tal:talL,cats,topPh,nonPart,un:C.filter(c=>!c.first).sort((a,b)=>b.c.t-a.c.t)};
 }
 function anChart(R){
   const C=R.cases; if(!C.length) return '';
@@ -2083,7 +2104,7 @@ function updateAn(){
   h+='</section>';
   h+='<div class="grid2"><section class="panel sec"><h3>أداء المشرفين في الرد</h3><div class="tw"><table><thead><tr><th>المشرف</th><th>المنطقة</th><th>المجموعات</th><th>حالات فريقه</th><th>ردّ عليها</th><th>نسبة الرد</th><th>وسيط الوقت</th>'+(hasHc?'<th>مشاركة الفريق</th>':'')+'</tr></thead><tbody>'+
     G.sups.map(s=>'<tr class="clickable'+(A.sup===s.key?' sel':'')+'" data-ansup="'+esc(s.key)+'"><td>'+esc(s.name)+'</td><td>'+esc(s.region||'—')+'</td><td>'+esc(s.groups)+'</td><td class="num">'+s.n+'</td><td class="num">'+s.rep+'</td><td><span class="pill '+anRateCls(s.rate)+'">'+s.rate+'%</span></td><td class="num">'+fmtDur_(s.med)+'</td>'+(hasHc?'<td class="num">'+(s.team?s.part+' من '+s.team:'—')+'</td>':'')+'</tr>').join('')+'</tbody></table></div><p class="note">«ردّ عليها» = ردّ المشرف نفسه. اضغط اسم المشرف لعرض حالاته التي بلا رد.</p></section>'+
-    '<section class="panel sec"><h3>ردود فريق Talent</h3>'+(G.tal.length?'<div class="tw"><table><thead><tr><th>العضو</th><th>حالات ردّ عليها</th><th>المجموعات</th><th>وسيط الوقت</th></tr></thead><tbody>'+G.tal.map(t=>'<tr><td>'+esc(t.name)+'</td><td class="num">'+t.n+'</td><td>'+esc(t.groups)+'</td><td class="num">'+fmtDur_(t.med)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="empty">'+(hasHc?'لا توجد ردود من فريق Talent في الفترة.':'تحتاج قائمة الموظفين لتمييز فريق Talent.')+'</div>')+
+    '<section class="panel sec"><h3>ردود فريق Talent</h3>'+(G.tal.length?'<div class="tw"><table><thead><tr><th>العضو</th><th>الردود (رسائل)</th><th>حالات ردّ عليها</th><th>المجموعات</th><th>وسيط الوقت</th></tr></thead><tbody>'+G.tal.map(t=>'<tr><td>'+esc(t.name)+'</td><td class="num"><b>'+t.m+'</b></td><td class="num">'+t.n+'</td><td>'+esc(t.groups)+'</td><td class="num">'+fmtDur_(t.med)+'</td></tr>').join('')+'</tbody></table></div><p class="note">«الردود» = كل رسالة مكتوبة من العضو في الفترة (ولو حرف أو إيموجي)، عدا الستيكر والمحذوفة والرسائل التي فيها روابط. «حالات ردّ عليها» = الحالات التي رُبط بها رده.</p>':'<div class="empty">'+(hasHc?'لا توجد ردود من فريق Talent في الفترة.':'تحتاج قائمة الموظفين لتمييز فريق Talent.')+'</div>')+
     '<h3 style="margin-top:14px">أكثر الصيادلة مشاركة</h3>'+G.topPh.map(p=>'<div class="hb static"><span class="l">'+esc(p.name)+(p.branch?' · '+esc(p.branch):'')+'</span><span class="t"><i style="width:'+Math.round(p.n*100/G.topPh[0].n)+'%;background:#2fa37a"></i></span><span class="v">'+p.n+'</span></div>').join('')+'</section></div>';
   let un=G.un; if(A.sup) un=un.filter(c=>(c.sup?c.sup.key:'—')===A.sup);
   const supName=A.sup?((G.sups.find(s=>s.key===A.sup)||{}).name||''):'';
@@ -2091,6 +2112,8 @@ function updateAn(){
   h+='<section class="panel sec"><h3>حالات بلا رد <span class="pill p-no">'+un.length+'</span>'+(A.sup?' — '+esc(supName)+' <button class="btn" data-ansup="">عرض الكل</button>':'')+'</h3>'+(un.length?'<div class="tw"><table><thead><tr><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>الفرع</th><th>المشرف</th><th>التصنيف</th><th>النص</th><th></th></tr></thead><tbody>'+
     shown.map(c=>'<tr><td>'+esc(c.g)+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.c.t)+' '+hm_(c.c.t)+'</td><td>'+esc(c.ph.name)+'</td><td class="num">'+esc(c.branch||'—')+'</td><td>'+esc(c.sup?c.sup.name:'—')+'</td><td>'+c.c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')+'</td><td style="max-width:300px;font-size:12.5px">'+esc((c.c.text||'(بدون نص)').slice(0,110))+'</td><td><button class="btn" data-anpick="'+esc(c.c.key)+'"'+(I.sel.has(c.c.key)?' disabled':'')+'>'+(I.sel.has(c.c.key)?'محددة للاستيراد':'تحديد للاستيراد')+'</button></td></tr>').join('')+'</tbody></table></div>'+(un.length>shown.length?'<div class="actions"><button class="btn" id="btnAnMoreUn">عرض الكل ('+un.length+')</button></div>':''):'<div class="empty">كل الحالات تم الرد عليها 👏</div>')+'</section>';
   if(hasHc&&G.nonPart.length) h+='<section class="panel sec"><details><summary style="cursor:pointer;font-weight:700">صيادلة لم يشاركوا في الفترة: '+G.nonPart.length+' (حسب قائمة الموظفين للمجموعات المحمّلة)</summary><div class="tw" style="margin-top:8px"><table><thead><tr><th>الاسم</th><th>الفرع</th><th>المجموعة</th><th>المشرف</th></tr></thead><tbody>'+G.nonPart.slice(0,300).map(p=>'<tr><td>'+esc(p.ar||p.en)+'</td><td class="num">'+esc(p.branch)+'</td><td>'+esc(p.group)+'</td><td>'+esc(p.sup)+'</td></tr>').join('')+'</tbody></table></div></details></section>';
+  if(R.unkRep.length) h+='<section class="panel sec"><h3>أشخاص يردّون على الحالات وغير موجودين في القائمة <span class="pill p-wait">'+R.unkRep.length+'</span></h3><p class="note" style="margin:0 0 8px">ردودهم لا تُحسب حتى تضيفهم. إذا كان الشخص من فريق Talent أو مشرفًا، أضفه بضغطة، وتُعاد الحسبة فورًا.</p><div class="tw"><table><thead><tr><th>الاسم في الواتساب</th><th>المجموعة</th><th>رسائل مدح/رد</th><th>الجوال</th><th></th></tr></thead><tbody>'+
+    R.unkRep.slice(0,60).map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.g)+'</td><td class="num">'+u.n+'</td><td class="mono" dir="ltr">'+esc(u.phone?maskPhone_(u.phone):'—')+'</td><td style="white-space:nowrap"><button class="btn" data-anadd="talent|'+esc(u.name)+'|'+esc(u.phone||'')+'">➕ Talent</button> <button class="btn" data-anadd="sup|'+esc(u.name)+'|'+esc(u.phone||'')+'">➕ مشرف</button></td></tr>').join('')+'</tbody></table></div></section>';
   if(R.unknown.length) h+='<section class="panel sec"><details><summary style="cursor:pointer;font-weight:700">مرسلون غير موجودين في قائمة الموظفين: '+R.unknown.length+'</summary><p class="note">أضف أرقامهم أو أسماءهم للقائمة حتى تُنسب حالاتهم للمشرف الصحيح. رفع تصدير الويب مع تصدير الجوال يظهر أرقام الجوالات ويحسّن الربط.</p><div class="tw"><table><thead><tr><th>الاسم في الواتساب</th><th>المجموعة</th><th>الحالات</th></tr></thead><tbody>'+R.unknown.slice(0,200).map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.g)+'</td><td class="num">'+u.n+'</td></tr>').join('')+'</tbody></table></div></details></section>';
   h+='<p class="note">طريقة احتساب الرد: تُحسب أي رسالة من مشرف أو Talent أو مدير منطقة بعد الحالة مهما تأخرت. تُنسب أولًا لحالة ذُكر اسم صيدليها في الرد، ثم لحالة من فريق المشرف أو ذكرته بالمنشن، ثم لأقرب حالة خلال 3 ساعات لم يُرد عليها. التصدير لا يحفظ الرسالة المقتبسة، فالنسبة تقديرية ودقيقة في الغالب.</p>';
   box.innerHTML=h;
@@ -2103,7 +2126,7 @@ async function anSave(){
     kpi:{cases:K.cases,ph:K.ph,br:K.br,inv:K.inv,net:Math.round(K.net),avg:K.avg,units:K.units,rate:K.rate,med:K.med,un:K.un,talent:K.talent},
     groups:G.groups.map(x=>({g:x.g,cases:x.cases,ph:x.ph,team:x.team||0,part:x.part||0,inv:x.inv,net:Math.round(x.net),avg:x.avg,rate:x.rate,med:x.med,talent:x.talent,un:x.un})),
     sups:G.sups.slice(0,80).map(s=>({name:s.name,region:s.region||'',groups:s.groups,n:s.n,rep:s.rep,rate:s.rate,med:s.med,team:s.team||0,part:s.part||0})),
-    tal:G.tal.slice(0,40).map(t=>({name:t.name,n:t.n,groups:t.groups,med:t.med})),
+    tal:G.tal.slice(0,40).map(t=>({name:t.name,m:t.m,n:t.n,groups:t.groups,med:t.med})),
     cats:Object.keys(G.cats).map(k=>[k==='__none'?'غير مصنّف':k,G.cats[k]]).sort((a,b)=>b[1]-a[1]).slice(0,30),
     top:G.topPh.slice(0,10).map(p=>({name:p.name,branch:p.branch||'',n:p.n}))};
   const r=await call('anSave',{month:to.slice(0,7),from,to,groups:A.cat?{}:groups,snap});
@@ -2122,7 +2145,7 @@ function repHtml(doc,sn){
    '<div class="rs-kpis">'+kp('إجمالي الحالات',K.cases,K.ph+' صيدلي · '+K.br+' فرع')+kp('حالات بفاتورة',K.inv+'%','صافي المقروء '+money_(K.net)+' ر.س')+kp('متوسط الفاتورة',money_(K.avg)+' ر.س',K.units+' قطعة')+kp('نسبة الرد',K.rate+'%',K.un+' حالة بلا رد')+kp('وسيط وقت الرد',fmtDur_(K.med),'')+kp('ردود Talent',K.talent,'حالة')+'</div>'+
    '<h3>المجموعات</h3>'+tbl(['المجموعة','الحالات','صيادلة','المشاركة','بفاتورة','صافي الفواتير','متوسط الفاتورة','نسبة الرد','وسيط الرد','Talent','بلا رد'],(sn.groups||[]).map(x=>'<tr><td><b>'+esc(x.g)+'</b></td><td>'+x.cases+'</td><td>'+x.ph+'</td><td>'+(x.team?x.part+' من '+x.team+' ('+pct_(x.part,x.team)+'%)':'—')+'</td><td>'+x.inv+'%</td><td>'+money_(x.net)+'</td><td>'+money_(x.avg)+'</td><td>'+rc(x.rate)+'</td><td>'+fmtDur_(x.med)+'</td><td>'+x.talent+'</td><td>'+x.un+'</td></tr>'))+
    '<h3>أداء المشرفين في الرد</h3>'+tbl(['المشرف','المنطقة','المجموعات','حالات فريقه','ردّ عليها','نسبة الرد','وسيط الوقت','مشاركة الفريق'],(sn.sups||[]).map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.region||'—')+'</td><td>'+esc(x.groups||'')+'</td><td>'+x.n+'</td><td>'+x.rep+'</td><td>'+rc(x.rate)+'</td><td>'+fmtDur_(x.med)+'</td><td>'+(x.team?x.part+' من '+x.team:'—')+'</td></tr>'))+
-   '<div class="rs-2"><div><h3>ردود فريق Talent</h3>'+((sn.tal||[]).length?tbl(['العضو','حالات ردّ عليها','المجموعات','وسيط الوقت'],sn.tal.map(t=>'<tr><td>'+esc(t.name)+'</td><td>'+t.n+'</td><td>'+esc(t.groups)+'</td><td>'+fmtDur_(t.med)+'</td></tr>')):'<p class="rs-n">لا توجد ردود من Talent.</p>')+
+   '<div class="rs-2"><div><h3>ردود فريق Talent</h3>'+((sn.tal||[]).length?tbl(['العضو','الردود','حالات ردّ عليها','المجموعات','وسيط الوقت'],sn.tal.map(t=>'<tr><td>'+esc(t.name)+'</td><td><b>'+(t.m==null?'—':t.m)+'</b></td><td>'+t.n+'</td><td>'+esc(t.groups)+'</td><td>'+fmtDur_(t.med)+'</td></tr>')):'<p class="rs-n">لا توجد ردود من Talent.</p>')+
    '<h3>أكثر الصيادلة مشاركة</h3>'+tbl(['الصيدلي','الفرع','الحالات'],(sn.top||[]).map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+esc(p.branch||'—')+'</td><td>'+p.n+'</td></tr>'))+'</div>'+
    '<div><h3>التصنيفات</h3>'+(sn.cats||[]).map(c=>'<div class="rs-b"><span>'+esc(c[0])+'</span><i><u style="width:'+Math.round(c[1]*100/cmax)+'%"></u></i><b>'+c[1]+'</b></div>').join('')+'</div></div>'+
    '<p class="rs-n">نسبة الرد ووقته تقديريان: يُحسب أي رد من مشرف أو Talent أو مدير منطقة بعد الحالة، ويُنسب للحالة بذكر اسم الصيدلي أو المشرف المسؤول أو الأقرب زمنيًا. «وسيط وقت الرد» = نصف الحالات المجاب عليها حصلت على أول رد خلال هذه المدة.</p></div>';
@@ -2162,7 +2185,7 @@ async function anXlsx(){
   add('الملخص',[['المؤشر','القيمة'],['الحالات',K.cases],['صيادلة مشاركون',K.ph],['فروع',K.br],['حالات بفاتورة %',K.inv],['صافي الفواتير المقروءة',Math.round(K.net)],['متوسط الفاتورة',K.avg],['متوسط القطع',K.units],['نسبة الرد %',K.rate],['وسيط وقت الرد (دقيقة)',K.med],['حالات بلا رد',K.un],['ردود Talent',K.talent]]);
   add('المجموعات',[['المجموعة','الحالات','صيادلة','فريق المجموعة','شاركوا','بفاتورة %','صافي الفواتير','متوسط الفاتورة','نسبة الرد %','وسيط وقت الرد (د)','ردود Talent','بلا رد']].concat(G.groups.map(x=>[x.g,x.cases,x.ph,x.team||'',x.part||'',x.inv,Math.round(x.net),x.avg,x.rate,x.med,x.talent,x.un])));
   add('المشرفون',[['المشرف','المنطقة','المجموعات','حالات فريقه','ردّ عليها','نسبة الرد %','وسيط الوقت (د)','حجم الفريق','شاركوا']].concat(G.sups.map(s=>[s.name,s.region,s.groups,s.n,s.rep,s.rate,s.med,s.team==null?'':s.team,s.part==null?'':s.part])));
-  add('Talent',[['العضو','حالات ردّ عليها','المجموعات','وسيط الوقت (د)']].concat(G.tal.map(t=>[t.name,t.n,t.groups,t.med])));
+  add('Talent',[['العضو','الردود (رسائل)','حالات ردّ عليها','المجموعات','وسيط الوقت (د)']].concat(G.tal.map(t=>[t.name,t.m,t.n,t.groups,t.med])));
   add('الحالات',[['المجموعة','التاريخ','الوقت','الصيدلي','الفرع','المشرف','التصنيفات','صافي الفاتورة','القطع','عدد الردود','أول رد بعد (د)','رد المشرف بعد (د)','من ردّ','النص']].concat(R.cases.map(c=>[c.g,ymd_(c.c.t),hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',c.c.cats.join('، '),c.net?Math.round(c.net*100)/100:'',c.units||'',c.replies.length,c.first?mins_(c.first-c.c.t):'',c.supT?mins_(c.supT-c.c.t):'',[...new Set(c.replies.map(r=>r.name))].join('، '),(c.c.text||'').slice(0,1000)])));
   add('بلا رد',[['المجموعة','التاريخ','الصيدلي','الفرع','المشرف','النص']].concat(G.un.map(c=>[c.g,ymd_(c.c.t)+' '+hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',(c.c.text||'').slice(0,500)])));
   if(G.nonPart.length) add('لم يشاركوا',[['الاسم','الفرع','المجموعة','المشرف']].concat(G.nonPart.map(p=>[p.ar||p.en,p.branch,p.group,p.sup])));
@@ -2980,6 +3003,9 @@ document.addEventListener('click',e=>{
   if(t.id==='btnRepClose'){ S.repOpen=null; return updateRep(); }
   if(t.dataset&&t.dataset.repdel){ const [id,key]=t.dataset.repdel.split('|'); if(!confirm('حذف ملخص '+id+'؟ لا يمكن التراجع.')) return; if(S.busy) return; S.busy=true; return call('anDel',{id,key}).then(()=>{ S.anHist=null; S.repDoc=null; if(S.repOpen&&S.repOpen.id===id&&S.repOpen.key===key) S.repOpen=null; toast('حُذف الملخص.'); return updateRep(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.id==='btnRepPdf'||t.id==='btnRepPng'){ if(S.busy) return; S.busy=true; const old=t.textContent; t.textContent='جارٍ التجهيز…'; return (t.id==='btnRepPdf'?repPdf():repPng()).catch(e=>toast(e.message,true)).then(()=>{ S.busy=false; t.textContent=old; }); }
+  if(t.dataset&&t.dataset.anadd){ const [role,name,phone]=t.dataset.anadd.split('|'); if(S.busy) return; S.busy=true; t.disabled=true;
+    S.hcMan=JSON.parse(JSON.stringify((S.hc&&S.hc.manual)||[])); S.hcMan.push({name,phone:phone?'+'+phone:'',role,group:'',wa:name});
+    return hcManSave().then(()=>updateAn()).catch(e=>{ toast(e.message,true); t.disabled=false; }).then(()=>{S.busy=false;}); }
   if(t.id==='btnAnMoreUn'){ anState().showAllUn=true; return updateAn(); }
   if(t.id==='btnAnXlsx'){ if(S.busy) return; S.busy=true; return anXlsx().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.id==='btnAnSave'){ if(S.busy) return; S.busy=true; return anSave().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
