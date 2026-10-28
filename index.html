@@ -1582,7 +1582,7 @@ function updateImport(){
     '<div style="margin-top:6px"><b style="font-size:13px">المجموعة:</b> '+Object.keys(gcnt).sort().map(g=>chip('data-impgrp',g,g,gcnt[g],I.f.groups.has(g))).join('')+
     '</div><div style="margin-top:6px"><b style="font-size:13px">الترشيح:</b> '+[3,2,1].map(t=>chip('data-imptier',String(t),TIER_AR[t],I.cases.filter(c=>c.tier===t).length,I.f.tier.has(String(t)))).join('')+
     ' <label class="f" style="display:inline-flex;gap:6px;align-items:center;margin:0 8px">الترتيب <select id="impSort"><option value="score"'+(I.sort==='score'?' selected':'')+'>الأعلى ترشيحًا</option><option value="time"'+(I.sort!=='score'?' selected':'')+'>حسب الوقت</option></select></label>'+
-    '<span style="display:inline-flex;gap:6px;align-items:center">حدد أفضل <input type="number" id="impTopN" min="1" max="200" value="'+(I.topN||20)+'" style="width:70px"> <button class="btn" id="btnImpTop">تحديد</button></span>'+
+    '<span style="display:inline-flex;gap:6px;align-items:center">حدد أفضل <input type="number" id="impTopN" min="1" max="200" value="'+(I.topN||20)+'" style="width:70px"> <button class="btn" id="btnImpTop">تحديد</button></span>'+impSelDist()+
     '</div><div style="margin-top:6px"><b style="font-size:13px">المرفقات:</b> '+IMP_ATT.map(([k,l])=>chip('data-impatt',k,l,I.cases.filter(c=>impAttKinds(c).includes(k)).length,I.f.att.has(k))).join('')+
     ' <label class="chip"><input type="checkbox" id="impInvOnly"'+(I.f.inv?' checked':'')+'>بفاتورة فقط</label><label class="chip"><input type="checkbox" id="impHideOld"'+(I.f.hideOld?' checked':'')+'>إخفاء المستوردة سابقًا</label></div>';
   const rows=impFiltered(); const oldKeys=new Set(S.inboxKeys||[]);
@@ -1705,6 +1705,10 @@ function impScore(c,msgs){
   c.score=Math.min(100,s); c.sigs=sig; c.why=why; c.tier=c.score>=70?3:c.score>=45?2:1;
 }
 const TIER_AR={3:'⭐⭐⭐ قوية',2:'⭐⭐ متوسطة',1:'⭐ ضعيفة'};
+// توزيع الحالات المحددة على المجموعات، يظهر بجانب زر «تحديد» ويتحدث مع أي تغيير في الاختيار
+function impSelDist(){ const I=impState(); const S_=I.cases.filter(c=>I.sel.has(c.key)); if(!S_.length) return '';
+  const d={}; S_.forEach(c=>{ d[c.group||'—']=(d[c.group||'—']||0)+1; });
+  return ' <span class="pill p-ok" style="margin-inline-start:8px">المحدد '+S_.length+' حالة: '+Object.keys(d).sort().map(g=>esc(g)+' '+d[g]).join('، ')+'</span>'; }
 function impTop(){
   const I=impState(), n=Math.max(1,Math.min(200,parseInt(($('#impTopN')||{}).value,10)||20)); I.topN=n; const old=new Set(S.inboxKeys||[]);
   const cand=impFiltered().filter(c=>!old.has(c.key)&&!(I.done&&I.done[c.key])).sort((a,b)=>b.score-a.score||b.t-a.t);
@@ -1712,8 +1716,7 @@ function impTop(){
   const byG={}; cand.forEach(c=>{ (byG[c.group||'—']=byG[c.group||'—']||[]).push(c); });
   Object.keys(byG).forEach(g=>{ const seen=new Set(), first=[], rest=[]; byG[g].forEach(c=>{ const k=WA.normA(cleanSender_(c.sender)); (seen.has(k)?rest:first).push(c); seen.add(k); }); byG[g]=first.concat(rest); });
   const L=[]; while(L.length<n){ const G=Object.keys(byG).filter(g=>byG[g].length).sort((a,b)=>byG[b][0].score-byG[a][0].score); if(!G.length) break; for(const g of G){ if(L.length>=n) break; L.push(byG[g].shift()); } }
-  const dist={}; L.forEach(c=>{ dist[c.group||'—']=(dist[c.group||'—']||0)+1; });
-  I.sel=new Set(L.map(c=>c.key)); toast('حُددت '+L.length+' حالة موزعة على المجموعات: '+Object.keys(dist).sort().map(g=>g+' '+dist[g]).join('، ')+'.'); updateImport();
+  I.sel=new Set(L.map(c=>c.key)); updateImport();
 }
 /* محرر إشارات الشارات (الإعدادات) */
 function updateSc(){
