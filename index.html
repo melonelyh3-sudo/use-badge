@@ -1345,9 +1345,11 @@ const WA=(()=>{
 
   /* ---------- segmentation ---------- */
   function segment(msgs){
-    const cases=[]; const last={}; // sender -> open case
+    const cases=[]; const last={}; const pend={}; // sender -> open case / نص قصير معلّق ينتظر صورة
     const WINDOW=3*60*1000, LATE=10*60*1000, SAME=5*1000, MIN=50;
-    for(const m of msgs){
+    // هل يكتب نفس الصيدلي نصًا طويلًا خلال 3 دقائق بعد هذا الملف؟ (الملف إذن بداية حالة جديدة)
+    const nextText=(ix,m)=>{ for(let j=ix+1;j<msgs.length;j++){ const n=msgs[j]; if(n.t-m.t>WINDOW) return false; if(n.sender!==m.sender) continue; const a=attachmentsOf(n.body); if(a.atts.length) continue; return (stripMentions(a.text).match(/[\p{L}\p{N}]/gu)||[]).length>=MIN; } return false; };
+    for(let ix=0;ix<msgs.length;ix++){ const m=msgs[ix];
       if(isSystem(m.body)) continue;
       const {text,atts}=attachmentsOf(m.body);
       const plain=stripMentions(text); const men=mentionOf(text);
@@ -1355,7 +1357,10 @@ const WA=(()=>{
       const hasAtt=atts.length>0, longText=letters>=MIN;
       let c=last[m.sender]; const gap=c?(m.t-c.lastT):Infinity;
       if(!hasAtt&&!longText){ // short: mention-only joins open case, others are chatter/replies
-        if(c&&gap<=WINDOW&&men&&plain.length<25){ c.mention=c.mention||men; c.lastT=m.t; }
+        if(c&&gap<=WINDOW&&men&&plain.length<25){ c.mention=c.mention||men; c.lastT=m.t; continue; }
+        // نص قصير بعد صورة/ملف نفس الصيدلي مباشرة (خلال 3 دقائق) = تعليق الصورة
+        if(c&&gap<=WINDOW&&c.atts.length&&!c.long&&letters>=2&&!/^\s*(تسلم|شكرا|شكراً|ممتاز|برافو|الله ينور|حاضر|تمام)/.test(plain)){ c.text=(c.text?c.text+'\n':'')+text.replace(/@\s*~?\s*/g,'@').trim(); if(men&&!c.mention) c.mention=men; c.lastT=m.t; continue; }
+        if(letters>=2) pend[m.sender]={t:m.t,text:text.replace(/@\s*~?\s*/g,'@').trim(),men};
         continue;
       }
       let join=false;
@@ -1364,13 +1369,17 @@ const WA=(()=>{
         else if(hasAtt&&!longText&&(!c.long||gap<=SAME)) join=true;   // more files, or a file sent with the text
         else if(hasAtt&&!longText&&c.long&&!c.atts.length) join=true; // text first, then the file
         else if(longText&&!hasAtt&&c.long&&gap<=2*60*1000) join=true;  // تكملة النص في رسالة ثانية خلال دقيقتين
+        else if(hasAtt&&!longText&&c.long&&gap<=2*60*1000&&!nextText(ix,m)) join=true;  // فاتورة إضافية بعد نص الحالة خلال دقيقتين (إلا إذا تبعها نص حالة جديدة)
       }
       // حتى 10 دقائق: فاتورة بدون نص ثم نص بدون مرفق (أو العكس) من نفس الصيدلي = حالة واحدة
       if(!join&&c&&gap<=LATE){
         if(longText&&!hasAtt&&!c.long&&c.atts.length) join=true;
         else if(hasAtt&&!longText&&c.long&&!c.atts.length) join=true;
       }
-      if(!join){ c={sender:m.sender,t:m.t,lastT:m.t,text:'',mention:'',atts:[]}; cases.push(c); last[m.sender]=c; }
+      if(!join){ c={sender:m.sender,t:m.t,lastT:m.t,text:'',mention:'',atts:[]}; cases.push(c); last[m.sender]=c;
+        // نص قصير كتبه الصيدلي قبل الصورة مباشرة (خلال دقيقة)
+        const p=pend[m.sender]; if(p&&hasAtt&&m.t-p.t<=60000&&m.t>=p.t){ c.text=p.text; c.t=p.t; if(p.men) c.mention=p.men; } }
+      delete pend[m.sender];
       // النص الطويل يُضاف دائمًا، والتعليق القصير المكتوب مع صورة أو ملف (مثل Friday offer) يُضاف أيضًا حتى لا يضيع
       if(longText||(hasAtt&&letters>=2)){ c.text=(c.text?c.text+'\n':'')+text.replace(/@\s*~?\s*/g,'@').trim(); if(longText) c.long=true; }
       if(men&&!c.mention) c.mention=men;
