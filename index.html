@@ -230,8 +230,11 @@ const IMPORT_CATS_DEFAULT=[
  {n:'صحة الرجل',k:'انتصاب, منوي, منويه, تستوستيرون, الهرمون الذكري, سنافي, snafi, نمر رويال, nemr, durex, ديوركس, x-hero, gentaplex, ارجينين, arginine, جنسنج, ginseng, منشط'},
  {n:'الأم والطفل',k:'طفل, اطفال, ابنه, ابنها, رضيع, حامل, حفاض, حفاضات, baby, kids, junior, omega mind, اوميجا مايند, nyda, قمل'},
  {n:'الفم والأسنان',k:'اسنان, لثه, فرشه اسنان, معجون, غسول الفم, sensodyn, sensodyne, oral-b, colgate, gengigel, avohex, crest'},
- {n:'الألم والأدوية بدون وصفة',k:'مسكن, صداع, كدمه, زور, التهاب الحلق, بنادول, panadol, reparil, ريباريل, roxonin, strepsils, ستربسلس, neo healar, نيوهيلار, mebo'},
- {n:'وصفتي',k:'وصفه, وصفتي, روشته, تامين, wasfaty'}
+ {n:'الألم والأدوية بدون وصفة',k:'مسكن, صداع, الم, آلام, مفاصل, مفصل, ركبه, ظهر, كدمه, عضلي, بنادول, panadol, reparil, ريباريل, roxonin, voltaren, فولتارين, joint, collagen, كولاجين, glucosamine, جلوكوزامين, neo healar, نيوهيلار, mebo'},
+ {n:'وصفتي',k:'وصفه, وصفتي, روشته, تامين, wasfaty, ضغط, سكر, كوليسترول, كولسترول, انسولين, insulin'},
+ {n:'الجهاز الهضمي',k:'قولون, امساك, اسهال, حموضه, حرقان, معده, هضم, بروبيوتيك, probiotic, انتفاخ, غازات, ibs, جرثومه, بواسير, prolife'},
+ {n:'الوزن والرياضة',k:'تخسيس, تنحيف, وزن, رجيم, دايت, كيتو, رياضه, جيم, بروتين, تمرين, عضلات, whey, protein, mounjaro, مونجارو, ozempic, اوزمبيك, صيام متقطع'},
+ {n:'البرد والمناعة',k:'برد, انفلونزا, كحه, سعال, زكام, مناعه, احتقان, حلق, زور, التهاب الحلق, strepsils, ستربسلس, redoxon'}
 ];
 document.documentElement.dir='rtl';
 document.documentElement.lang='ar';
@@ -1325,7 +1328,7 @@ const WA=(()=>{
     }
     return out;
   }
-  const isSystem=b=>/<message_history_notice|<album message>|changed their phone number|changed the phone number|security code|joined using|created group|created this group|added|left$|removed|changed the (subject|group)|This message was deleted|تم حذف هذه الرسالة|انضم|غادر|أضاف|Messages and calls are end-to-end/i.test(b)&&b.length<160;
+  const isSystem=b=>/<message_history_notice|<album message>|changed this group.s settings|changed this group|changed the settings|changed the group description|pinned a message|changed their phone number|changed the phone number|security code|joined using|created group|created this group|added|left$|removed|changed the (subject|group)|This message was deleted|تم حذف هذه الرسالة|انضم|غادر|أضاف|Messages and calls are end-to-end/i.test(b)&&b.length<160;
   function attachmentsOf(body){
     const atts=[]; let text=body;
     text=text.replace(/<(image|video|audio|GIF|sticker|document) omitted>/gi,(m,k)=>{ if(!/sticker/i.test(k)) atts.push({name:'('+k+')',omitted:true}); return ' '; });
@@ -1616,7 +1619,7 @@ async function impLoadFiles(files){
   I.busy=false; updateImport();
 }
 async function impExtract(){
-  const I=impState(); if(I.busy||!I.srcs.length) return; I.busy=true; I.cases=[]; I.sel=new Set(); I.dropped=[]; I.groupMsgs={}; I.groupNames={}; I.an=null; I.extractMsg='جارٍ استخراج الحالات وقراءة الفواتير…'; updateImport();
+  const I=impState(); if(I.busy||!I.srcs.length) return; I.busy=true; I.cases=[]; I.sel=new Set(); I.dropped=[]; I.groupMsgs={}; S._gmemo={}; I.groupNames={}; I.an=null; I.extractMsg='جارٍ استخراج الحالات وقراءة الفواتير…'; updateImport();
   try{
     const from=I.from?new Date(I.from+'T00:00:00'):null, to=I.to?new Date(I.to+'T23:59:59'):null; const cats=impCats(); let all=[];
     let filled=0, replies=0;
@@ -1629,7 +1632,7 @@ async function impExtract(){
       const cs0=await WA.buildCases(s,from,to,cats,(i,n)=>{ const m=$('#impExtractMsg'); if(m) m.textContent=s.group+': قراءة الحالة '+i+' من '+n+'…'; });
       // ردود المشرفين وفريق Talent بدون مرفق، والرسائل التي لا تبدو حالة، لا تُحسب حالات
       let res=null; try{ if(S.me&&S.me.canEdit){ await hcLoad(); if(hcIndex().n) res=anResolver(s.group,s.names||{}); } }catch(e){}
-      const cs=cs0.filter(c=>{ if(c.reply){ replies++; I.dropped.push({g:s.group,t:c.t,sender:cleanSender_(c.sender),text:c.text,why:'لا تبدو حالة'}); return false; } if(res&&!c.atts.length){ const r=res(c.sender); if(r.p&&r.p.role!=='pharm'){ replies++; I.dropped.push({g:s.group,t:c.t,sender:r.name,text:c.text,why:({sup:'مشرف',talent:'Talent',am:'مدير منطقة'})[r.p.role]}); return false; } } return true; });
+      const cs=cs0.filter(c=>{ if(c.reply){ replies++; I.dropped.push({g:s.group,t:c.t,sender:cleanSender_(c.sender),text:c.text,why:'لا تبدو حالة'}); return false; } if(res){ const r0=res(c.sender); if(r0.p&&(r0.p.role==='talent'||r0.p.role==='am')){ replies++; I.dropped.push({g:s.group,t:c.t,sender:r0.name,text:c.text,why:r0.p.role==='talent'?'Talent':'مدير منطقة'}); return false; } } if(res&&!c.atts.length){ const r=res(c.sender); if(r.p&&r.p.role!=='pharm'){ replies++; I.dropped.push({g:s.group,t:c.t,sender:r.name,text:c.text,why:({sup:'مشرف',talent:'Talent',am:'مدير منطقة'})[r.p.role]}); return false; } } return true; });
       cs.forEach(c=>{ c.src=s; c.group=s.group; c.key=[c.group,c.t.toISOString().slice(0,16),WA.normA(c.sender)].join('|'); }); all=all.concat(cs);
     }
     all.sort((a,b)=>a.t-b.t); all.forEach(c=>impScore(c,(I.groupMsgs[c.group]||{}).msgs)); I.cases=all;
@@ -1943,22 +1946,49 @@ function nameKey_(w){ w=String(w||'').toLowerCase().trim(); if(!w) return ''; le
   if(/[\u0600-\u06FF]/.test(w)){ w=WA.normA(w); if(NAME_STOP.test(w)) return ''; v=/^[اعء]/.test(w); sk=[...w].map(ch=>AR2L[ch]||'').join(''); }
   else{ w=w.replace(/[^a-z]/g,''); if(!w||NAME_STOP.test(w)) return ''; v=/^[aeiou]/.test(w); sk=w.replace(/^(al|el)(?=[a-z]{3})/,'').replace(/ph/g,'f').replace(/kh|gh/g,'k').replace(/sh/g,'s').replace(/th/g,'t').replace(/dh/g,'d').replace(/[qgcj]/g,'k').replace(/[aeiouyw]/g,''); }
   sk=sk.replace(/(.)\1+/g,'$1').replace(/h$/,''); return sk.length>=2?(v?'v':'c')+sk:''; }
+// مطابقة اسم الواتساب بالاسم الرسمي (Belal Gamal ← Bilal Jamal Saeed، هانى عبدالرحمن ← Hani Shehata Abdel Rahman)
+const NM_SKIP=/^(dr|د|دكتور|دكتوره|ph|pharm|pharmacist|صيدلي|صيدلانيه|al|el|ال|مشرف|upc|united|المتحده)$/;
+function nmToks_(x){ const t=WA.normA(String(x||'')).toLowerCase().replace(/[^\p{L}\s]/gu,' ').split(/\s+/).filter(w=>w&&!NM_SKIP.test(w)); const o=[];
+  for(let i=0;i<t.length;i++){ const w=t[i]; if(/^(abd|abdel|abdul|abdal|abu|abo|abul|عبد|ابو)$/.test(w)&&t[i+1]){ o.push(w+t[++i]); continue; } o.push(w); } return o; }
+const levK_=(a,b)=>{ if(Math.abs(a.length-b.length)>1) return 9; const d=[...Array(b.length+1).keys()]; for(let i=1;i<=a.length;i++){ let pv=d[0]; d[0]=i; for(let j=1;j<=b.length;j++){ const t=d[j]; d[j]=Math.min(d[j]+1,d[j-1]+1,pv+(a[i-1]===b[j-1]?0:1)); pv=t; } } return d[b.length]; };
+function tokMatch_(a,b){ const ka=nameKey_(a), kb=nameKey_(b); return !!ka&&!!kb&&(ka===kb||(ka.length>=5&&ka[0]===kb[0]&&levK_(ka,kb)<=1)); }
+function matchDisplay_(display,people,nameOf){ const dt=nmToks_(display); if(!dt.length) return null; const hit=new Set();
+  people.forEach(p=>{ (Array.isArray(nameOf(p))?nameOf(p):[nameOf(p)]).forEach(nm=>{ const ft=nmToks_(nm); if(!ft.length||!tokMatch_(dt[0],ft[0])) return;
+    if(dt.length===1||dt.slice(1).every(t=>ft.slice(1).some(x=>tokMatch_(t,x)))) hit.add(p); }); });
+  return hit.size===1?[...hit][0]:null; }
+// اسم المشرف كما يظهر في الواتساب (قد يحتوي كلمات زائدة: «د.حمدي اسلام مشرف ابها UPC»)
+function supOf_(display){ const pool=hcAll().filter(p=>p.role==='sup'||p.role==='am'); const names=p=>[p.alias,p.en,p.ar].filter(Boolean);
+  let p=matchDisplay_(display,pool,names); if(p) return p;
+  const t=nmToks_(display).slice(0,2); if(t.length<2) return null; const hit=new Set();
+  pool.forEach(x=>names(x).forEach(nm=>{ const ft=nmToks_(nm); if(ft.length>=2&&tokMatch_(t[0],ft[0])&&ft.slice(1).some(y=>tokMatch_(t[1],y))) hit.add(x); }));
+  return hit.size===1?[...hit][0]:null; }
+// التصنيف الرئيسي للحالة: التصنيف الأكثر تكرارًا لكلماته في النص وأصناف الفاتورة
+function primaryTopic_(text,items){ const hay=' '+WA.normA(String(text||'')+' '+(items||[]).join(' ')).toLowerCase()+' '; const words=' '+hay.replace(/[^\p{L}\p{N}\s\-+]/gu,' ').replace(/\s+/g,' ')+' ';
+  let best='__none', bs=0; impCats().forEach(c=>{ let n=0; String(c.k||'').split(/[,،\n]/).map(x=>WA.normA(x).toLowerCase().trim()).filter(x=>x.length>=2).forEach(k=>{ n+=(k.length<=3?words.split(' '+k+' ').length:hay.split(k).length)-1; }); if(n>bs){ bs=n; best=c.n; } }); return best; }
 // المجموعة في القائمة قد تكون D4 أو اسم الـ District (Dr. Deiaa) الموجود في اسم ملف التصدير
-function hcGroupOf(p){ const I=impState(); const G=Object.keys(I.groupMsgs||{}); if(!p.group) return ''; if(G.includes(p.group)) return p.group; const k=normN_(p.group); if(k.length<3) return '';
-  return G.find(g=>((I.groupNames||{})[g]||'').split(' ').join(' ').includes(k))||''; }
+function hcGroupOf(p){ const I=impState(); const G=Object.keys(I.groupMsgs||{}); if(!p.group) return ''; if(G.includes(p.group)) return p.group;
+  const sig=G.join(',')+'|'+p.group, M=(S._gmemo=S._gmemo||{}); if(sig in M) return M[sig];
+  const k=normN_(p.group); let g=k.length>=3?G.find(g=>((I.groupNames||{})[g]||'').includes(k)):'';
+  // اختلاف التهجئة بين الـ Headcount واسم ملف التصدير (Hussein / Hussien)
+  if(!g){ const dt=nmToks_(p.group); if(dt.length) g=G.find(x=>{ const ft=nmToks_((I.groupNames||{})[x]||''); return dt.every(t=>{ const k=nameKey_(t); return k&&ft.some(y=>nameKey_(y)===k); }); }); }   // تطابق تام للهيكل الصوتي فقط (Soliman ≠ Salem)
+  return (M[sig]=g||''); }
 // كل الردود تُحسب مهما تأخرت (حد أمان 7 أيام حتى لا تُنسب رسائل عامة لحالات قديمة)
 const AN_WIN=7*86400000;
 function anState(){ if(!S.an) S.an={groups:new Set(),cat:'',sup:'',showAllUn:false}; return S.an; }
 function anResolver(group,names){
   const idx=hcIndex(); const n2p={}, disp={}; Object.keys(names||{}).forEach(ph=>{ const k=normN_(names[ph]); n2p[k]=phoneKey_(ph); disp[k]=cleanSender_(names[ph]); });
-  const cache=new Map();
-  const fn=function(sender,pharmNo){
-    const ck=sender+'|'+(pharmNo||''); if(cache.has(ck)) return cache.get(ck);
+  const cache=new Map(); let pool=null;
+  const fn=function(sender,pharmNo,mode){
+    const ck=sender+'|'+(pharmNo||'')+'|'+(mode||''); if(cache.has(ck)) return cache.get(ck);
     let p=null, phone='';
     if(isPhone_(sender)) phone=phoneKey_(sender); else phone=n2p[normN_(sender)]||'';
     if(phone) p=idx.byPhone.get(phone)||null;
     if(!p&&pharmNo) p=idx.byEmp.get(String(pharmNo))||null;
     if(!p){ const k=normN_(cleanSender_(sender)); if(k.length>=4) p=idx.byName.get(k)||null; }
+    if(!p&&idx.n&&!isPhone_(sender)){
+      if(mode==='msg') p=supOf_(cleanSender_(sender));
+      if(!p&&mode!=='msg'){ if(!pool) pool=hcAll().filter(x=>x.role==='pharm'&&hcGroupOf(x)===group); p=matchDisplay_(cleanSender_(sender),pool,x=>[x.en,x.ar].filter(Boolean)); }
+    }
     const r={p, key:p?hcId_(p):'n:'+normN_(cleanSender_(sender)||sender), name:p?(p.alias||p.ar||p.en):cleanSender_(sender), phone};
     cache.set(ck,r); return r;
   };
@@ -1967,14 +1997,14 @@ function anResolver(group,names){
 function anCompute(){
   const I=impState(), A=anState(), win=AN_WIN; const idx=hcIndex();
   const groups=Object.keys(I.groupMsgs||{}).filter(g=>!A.groups.size||A.groups.has(g)).sort();
-  const cases=[], replies=[], unknown={}, unkRep={}, talMsg={}, talByGroup={};
+  const cases=[], replies=[], unknown={}, unkRep={}, talMsg={}, talByGroup={}, supMsg={};
   for(const g of groups){
     const GM=I.groupMsgs[g], res=anResolver(g,GM.names);
     const gc=I.cases.filter(c=>c.group===g).sort((a,b)=>a.t-b.t);
     // منشن بصيغة الويب قد يلتصق به أول كلمات النص: نطابق أطول اسم معروف في بدايته
     const nameKeys=[...new Set(Object.keys(res.n2p).concat([...idx.byName.keys()]))].filter(k=>k.length>=5);
-    const resM=mn=>{ const r=res(mn); if(r.p) return r; const k=normN_(mn); let best=''; nameKeys.forEach(key=>{ if(key.length>best.length&&(k===key||k.startsWith(key+' '))) best=key; });
-      if(!best) return r; if(res.n2p[best]){ const x=res('+'+res.n2p[best]); return x.p?x:{p:null,key:'n:'+best,name:res.disp[best]||mn,phone:x.phone}; } const p=idx.byName.get(best); return p?{p,key:hcId_(p),name:p.ar||p.en,phone:p.phone}:r; };
+    const resM=mn=>{ const r=res(mn,null,'msg'); if(r.p) return r; const k=normN_(mn); let best=''; nameKeys.forEach(key=>{ if(key.length>best.length&&(k===key||k.startsWith(key+' '))) best=key; });
+      if(!best){ const sp=idx.n?supOf_(mn):null; return sp?{p:sp,key:hcId_(sp),name:sp.alias||sp.en||sp.ar,phone:sp.phone}:r; } if(res.n2p[best]){ const x=res('+'+res.n2p[best]); return x.p?x:{p:null,key:'n:'+best,name:res.disp[best]||mn,phone:x.phone}; } const p=idx.byName.get(best); return p?{p,key:hcId_(p),name:p.ar||p.en,phone:p.phone}:r; };
     gc.forEach(c=>{ if(c.mention){ const r=resM(c.mention); c._m=r; } });
     const mentionKeys=new Set(gc.map(c=>c._m&&c._m.key.startsWith('n:')?normN_(c.mention):'').filter(Boolean));
     gc.forEach(c=>{ if(c._m&&c._m.p) [c._m.p.ar,c._m.p.en].forEach(n=>{ if(n) mentionKeys.add(normN_(n)); }); });
@@ -1988,7 +2018,7 @@ function anCompute(){
       const nmSrc=[ph.p&&ph.p.ar,fixName_(inv0.pharmacist||''),cleanSender_(c.sender),ph.p&&ph.p.en].filter(Boolean);
       const toks=[...new Set(nmSrc.map(s=>normN_(s).split(' ')[0]).filter(k=>k&&k.length>=3&&!/^\d+$/.test(k)))];
       const nk=[...new Set(nmSrc.map(s=>nameKey_(normN_(s).split(' ')[0])).filter(Boolean))];
-      cases.push({c,g,ph,sup,branch,toks,nk,replies:[],first:null,supT:null,net:c.invoices.reduce((s,v)=>s+(+v.total||0),0),units:c.invoices.reduce((s,v)=>s+(+v.units||0),0),hasInv:!!(c.invoices.length||c.aiFiles.length)});
+      cases.push({c,g,ph,sup,branch,toks,nk,topic:primaryTopic_(c.text,[].concat(...c.invoices.map(v=>v.items.map(i=>i.name)))),replies:[],first:null,supT:null,net:c.invoices.reduce((s,v)=>s+(+v.total||0),0),units:c.invoices.reduce((s,v)=>s+(+v.units||0),0),hasInv:!!(c.invoices.length||c.aiFiles.length)});
     });
     const gcs=cases.filter(x=>x.g===g);
     // رسائل الحالات نفسها لا تُحسب ردودًا
@@ -1998,12 +2028,15 @@ function anCompute(){
     // ردود Talent: كل رسالة مكتوبة (ولو حرف أو إيموجي) خلال الفترة، عدا المحذوفة والستيكر والرسائل التي فيها روابط
     const pf=I.from?new Date(I.from+'T00:00:00'):(gc[0]&&gc[0].t), pt=I.to?new Date(I.to+'T23:59:59'):(gc.length?new Date(gc[gc.length-1].t.getTime()+86400000):null);
     if(pf&&pt) GM.msgs.forEach(m=>{ if(m.t<pf||m.t>pt) return; const b=m.body||''; if(/This message was deleted|تم حذف هذه الرسالة|https?:\/\/|www\./i.test(b)) return;
-      const txt=b.replace(/<attached:[^>]*>|<[a-z]+ omitted>|\b(?:image|video|audio|GIF|sticker|document) omitted\b|<This message was edited>|<تم تعديل هذه الرسالة>/gi,'').trim(); if(!txt) return;
-      const w=res(m.sender); if(!w.p||w.p.role!=='talent') return;
-      const t=talMsg[w.key]||(talMsg[w.key]={key:w.key,name:w.name,m:0,groups:new Set()}); t.m++; t.groups.add(g); talByGroup[g]=(talByGroup[g]||0)+1; });
+      const txt=b.replace(/<attached:[^>]*>|<[a-z]+ omitted>|\b(?:image|video|audio|GIF|sticker|document) omitted\b|<This message was edited>|<تم تعديل هذه الرسالة>/gi,'').trim();
+      const sticker=!txt&&/STICKER|sticker omitted/i.test(b); if(!txt&&!sticker) return;
+      const w=res(m.sender,null,'msg'); if(!w.p) return; const role=w.p.role;
+      if(role==='sup'||role==='am'){ const k=g+'|'+w.key; const sm=supMsg[k]||(supMsg[k]={g,key:w.key,name:w.name,role,written:0,sticker:0}); sticker?sm.sticker++:sm.written++; return; }
+      if(role!=='talent'||sticker) return;
+      const t=talMsg[w.key]||(talMsg[w.key]={key:w.key,name:w.name,m:0,groups:new Set(),byGroup:{}}); t.m++; t.groups.add(g); t.byGroup[g]=(t.byGroup[g]||0)+1; talByGroup[g]=(talByGroup[g]||0)+1; });
     for(const m of msgs){
       if(own(m)) continue; if(/This message was deleted|تم حذف هذه الرسالة|^\s*$/.test(m.body)) continue;
-      const who=res(m.sender); let role=who.p?who.p.role:'';
+      const who=res(m.sender,null,'msg'); let role=who.p?who.p.role:'';
       if(!role&&mentionKeys.has(normN_(cleanSender_(m.sender)))) role='sup';
       if(!role&&!who.p&&!caseSenders.has(m.sender)&&PRAISE_RX.test(m.body)&&m.body.length<300){ const k=g+'|'+who.key; const u=unkRep[k]||(unkRep[k]={g,name:who.name,phone:who.phone||(isPhone_(m.sender)?phoneKey_(m.sender):''),n:0}); u.n++; }
       if(role!=='sup'&&role!=='talent'&&role!=='am') continue;
@@ -2028,7 +2061,7 @@ function anCompute(){
     }
   }
   const sel=cases.filter(x=>(!A.cat||(A.cat==='__none'?!x.c.cats.length:x.c.cats.includes(A.cat))));
-  return {groups,cases:sel,allCases:cases,replies:replies.filter(r=>sel.includes(r.x)),unknown:Object.values(unknown).sort((a,b)=>b.n-a.n),unkRep:Object.values(unkRep).filter(u=>u.n>=2).sort((a,b)=>b.n-a.n),talMsg,talByGroup};
+  return {groups,cases:sel,allCases:cases,replies:replies.filter(r=>sel.includes(r.x)),unknown:Object.values(unknown).sort((a,b)=>b.n-a.n),unkRep:Object.values(unkRep).filter(u=>u.n>=2).sort((a,b)=>b.n-a.n),talMsg,talByGroup,supMsg};
 }
 const mins_=ms=>Math.round(ms/60000);
 const fmtDur_=m=>m==null||!isFinite(m)?'—':(m<60?m+'د':m<1440?Math.floor(m/60)+'س'+(m%60?' '+(m%60)+'د':''):Math.floor(m/1440)+' يوم'+(Math.floor(m%1440/60)?' '+Math.floor(m%1440/60)+'س':''));
@@ -2057,7 +2090,18 @@ function anAgg(R){
   const topPh=Object.values(phs).sort((a,b)=>b.n-a.n).slice(0,10);
   let nonPart=[]; if(idx.n){ const P=new Set(C.map(c=>c.ph.p&&hcId_(c.ph.p)).filter(Boolean)); nonPart=hcAll().filter(p=>p.role==='pharm'&&p.status==='active'&&R.groups.includes(hcGroupOf(p))&&!P.has(hcId_(p))); }
   const kAll=kpi(C); kAll.talent=Object.values(R.talByGroup||{}).reduce((a,b)=>a+b,0);
-  return {kpi:kAll,groups,sups:supL,tal:talL,cats,topPh,nonPart,un:C.filter(c=>!c.first).sort((a,b)=>b.c.t-a.c.t)};
+  // ----- جداول بنفس شكل ملف المتابعة الشهري -----
+  const SM=Object.values(R.supMsg||{});
+  groups.forEach(x=>{ x.supMsgs=SM.filter(m=>m.g===x.g).reduce((a,m)=>a+m.written+m.sticker,0); x.covered=x.cases-x.un; });
+  kAll.supMsgs=groups.reduce((a,x)=>a+x.supMsgs,0); kAll.covered=kAll.cases-kAll.un; kAll.team=groups.reduce((a,x)=>a+(x.team||0),0);
+  const supRows=[]; R.groups.forEach(g=>{ const rows={}; const row=(k,name,role)=>rows[k]||(rows[k]={g,key:k,name,role:role||'sup',team:0,cases:0,covered:0,written:0,sticker:0});
+    if(idx.n) hcAll().filter(p=>p.role==='pharm'&&p.status==='active'&&p.sup&&hcGroupOf(p)===g).forEach(p=>{ const sp=idx.supByName.get(normN_(p.sup)); row(sp?hcId_(sp):'n:'+normN_(p.sup),sp?(sp.alias||sp.en||sp.ar):p.sup,sp&&sp.role).team++; });
+    C.filter(c=>c.g===g).forEach(c=>{ const r=c.sup?row(c.sup.key,c.sup.name,c.sup.p&&c.sup.p.role):row('—','غير محدد (لم يُطابَق الصيدلي ولا يوجد منشن)','none'); r.cases++; if(c.supT) r.covered++; });
+    SM.filter(m=>m.g===g).forEach(m=>{ const r=row(m.key,m.name,m.role); r.written+=m.written; r.sticker+=m.sticker; });
+    Object.values(rows).sort((a,b)=>(a.role==='none')-(b.role==='none')||String(a.name).localeCompare(String(b.name))).forEach(r=>supRows.push(r)); });
+  const topics={}; R.groups.forEach(g=>{ topics[g]={}; C.filter(c=>c.g===g).forEach(c=>{ topics[g][c.topic]=(topics[g][c.topic]||0)+1; }); });
+  const talRows=Object.values(R.talMsg||{}).map(t=>{ const n=(tal[t.key]||{}).n||0, med=(tal[t.key]||{}).med; return {name:t.name,byGroup:t.byGroup||{},m:t.m,n,med}; }).sort((a,b)=>b.m-a.m);
+  return {kpi:kAll,groups,sups:supL,supRows,topics,talRows,tal:talL,cats,topPh,nonPart,un:C.filter(c=>!c.first).sort((a,b)=>b.c.t-a.c.t)};
 }
 function anChart(R){
   const C=R.cases; if(!C.length) return '';
@@ -2094,20 +2138,32 @@ function updateAn(){
   if(!hasHc) h+='<p class="note" style="color:var(--warn)">⚠️ لم تُرفع قائمة الموظفين بعد (المستخدمون والإعدادات). بدونها تظهر الأسماء كما في الواتساب، ويُعرف المشرف من المنشن فقط، ولا تُحسب ردود Talent ولا نسبة المشاركة.</p>';
   if(A.cat) h+='<p class="note">مفلتر على التصنيف: <b>'+esc(A.cat==='__none'?'غير مصنّف':A.cat)+'</b> <button class="btn" data-ancat="">إلغاء الفلتر</button></p>';
   h+='<div class="kpis">'+kp('إجمالي الحالات',K.cases,cmp||(K.ph+' صيدلي'),'')+kp('صيادلة مشاركون',K.ph,'في '+K.br+' فرعًا')+kp('حالات بفاتورة',K.inv+'%','صافي المقروء منها '+money_(K.net)+' ر.س')+kp('متوسط الفاتورة',money_(K.avg),'ر.س · '+K.units+' قطعة')+
-    kp('نسبة الرد',K.rate+'%',K.un+' حالة بلا رد',K.rate>=80?'var(--good)':K.rate>=70?'var(--warn)':'var(--bad)')+kp('وسيط وقت الرد',fmtDur_(K.med),'ردود Talent: '+K.talent)+'</div>';
+    kp('نسبة الرد',K.rate+'%',K.un+' حالة بلا رد',K.rate>=80?'var(--good)':K.rate>=70?'var(--warn)':'var(--bad)')+kp('وسيط وقت الرد',fmtDur_(K.med),'ردود Talent: '+K.talent)+kp('ردود المشرفين',K.supMsgs,(K.cases?(K.supMsgs/K.cases).toFixed(2):'0')+' لكل حالة')+'</div>';
   const catMax=Math.max(1,...Object.values(G.cats));
   h+='<div class="grid2"><section class="panel sec"><h3>الحالات يوميًا لكل مجموعة</h3>'+anChart(R)+'</section><section class="panel sec"><h3>توزيع الحالات على التصنيفات</h3>'+
     cats.map(c=>({n:c.n,v:G.cats[c.n]||0})).concat([{n:'__none',v:G.cats.__none||0}]).filter(x=>x.v).sort((a,b)=>b.v-a.v).map(x=>'<button class="hb'+(A.cat===x.n?' on':'')+'" data-ancat="'+esc(x.n)+'"><span class="l">'+esc(x.n==='__none'?'غير مصنّف':x.n)+'</span><span class="t"><i style="width:'+Math.round(x.v*100/catMax)+'%"></i></span><span class="v">'+x.v+'</span></button>').join('')+
     '<p class="note">الحالة قد تأخذ أكثر من تصنيف. اضغط التصنيف لفلترة كل الجداول.</p></section></div>';
-  h+='<section class="panel sec"><h3>مقارنة المجموعات</h3><div class="tw"><table><thead><tr><th>المجموعة</th><th>الحالات</th><th>صيادلة</th>'+(hasHc?'<th>المشاركة</th>':'')+'<th>بفاتورة</th><th>صافي الفواتير</th><th>متوسط الفاتورة</th><th>نسبة الرد</th><th>وسيط وقت الرد</th><th>ردود Talent</th><th>بلا رد</th></tr></thead><tbody>'+
-    G.groups.map(x=>'<tr><td><b>'+esc(x.g)+'</b></td><td class="num">'+x.cases+'</td><td class="num">'+x.ph+'</td>'+(hasHc?'<td class="num">'+(x.team?x.part+' من '+x.team+' ('+pct_(x.part,x.team)+'%)':'—')+'</td>':'')+'<td class="num">'+x.inv+'%</td><td class="num">'+money_(x.net)+'</td><td class="num">'+money_(x.avg)+'</td><td><span class="pill '+anRateCls(x.rate)+'">'+x.rate+'%</span></td><td class="num">'+fmtDur_(x.med)+'</td><td class="num">'+x.talent+'</td><td class="num">'+x.un+'</td></tr>').join('')+'</tbody></table></div>';
+  const tl=t=>t==='__none'?'غير مصنّف':t;
+  h+='<section class="panel sec"><h3>مقارنة المجموعات (Districts)</h3><div class="tw"><table><thead><tr><th>المجموعة</th>'+(hasHc?'<th>Headcount</th>':'')+'<th>صيادلة مشاركون</th>'+(hasHc?'<th>المشاركة</th>':'')+'<th>الحالات</th><th>ردود المشرفين</th><th>ردود لكل حالة</th><th>حالات انرد عليها</th><th>التغطية</th><th>ردود Talent</th><th>بفاتورة</th><th>صافي الفواتير</th><th>وسيط الرد</th></tr></thead><tbody>'+
+    G.groups.map(x=>'<tr><td><b>'+esc(x.g)+'</b></td>'+(hasHc?'<td class="num">'+(x.team||'—')+'</td>':'')+'<td class="num">'+x.ph+'</td>'+(hasHc?'<td class="num">'+(x.team?pct_(x.part,x.team)+'%':'—')+'</td>':'')+'<td class="num">'+x.cases+'</td><td class="num">'+x.supMsgs+'</td><td class="num">'+(x.cases?(x.supMsgs/x.cases).toFixed(2):'—')+'</td><td class="num">'+x.covered+'</td><td><span class="pill '+anRateCls(x.rate)+'">'+x.rate+'%</span></td><td class="num">'+x.talent+'</td><td class="num">'+x.inv+'%</td><td class="num">'+money_(x.net)+'</td><td class="num">'+fmtDur_(x.med)+'</td></tr>').join('')+
+    (G.groups.length>1?'<tr style="font-weight:700"><td>الإجمالي</td>'+(hasHc?'<td class="num">'+(K.team||'—')+'</td>':'')+'<td class="num">'+K.ph+'</td>'+(hasHc?'<td class="num">'+(K.team?pct_(K.ph,K.team)+'%':'—')+'</td>':'')+'<td class="num">'+K.cases+'</td><td class="num">'+K.supMsgs+'</td><td class="num">'+(K.cases?(K.supMsgs/K.cases).toFixed(2):'—')+'</td><td class="num">'+K.covered+'</td><td><span class="pill '+anRateCls(K.rate)+'">'+K.rate+'%</span></td><td class="num">'+K.talent+'</td><td class="num">'+K.inv+'%</td><td class="num">'+money_(K.net)+'</td><td class="num">'+fmtDur_(K.med)+'</td></tr>':'')+'</tbody></table></div>';
   const hist=(S.anHist||[]).slice().sort((a,b)=>a.id.localeCompare(b.id)).slice(-6);
   if(hist.length) h+='<p class="note" style="margin-top:10px"><b>الملخصات المحفوظة:</b></p><div class="tw"><table><thead><tr><th>الشهر</th>'+allG.map(g=>'<th>'+esc(g)+': حالات / رد</th>').join('')+'</tr></thead><tbody>'+hist.map(m=>'<tr><td class="mono">'+esc(m.id)+'</td>'+allG.map(g=>{ const v=(m.groups||{})[g]; return '<td class="num">'+(v?v.cases+' / '+v.rate+'%':'—')+'</td>'; }).join('')+'</tr>').join('')+'</tbody></table></div>';
   h+='</section>';
-  h+='<div class="grid2"><section class="panel sec"><h3>أداء المشرفين في الرد</h3><div class="tw"><table><thead><tr><th>المشرف</th><th>المنطقة</th><th>المجموعات</th><th>حالات فريقه</th><th>ردّ عليها</th><th>نسبة الرد</th><th>وسيط الوقت</th>'+(hasHc?'<th>مشاركة الفريق</th>':'')+'</tr></thead><tbody>'+
-    G.sups.map(s=>'<tr class="clickable'+(A.sup===s.key?' sel':'')+'" data-ansup="'+esc(s.key)+'"><td>'+esc(s.name)+'</td><td>'+esc(s.region||'—')+'</td><td>'+esc(s.groups)+'</td><td class="num">'+s.n+'</td><td class="num">'+s.rep+'</td><td><span class="pill '+anRateCls(s.rate)+'">'+s.rate+'%</span></td><td class="num">'+fmtDur_(s.med)+'</td>'+(hasHc?'<td class="num">'+(s.team?s.part+' من '+s.team:'—')+'</td>':'')+'</tr>').join('')+'</tbody></table></div><p class="note">«ردّ عليها» = ردّ المشرف نفسه. اضغط اسم المشرف لعرض حالاته التي بلا رد.</p></section>'+
-    '<section class="panel sec"><h3>ردود فريق Talent</h3>'+(G.tal.length?'<div class="tw"><table><thead><tr><th>العضو</th><th>الردود (رسائل)</th><th>حالات ردّ عليها</th><th>المجموعات</th><th>وسيط الوقت</th></tr></thead><tbody>'+G.tal.map(t=>'<tr><td>'+esc(t.name)+'</td><td class="num"><b>'+t.m+'</b></td><td class="num">'+t.n+'</td><td>'+esc(t.groups)+'</td><td class="num">'+fmtDur_(t.med)+'</td></tr>').join('')+'</tbody></table></div><p class="note">«الردود» = كل رسالة مكتوبة من العضو في الفترة (ولو حرف أو إيموجي)، عدا الستيكر والمحذوفة والرسائل التي فيها روابط. «حالات ردّ عليها» = الحالات التي رُبط بها رده.</p>':'<div class="empty">'+(hasHc?'لا توجد ردود من فريق Talent في الفترة.':'تحتاج قائمة الموظفين لتمييز فريق Talent.')+'</div>')+
-    '<h3 style="margin-top:14px">أكثر الصيادلة مشاركة</h3>'+G.topPh.map(p=>'<div class="hb static"><span class="l">'+esc(p.name)+(p.branch?' · '+esc(p.branch):'')+'</span><span class="t"><i style="width:'+Math.round(p.n*100/G.topPh[0].n)+'%;background:#2fa37a"></i></span><span class="v">'+p.n+'</span></div>').join('')+'</section></div>';
+  // جدول المشرفين لكل District (نفس ملف المتابعة): الحالات، الردود (مكتوبة + ستيكر)، الحالات التي ردّ عليها
+  const gSpan={}; G.supRows.forEach(r=>{ gSpan[r.g]=(gSpan[r.g]||0)+1; }); const gSeen={};
+  h+='<section class="panel sec"><h3>أداء المشرفين في الرد</h3><div class="tw"><table><thead><tr><th>المجموعة</th><th>المشرف</th><th>الفريق</th><th>الحالات</th><th>الردود</th><th>ردود لكل حالة</th><th>مكتوبة</th><th>ستيكر</th><th>حالات ردّ عليها</th><th>التغطية</th></tr></thead><tbody>'+
+    G.supRows.map(r=>{ const first=!gSeen[r.g]; gSeen[r.g]=1; const resp=r.written+r.sticker; return '<tr class="clickable'+(A.sup===r.key?' sel':'')+'" data-ansup="'+esc(r.key)+'"'+(r.role==='none'?' style="color:var(--muted)"':'')+'>'+(first?'<td rowspan="'+gSpan[r.g]+'" style="font-weight:700;vertical-align:middle">'+esc(r.g)+'</td>':'')+'<td>'+esc(r.name)+(r.role==='am'?' <span class="pill p-na">مدير منطقة</span>':'')+'</td><td class="num">'+(r.team||'—')+'</td><td class="num">'+r.cases+'</td><td class="num"><b>'+resp+'</b></td><td class="num">'+(r.cases?(resp/r.cases).toFixed(2):'—')+'</td><td class="num">'+r.written+'</td><td class="num">'+r.sticker+'</td><td class="num">'+r.covered+'</td><td>'+(r.cases?'<span class="pill '+anRateCls(pct_(r.covered,r.cases))+'">'+pct_(r.covered,r.cases)+'%</span>':'—')+'</td></tr>'; }).join('')+
+    '</tbody></table></div><p class="note">«الردود» = كل رسالة كتبها المشرف في مجموعته (مكتوبة أو ستيكر)، عدا المحذوفة والرسائل التي فيها روابط. «حالات ردّ عليها» = حالات فريقه التي رُبط بها رده. اضغط السطر لعرض حالاته التي بلا رد.</p></section>';
+  // توزيع الحالات على التصنيفات (تصنيف رئيسي واحد لكل حالة)
+  const tAll={}; Object.values(G.topics).forEach(o=>Object.keys(o).forEach(k=>{ tAll[k]=(tAll[k]||0)+o[k]; })); const tTot=Object.values(tAll).reduce((a,b)=>a+b,0);
+  h+='<section class="panel sec"><h3>توزيع الحالات على التصنيفات حسب المجموعة</h3><div class="tw"><table><thead><tr><th>التصنيف</th>'+R.groups.map(g=>'<th>'+esc(g)+'</th>').join('')+'<th>الإجمالي</th><th>النسبة</th></tr></thead><tbody>'+
+    Object.keys(tAll).sort((a,b)=>(a==='__none')-(b==='__none')||tAll[b]-tAll[a]).map(k=>'<tr><td>'+esc(tl(k))+'</td>'+R.groups.map(g=>'<td class="num">'+(G.topics[g][k]||0)+'</td>').join('')+'<td class="num"><b>'+tAll[k]+'</b></td><td class="num">'+pct_(tAll[k],tTot)+'%</td></tr>').join('')+
+    '</tbody></table></div><p class="note">لكل حالة تصنيف رئيسي واحد: التصنيف الأكثر ظهورًا لكلماته في النص وأصناف الفاتورة.</p></section>';
+  h+='<div class="grid2">'+
+
+    '<section class="panel sec"><h3>ردود فريق Talent</h3>'+(G.talRows.length?'<div class="tw"><table><thead><tr><th>العضو</th>'+R.groups.map(g=>'<th>'+esc(g)+'</th>').join('')+'<th>الردود (رسائل)</th><th>حالات ردّ عليها</th><th>وسيط الوقت</th></tr></thead><tbody>'+G.talRows.map(t=>'<tr><td>'+esc(t.name)+'</td>'+R.groups.map(g=>'<td class="num">'+(t.byGroup[g]||0)+'</td>').join('')+'<td class="num"><b>'+t.m+'</b></td><td class="num">'+t.n+'</td><td class="num">'+fmtDur_(t.med)+'</td></tr>').join('')+'</tbody></table></div><p class="note">«الردود» = كل رسالة مكتوبة من العضو في الفترة (ولو حرف أو إيموجي)، عدا الستيكر والمحذوفة والرسائل التي فيها روابط.</p></section><section class="panel sec">':'<div class="empty">'+(hasHc?'لا توجد ردود من فريق Talent في الفترة.':'تحتاج قائمة الموظفين لتمييز فريق Talent.')+'</div></section><section class="panel sec">')+
+    '<h3>أكثر الصيادلة مشاركة</h3>'+G.topPh.map(p=>'<div class="hb static"><span class="l">'+esc(p.name)+(p.branch?' · '+esc(p.branch):'')+'</span><span class="t"><i style="width:'+Math.round(p.n*100/G.topPh[0].n)+'%;background:#2fa37a"></i></span><span class="v">'+p.n+'</span></div>').join('')+'</section></div>';
   let un=G.un; if(A.sup) un=un.filter(c=>(c.sup?c.sup.key:'—')===A.sup);
   const supName=A.sup?((G.sups.find(s=>s.key===A.sup)||{}).name||''):'';
   const shown=A.showAllUn?un:un.slice(0,30);
@@ -2180,20 +2236,82 @@ async function repPdf(){
     if(pg) pdf.addPage(); pdf.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',10,10,W,h/pxPerMm); }
   await saveFile(repName_()+'.pdf',pdf.output('blob'));
 }
+const EXCELJS_URL='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+// تصدير بنفس شكل ملف المتابعة الشهري (Community Comparison) + التفاصيل
 async function anXlsx(){
-  const I=impState(); if(!I.an) return; const {R,G}=I.an; const X=await xlsxLib(); const wb=X.utils.book_new();
-  const add=(name,aoa)=>X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(aoa),name);
-  const K=G.kpi;
-  add('الملخص',[['المؤشر','القيمة'],['الحالات',K.cases],['صيادلة مشاركون',K.ph],['فروع',K.br],['حالات بفاتورة %',K.inv],['صافي الفواتير المقروءة',Math.round(K.net)],['متوسط الفاتورة',K.avg],['متوسط القطع',K.units],['نسبة الرد %',K.rate],['وسيط وقت الرد (دقيقة)',K.med],['حالات بلا رد',K.un],['ردود Talent',K.talent]]);
-  add('المجموعات',[['المجموعة','الحالات','صيادلة','فريق المجموعة','شاركوا','بفاتورة %','صافي الفواتير','متوسط الفاتورة','نسبة الرد %','وسيط وقت الرد (د)','ردود Talent','بلا رد']].concat(G.groups.map(x=>[x.g,x.cases,x.ph,x.team||'',x.part||'',x.inv,Math.round(x.net),x.avg,x.rate,x.med,x.talent,x.un])));
-  add('المشرفون',[['المشرف','المنطقة','المجموعات','حالات فريقه','ردّ عليها','نسبة الرد %','وسيط الوقت (د)','حجم الفريق','شاركوا']].concat(G.sups.map(s=>[s.name,s.region,s.groups,s.n,s.rep,s.rate,s.med,s.team==null?'':s.team,s.part==null?'':s.part])));
-  add('Talent',[['العضو','الردود (رسائل)','حالات ردّ عليها','المجموعات','وسيط الوقت (د)']].concat(G.tal.map(t=>[t.name,t.m,t.n,t.groups,t.med])));
-  add('الحالات',[['المجموعة','التاريخ','الوقت','الصيدلي','الفرع','المشرف','التصنيفات','صافي الفاتورة','القطع','عدد الردود','أول رد بعد (د)','رد المشرف بعد (د)','من ردّ','النص']].concat(R.cases.map(c=>[c.g,ymd_(c.c.t),hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',c.c.cats.join('، '),c.net?Math.round(c.net*100)/100:'',c.units||'',c.replies.length,c.first?mins_(c.first-c.c.t):'',c.supT?mins_(c.supT-c.c.t):'',[...new Set(c.replies.map(r=>r.name))].join('، '),(c.c.text||'').slice(0,1000)])));
-  add('بلا رد',[['المجموعة','التاريخ','الصيدلي','الفرع','المشرف','النص']].concat(G.un.map(c=>[c.g,ymd_(c.c.t)+' '+hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',(c.c.text||'').slice(0,500)])));
-  if(G.nonPart.length) add('لم يشاركوا',[['الاسم','الفرع','المجموعة','المشرف']].concat(G.nonPart.map(p=>[p.ar||p.en,p.branch,p.group,p.sup])));
-  if(R.unknown.length) add('غير معروفين',[['الاسم في الواتساب','المجموعة','الحالات']].concat(R.unknown.map(u=>[u.name,u.g,u.n])));
-  wb.Workbook={Views:[{RTL:true}]};
-  await saveFile('تحليل_المجموعات_'+R.groups.join('-')+'_'+new Date().toISOString().slice(0,10)+'.xlsx',new Blob([X.write(wb,{type:'array',bookType:'xlsx'})],{type:'application/octet-stream'}));
+  const I=impState(); if(!I.an) return; const {R,G}=I.an; await libOnce_(EXCELJS_URL,()=>window.ExcelJS);
+  const XL=window.ExcelJS, wb=new XL.Workbook(); wb.calcProperties.fullCalcOnLoad=true;
+  const NAVY='FF0A2F5C', SOFT='FFEEF3FA', YEL='FFFFF7D6', GREY='FFF3F5F8'; const bd={style:'thin',color:{argb:'FFD0D7E2'}}; const BR={top:bd,left:bd,bottom:bd,right:bd};
+  const H=(c,v)=>{ c.value=v; c.font={name:'Arial',bold:true,size:10,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:NAVY}}; c.alignment={horizontal:'center',vertical:'middle',wrapText:true}; c.border=BR; };
+  const V=(c,v,fmt,o)=>{ o=o||{}; c.value=(typeof v==='string'&&v[0]==='=')?{formula:v.slice(1)}:(v==null?'':v); c.font={name:'Arial',size:10,bold:!!o.bold,color:o.color?{argb:o.color}:undefined}; c.border=BR; c.alignment={horizontal:o.align||'center',vertical:'middle',wrapText:true}; if(fmt) c.numFmt=fmt; if(o.fill) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:o.fill}}; };
+  const T=(c,v,size,color)=>{ c.value=v; c.font={name:'Arial',bold:true,size:size||12,color:{argb:color||NAVY}}; };
+  const col=n=>{ let s='',x=n; while(x>0){ const m=(x-1)%26; s=String.fromCharCode(65+m)+s; x=Math.floor((x-1)/26); } return s; };
+  const K=G.kpi, tl=t=>t==='__none'?'غير مصنّف':t; const ts=R.cases.map(c=>c.c.t.getTime());
+  const from=ts.length?ymd_(new Date(Math.min(...ts))):'', to=ts.length?ymd_(new Date(Math.max(...ts))):'';
+  const hasHc=!!hcIndex().n;
+  // اسم الـ District بجانب المجموعة (D2 – Dr. Yousef)
+  const dname={}; if(hasHc){ const cnt={}; hcAll().filter(p=>p.role==='pharm').forEach(p=>{ const g=hcGroupOf(p); if(!g) return; const k=g+'|'+p.group; cnt[k]=(cnt[k]||0)+1; }); Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).forEach(k=>{ const [g,n]=k.split('|'); if(!dname[g]&&n!==g) dname[g]=n; }); }
+  const gl=g=>g+(dname[g]?' – '+dname[g]:'');
+  const ws=wb.addWorksheet('Community Comparison',{views:[{state:'frozen',ySplit:3,showGridLines:false}]});
+  T(ws.getCell('A1'),'USE Community — '+monthAr_(to.slice(0,7))+' ('+from+' → '+to+')'+(anState().cat?' · تصنيف: '+tl(anState().cat):''),14);
+  // ---- KPI band ----
+  const band=[['A','حالات منشورة',K.cases,null],['D','صيادلة مشاركون',K.ph,null],['G','معدل المشاركة',hasHc?'=D3/B'+(7+G.groups.length):'—','0.0%'],['J','ردود المشرفين',K.supMsgs,null],['M','نسبة ردود المشرفين','=J3/A3','0.0%'],['P','ردود Talent Management',K.talent,null]];
+  band.forEach(([c0,h,v,f])=>{ const n=ws.getColumn(c0).number; ws.mergeCells(c0+'2:'+col(n+2)+'2'); H(ws.getCell(c0+'2'),h); ws.mergeCells(c0+'3:'+col(n+2)+'3'); V(ws.getCell(c0+'3'),v,f,{bold:true}); ws.getCell(c0+'3').font={name:'Arial',size:16,bold:true,color:{argb:NAVY}}; });
+  H(ws.getCell('S2'),'نسبة Talent'); V(ws.getCell('S3'),'=P3/A3','0.0%',{bold:true});
+  // ---- District table ----
+  const dh=['District','Headcount','Active PH','Participation %','Cases','Supervisor Replies','SV replies per case','Cases with any reply','Reply coverage %','Talent replies'];
+  dh.forEach((h,i)=>H(ws.getCell(6,i+1),h));
+  G.groups.forEach((x,k)=>{ const r=7+k; [gl(x.g),hasHc?(x.team||0):'—',x.ph,hasHc?'=IF(B'+r+'=0,"—",C'+r+'/B'+r+')':'—',x.cases,x.supMsgs,'=IF(E'+r+'=0,"—",F'+r+'/E'+r+')',x.covered,'=IF(E'+r+'=0,"—",H'+r+'/E'+r+')',x.talent].forEach((v,i)=>V(ws.getCell(r,i+1),v,i===3||i===8?'0.0%':(i===6?'0.00':null),{align:i===0?'left':'center',fill:[1,2,4,5,7,9].includes(i)?YEL:null})); });
+  const tr=7+G.groups.length; V(ws.getCell(tr,1),'Total',null,{bold:true,fill:SOFT,align:'left'});
+  [2,3,5,6,8,10].forEach(i=>V(ws.getCell(tr,i),'=SUM('+col(i)+'7:'+col(i)+(tr-1)+')',null,{bold:true,fill:SOFT}));
+  V(ws.getCell(tr,4),'=IF(B'+tr+'=0,"—",C'+tr+'/B'+tr+')','0.0%',{bold:true,fill:SOFT}); V(ws.getCell(tr,7),'=F'+tr+'/E'+tr,'0.00',{bold:true,fill:SOFT}); V(ws.getCell(tr,9),'=H'+tr+'/E'+tr,'0.0%',{bold:true,fill:SOFT});
+  ws.getCell(tr+1,1).value='Active PH في الإجمالي قد يختلف قليلًا عن «صيادلة مشاركون» لأن نفس الصيدلي قد يشارك في أكثر من مجموعة.'; ws.getCell(tr+1,1).font={name:'Arial',size:9,italic:true,color:{argb:'FF6B7686'}};
+  // ---- Supervisors table ----
+  const s0=tr+4; T(ws.getCell(s0,1),'USE Community  |  Supervisors Responses');
+  ['District','Supervisor (source)','Team size (source)','cases','Responses','SV Share of District','written','stickers','Cases replied by SV','SV coverage %'].forEach((h,i)=>H(ws.getCell(s0+1,i+1),h));
+  let row=s0+2; const firstS=row;
+  R.groups.forEach(g=>{ const rows=G.supRows.filter(r=>r.g===g); if(!rows.length) return; const st=row;
+    rows.forEach(r=>{ V(ws.getCell(row,2),r.name+(r.role==='am'?' (مدير منطقة)':''),null,{align:'left'}); V(ws.getCell(row,3),r.team||'—'); V(ws.getCell(row,4),r.cases); V(ws.getCell(row,5),'=G'+row+'+H'+row);
+      V(ws.getCell(row,6),'=IF(D'+row+'=0,"—",E'+row+'/D'+row+')','0%'); V(ws.getCell(row,7),r.written); V(ws.getCell(row,8),r.sticker); V(ws.getCell(row,9),r.covered); V(ws.getCell(row,10),'=IF(D'+row+'=0,"—",I'+row+'/D'+row+')','0%');
+      if(r.role==='none') for(let i=2;i<=10;i++) ws.getCell(row,i).fill={type:'pattern',pattern:'solid',fgColor:{argb:GREY}}; row++; });
+    if(row-1>st) ws.mergeCells(st,1,row-1,1); V(ws.getCell(st,1),g,null,{bold:true}); });
+  V(ws.getCell(row,2),'Total',null,{bold:true,fill:SOFT,align:'left'}); [4,5,7,8,9].forEach(i=>V(ws.getCell(row,i),'=SUM('+col(i)+firstS+':'+col(i)+(row-1)+')',null,{bold:true,fill:SOFT}));
+  ws.getCell(row+1,6).value='نسبة المكتوب / الستيكر'; ws.getCell(row+1,6).font={name:'Arial',size:9,italic:true}; V(ws.getCell(row+1,7),'=IF(E'+row+'=0,"—",G'+row+'/E'+row+')','0%'); V(ws.getCell(row+1,8),'=IF(E'+row+'=0,"—",H'+row+'/E'+row+')','0%');
+  // ---- Topic distribution ----
+  const c0=12, nG=R.groups.length; T(ws.getCell(s0,c0),'USE Community  |  Topic Distribution');
+  ['Topic'].concat(R.groups,['Company Cases','Share of Cases']).forEach((h,i)=>H(ws.getCell(s0+1,c0+i),h));
+  const tAll={}; Object.values(G.topics).forEach(o=>Object.keys(o).forEach(k=>{ tAll[k]=(tAll[k]||0)+o[k]; }));
+  const tk=Object.keys(tAll).sort((a,b)=>(a==='__none')-(b==='__none')||tAll[b]-tAll[a]); const tTot=s0+2+tk.length;
+  tk.forEach((k,j)=>{ const r=s0+2+j; V(ws.getCell(r,c0),tl(k),null,{align:'left'}); R.groups.forEach((g,i)=>V(ws.getCell(r,c0+1+i),G.topics[g][k]||0)); V(ws.getCell(r,c0+1+nG),'=SUM('+col(c0+1)+r+':'+col(c0+nG)+r+')'); V(ws.getCell(r,c0+2+nG),'='+col(c0+1+nG)+r+'/$'+col(c0+1+nG)+'$'+tTot,'0.0%'); });
+  V(ws.getCell(tTot,c0),'TOTAL',null,{bold:true,fill:SOFT,align:'left'}); for(let i=1;i<=nG+1;i++) V(ws.getCell(tTot,c0+i),'=SUM('+col(c0+i)+(s0+2)+':'+col(c0+i)+(tTot-1)+')',null,{bold:true,fill:SOFT}); V(ws.getCell(tTot,c0+2+nG),'='+col(c0+1+nG)+tTot+'/$'+col(c0+1+nG)+'$'+tTot,'0.0%',{bold:true,fill:SOFT});
+  // ---- Talent table ----
+  const k0=tTot+3; T(ws.getCell(k0,c0),'Talent Management  |  Replies by member');
+  ['Member'].concat(R.groups,['Total','Cases replied']).forEach((h,i)=>H(ws.getCell(k0+1,c0+i),h));
+  let rr=k0+2; G.talRows.forEach(t=>{ V(ws.getCell(rr,c0),t.name,null,{align:'left'}); R.groups.forEach((g,i)=>V(ws.getCell(rr,c0+1+i),t.byGroup[g]||0)); V(ws.getCell(rr,c0+1+nG),'=SUM('+col(c0+1)+rr+':'+col(c0+nG)+rr+')',null,{bold:true}); V(ws.getCell(rr,c0+2+nG),t.n); rr++; });
+  V(ws.getCell(rr,c0),'Total',null,{bold:true,fill:SOFT,align:'left'}); for(let i=1;i<=nG+2;i++) V(ws.getCell(rr,c0+i),'=SUM('+col(c0+i)+(k0+2)+':'+col(c0+i)+(rr-1)+')',null,{bold:true,fill:SOFT});
+  ws.getCell(rr+1,c0).value='كل رسالة مكتوبة (ولو حرف أو إيموجي)، عدا الستيكر والمحذوفة والرسائل التي فيها روابط.'; ws.getCell(rr+1,c0).font={name:'Arial',size:9,italic:true,color:{argb:'FF6B7686'}};
+  [26,30,12,13,11,13,12,12,12,12,4,24].forEach((w,i)=>{ ws.getColumn(i+1).width=w; }); for(let i=13;i<=13+nG+2;i++) ws.getColumn(i).width=11;
+  // ---- detail sheets ----
+  const sheet=(name,head,rows,widths)=>{ const w=wb.addWorksheet(name,{views:[{rightToLeft:true,state:'frozen',ySplit:1}]}); head.forEach((h,i)=>H(w.getCell(1,i+1),h)); rows.forEach((r,k)=>r.forEach((v,i)=>{ const c=w.getCell(k+2,i+1); c.value=v; c.font={name:'Arial',size:10}; c.alignment={vertical:'top',wrapText:i===r.length-1}; })); (widths||[]).forEach((x,i)=>{ w.getColumn(i+1).width=x; }); return w; };
+  sheet('الحالات',['المجموعة','التاريخ','الوقت','الصيدلي','الفرع','المشرف','التصنيف الرئيسي','كل التصنيفات','صافي الفاتورة','القطع','عدد الردود','أول رد بعد (د)','رد المشرف بعد (د)','من ردّ','النص'],
+    R.cases.map(c=>[c.g,ymd_(c.c.t),hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',tl(c.topic),c.c.cats.join('، '),c.net?Math.round(c.net*100)/100:'',c.units||'',c.replies.length,c.first?mins_(c.first-c.c.t):'',c.supT?mins_(c.supT-c.c.t):'',[...new Set(c.replies.map(r=>r.name))].join('، '),(c.c.text||'').slice(0,1000)]),[8,12,8,26,8,22,20,26,12,8,10,12,12,26,80]);
+  sheet('بلا رد',['المجموعة','التاريخ','الصيدلي','الفرع','المشرف','النص'],G.un.map(c=>[c.g,ymd_(c.c.t)+' '+hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',(c.c.text||'').slice(0,500)]),[8,18,26,8,22,80]);
+  if(G.nonPart.length) sheet('لم يشاركوا',['الاسم','الفرع','المجموعة','المشرف'],G.nonPart.map(p=>[p.ar||p.en,p.branch,p.group,p.sup]),[34,10,16,26]);
+  if(R.unknown.length) sheet('غير معروفين',['الاسم في الواتساب','المجموعة','الحالات'],R.unknown.map(u=>[u.name,u.g,u.n]),[34,10,10]);
+  const ms=wb.addWorksheet('المنهجية',{views:[{rightToLeft:true,showGridLines:false}]}); ms.getColumn(1).width=120;
+  ['طريقة الحساب','',
+   'المصدر: ملفات تصدير الواتساب المحمّلة في المنصة للفترة '+from+' → '+to+'.',
+   'الحالة: رسالة الصيدلي التي فيها فاتورة/صورة أو نص يصف حالة عميل. تُدمج رسائل نفس الصيدلي المتتالية (النص + الفاتورة) كحالة واحدة، وتُستبعد ردود المدح والتعليقات ومنشورات Talent ورسائل النظام.',
+   'Headcount: من قائمة الموظفين المرفوعة في المنصة لكل District.',
+   'Active PH / صيادلة مشاركون: الصيادلة المختلفون الذين نشروا حالة. يُطابَق اسم الواتساب أو رقمه مع قائمة الموظفين (بالعربي أو الإنجليزي)، وإن لم يُطابَق يُحسب باسمه في الواتساب.',
+   'مشرف الحالة: المشرف المذكور بالمنشن، وإلا مشرف الصيدلي حسب قائمة الموظفين. الحالات التي لم يُطابَق صيدليها ولا يوجد فيها منشن تظهر في سطر «غير محدد».',
+   'Responses (ردود المشرف): كل رسالة كتبها المشرف في مجموعة الـ District (مكتوبة أو ستيكر)، عدا المحذوفة والرسائل التي فيها روابط. تشمل مديري المناطق بعلامة (مدير منطقة).',
+   'Cases replied / Reply coverage: الحالات التي رُبط بها رد. الربط تقديري: باسم الصيدلي في الرد، ثم فريق المشرف أو المنشن، ثم الأقرب زمنيًا، ثم الردود المتتالية بترتيب القراءة.',
+   'ردود Talent Management: كل رسالة مكتوبة من أعضاء الفريق (ولو حرف أو إيموجي)، عدا الستيكر والمحذوفة والرسائل التي فيها روابط.',
+   'التصنيفات: تصنيف رئيسي واحد لكل حالة بحسب أكثر كلمات التصنيف ظهورًا في النص وأصناف الفاتورة (التصنيفات قابلة للتعديل من الإعدادات).',
+   'الخلايا الصفراء أرقام من التحليل، وباقي الخلايا معادلات.'].forEach((n,k)=>{ const c=ms.getCell(k+1,1); c.value=n; c.alignment={wrapText:true,vertical:'top'}; c.font={name:'Arial',size:k?11:14,bold:!k,color:{argb:k?'FF1C2633':NAVY}}; });
+  const buf=await wb.xlsx.writeBuffer();
+  await saveFile('USE_Community_'+to.slice(0,7)+'_'+R.groups.join('-')+'.xlsx',new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
 }
 
 /* ---------- Shell ---------- */
