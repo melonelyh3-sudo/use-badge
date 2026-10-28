@@ -1707,8 +1707,13 @@ function impScore(c,msgs){
 const TIER_AR={3:'⭐⭐⭐ قوية',2:'⭐⭐ متوسطة',1:'⭐ ضعيفة'};
 function impTop(){
   const I=impState(), n=Math.max(1,Math.min(200,parseInt(($('#impTopN')||{}).value,10)||20)); I.topN=n; const old=new Set(S.inboxKeys||[]);
-  const L=impFiltered().filter(c=>!old.has(c.key)&&!(I.done&&I.done[c.key])).sort((a,b)=>b.score-a.score||b.t-a.t).slice(0,n);
-  I.sel=new Set(L.map(c=>c.key)); toast('حُددت أفضل '+L.length+' حالة حسب الترشيح ضمن الفلاتر الحالية.'); updateImport();
+  const cand=impFiltered().filter(c=>!old.has(c.key)&&!(I.done&&I.done[c.key])).sort((a,b)=>b.score-a.score||b.t-a.t);
+  // توزيع متوازن: بالتناوب على المجموعات (D1، D2، …)، وداخل كل مجموعة صيدلي مختلف قبل تكرار نفس الصيدلي
+  const byG={}; cand.forEach(c=>{ (byG[c.group||'—']=byG[c.group||'—']||[]).push(c); });
+  Object.keys(byG).forEach(g=>{ const seen=new Set(), first=[], rest=[]; byG[g].forEach(c=>{ const k=WA.normA(cleanSender_(c.sender)); (seen.has(k)?rest:first).push(c); seen.add(k); }); byG[g]=first.concat(rest); });
+  const L=[]; while(L.length<n){ const G=Object.keys(byG).filter(g=>byG[g].length).sort((a,b)=>byG[b][0].score-byG[a][0].score); if(!G.length) break; for(const g of G){ if(L.length>=n) break; L.push(byG[g].shift()); } }
+  const dist={}; L.forEach(c=>{ dist[c.group||'—']=(dist[c.group||'—']||0)+1; });
+  I.sel=new Set(L.map(c=>c.key)); toast('حُددت '+L.length+' حالة موزعة على المجموعات: '+Object.keys(dist).sort().map(g=>g+' '+dist[g]).join('، ')+'.'); updateImport();
 }
 /* محرر إشارات الشارات (الإعدادات) */
 function updateSc(){
