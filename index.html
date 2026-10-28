@@ -1325,7 +1325,7 @@ const WA=(()=>{
     }
     return out;
   }
-  const isSystem=b=>/<message_history_notice|changed their phone number|changed the phone number|security code|joined using|created group|created this group|added|left$|removed|changed the (subject|group)|This message was deleted|تم حذف هذه الرسالة|انضم|غادر|أضاف|Messages and calls are end-to-end/i.test(b)&&b.length<160;
+  const isSystem=b=>/<message_history_notice|<album message>|changed their phone number|changed the phone number|security code|joined using|created group|created this group|added|left$|removed|changed the (subject|group)|This message was deleted|تم حذف هذه الرسالة|انضم|غادر|أضاف|Messages and calls are end-to-end/i.test(b)&&b.length<160;
   function attachmentsOf(body){
     const atts=[]; let text=body;
     text=text.replace(/<(image|video|audio|GIF|sticker|document) omitted>/gi,(m,k)=>{ if(!/sticker/i.test(k)) atts.push({name:'('+k+')',omitted:true}); return ' '; });
@@ -2020,6 +2020,8 @@ function anCompute(){
       let tgt=byName(day).pop()||bySup(day).pop();
       if(!tgt){ const recent=open.filter(x=>m.t-x.c.lastT<=3*3600000); tgt=recent.filter(x=>!x.replies.length).pop()||recent.filter(notMine).pop(); }
       if(!tgt) tgt=pick(byName(open))||pick(bySup(open));
+      // ردود متتالية بدون اسم (تسلم، ما شاء الله…) على حالات اليوم: تُنسب لأقدم حالة خلال 24 ساعة لم يرد عليها هذا الشخص، بنفس ترتيب قراءته للمجموعة
+      if(!tgt) tgt=day.filter(notMine)[0];
       if(!tgt) continue;
       const r={key:who.key,name:who.name,role,t:m.t,g}; tgt.replies.push(r); replies.push(Object.assign({x:tgt},r));
       if(!tgt.first||m.t<tgt.first) tgt.first=m.t; if(tgt.sup&&tgt.sup.key===who.key&&!tgt.supT) tgt.supT=m.t;
