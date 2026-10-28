@@ -2382,11 +2382,15 @@ async function runAiSuggest(){
   let text=(d.summary||'').trim();
   if(d.situation&&d.situation.length) text+='\n\nنقاط الموقف:\n- '+d.situation.filter(Boolean).join('\n- ');
   if(d.products&&d.products.length) text+='\n\nالمنتجات المذكورة: '+d.products.filter(Boolean).join('، ');
-  if(!text.trim()){ S.aiErr='اكتب ملخص الحالة أولًا قبل طلب الاقتراح.'; }
+  const inv=S.invoice&&S.invoice.draft===d?S.invoice:null;
+  // بدون ملف مرفق: نرسل أصناف الفاتورة المحفوظة في الحالة (من الاستيراد أو تحليل سابق) ليقرأها الذكاء الاصطناعي
+  const items=(d.invoiceItems||[]).filter(Boolean);
+  const invText=!inv&&items.length?('أصناف الفاتورة:\n- '+items.join('\n- ')+(String(d.invoiceTotal||'').trim()?'\nصافي الفاتورة: '+d.invoiceTotal+' ر.س':'')+(String(d.invoiceCount||'').trim()?'\nعدد القطع: '+d.invoiceCount:'')+(d.invoiceNote?'\nملاحظة: '+d.invoiceNote:'')):'';
+  if(!text.trim()&&!inv&&!invText){ S.aiErr='اكتب ملخص الحالة أولًا قبل طلب الاقتراح.'; }
   else{
     try{
-      const inv=S.invoice&&S.invoice.draft===d?S.invoice:null;
-      const r=await call('aiSuggest',inv?{caseId:d.id||'',text:text,file:{mediaType:inv.mediaType,data:inv.data}}:{caseId:d.id||'',text:text});
+      const r=await call('aiSuggest',inv?{caseId:d.id||'',text:text,file:{mediaType:inv.mediaType,data:inv.data}}:{caseId:d.id||'',text:text,invoiceText:invText||undefined});
+      if(invText&&r.invoiceNote&&!d.invoiceNote){ d.invoiceNote=r.invoiceNote; const ib=$('#invBox'); if(ib) ib.innerHTML=invBoxHtml(d); touch(); }
       if(inv){ d.invoiceItems=r.invoiceItems||[]; d.invoiceNote=r.invoiceNote||'';
         [['invoiceTotal','صافي الفاتورة'],['invoiceCount','عدد المنتجات']].forEach(([k,lb])=>{ if(r[k]!==''&&r[k]!=null&&!String(d[k]==null?'':d[k]).trim()){ d[k]=r[k]; const el=$('[data-f="'+k+'"]'); if(el) el.value=r[k]; } }); const ib=$('#invBox'); if(ib) ib.innerHTML=invBoxHtml(d); touch(); }
       const codeToBadge={}; activeBadges().forEach(b=>{(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;});});
@@ -2407,6 +2411,7 @@ async function runAiSuggest(){
       let msg=total===0?'لم يجد الذكاء الاصطناعي إجابات واضحة في النص.':(applied?('تم اقتراح '+applied+' إجابة جديدة، راجعها أدناه.'+(skipped?(' (تجاهل '+skipped+' سؤالًا مُجابًا مسبقًا.)'):'')):'كل الأسئلة التي فهمها الذكاء الاصطناعي من النص مُجابة مسبقًا.');
       if(filledLabels.length) msg+=' كما اقترح محتوى: '+filledLabels.join('، ')+'.';
       if(inv) msg+=(r.invoiceItems&&r.invoiceItems.length)?(' وقُرئ من الفاتورة '+r.invoiceItems.length+' صنف.'):' ولم تُقرأ أصناف واضحة من الفاتورة.';
+      else if(invText) msg+=' واستُخدمت أصناف الفاتورة المحفوظة ('+items.length+' صنف).';
       if(st) st.textContent=msg;
       if(applied||filledLabels.length){ touch(); }
       if(filledLabels.indexOf('وصف الموقف')>=0||filledLabels.indexOf('المنتجات')>=0) relist(); // يعيد رسم قائمة نقاط الموقف مع القيم الجديدة
