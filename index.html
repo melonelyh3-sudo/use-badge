@@ -1361,6 +1361,7 @@ const WA=(()=>{
         if(longText&&!c.text) join=true;                       // file first, then the text
         else if(hasAtt&&!longText&&(!c.text||gap<=SAME)) join=true;   // more files, or a file sent with the text
         else if(hasAtt&&!longText&&c.text&&!c.atts.length) join=true; // text first, then the file
+        else if(longText&&!hasAtt&&c.text&&gap<=2*60*1000) join=true;  // تكملة النص في رسالة ثانية خلال دقيقتين
       }
       // حتى 10 دقائق: فاتورة بدون نص ثم نص بدون مرفق (أو العكس) من نفس الصيدلي = حالة واحدة
       if(!join&&c&&gap<=LATE){
@@ -1475,9 +1476,14 @@ const WA=(()=>{
     });
     return {msgs:out, filled, names};
   }
+  const CASE_STEMS=['عميل','مريض','حضر','شرف','زار','زارت','جاني','جالي','جاتني','جاتلي','دخل','طلب','ترشيح','رشح','نصح','سالت','سالته','سالتها','سالني','سالها','ساله','استفسر','يشتك','تشتك','بيشتك','بتشتك','اشتك','يعاني','تعاني','بيعاني','بتعاني','عرضت','اقترح','محتاج','customer','patient','client'];
+  function looksLikeCase(t){ const w=normA(String(t||'')).split(/[^\p{L}\p{N}]+/u).map(x=>x.replace(/^(و|ف)?(ال)?/,'')).filter(x=>x.length>=3);
+    return w.some(x=>!/^حضرت(ك|كم|ه)|^حضراتكم/.test(x)&&CASE_STEMS.some(s=>x.startsWith(s))); }
   async function buildCases(src, from, to, cats, onProgress){
     const msgs=src.msgs.filter(m=>(!from||m.t>=from)&&(!to||m.t<=to));
     const cs=segment(msgs); let i=0;
+    // رسالة بدون مرفق ولا تحتوي أي كلمة تدل على حالة (عميل، حضرت، شرفنا، طلب، رشحت…) = رد أو تعليق، وليست حالة
+    cs.forEach(c=>{ c.reply=!c.atts.length&&!looksLikeCase(c.text); });
     // منشن بصيغة الويب (@~الاسم ثم النص مباشرة): نطابقه مع أسماء المشرفين الظاهرة في باقي الحالات
     const known=[...new Set(cs.map(c=>c.mention).filter(Boolean))].sort((a,b)=>b.length-a.length);
     cs.forEach(c=>{ if(c.mention||!c.text) return; const t=c.text.replace(INV,''); const k=known.find(n=>t.includes('@'+n)||t.includes('@~'+n)||t.includes('@ ~'+n)); if(k) c.mention=k; });
@@ -1554,7 +1560,8 @@ function updateImport(){
   $('#impSrcs').innerHTML=I.srcs.length?'<div class="tw"><table><thead><tr><th>الملف</th><th>النوع</th><th>المجموعة</th><th>الرسائل</th><th>الفترة في الملف</th><th></th></tr></thead><tbody>'+I.srcs.map((s,i)=>{ const a=s.msgs[0], b=s.msgs[s.msgs.length-1];
       return '<tr><td>'+esc(s.file.name)+'</td><td>'+(s.media?'<span class="pill p-ok">مع الوسائط</span>':'<span class="pill p-na">نص فقط (ويب)</span>')+'</td><td><select data-impgsel="'+i+'">'+IMP_GROUPS.concat(['أخرى']).map(g=>'<option'+(s.group===g?' selected':'')+'>'+g+'</option>').join('')+'</select></td><td class="num">'+s.msgs.length+'</td><td class="mono">'+(a?ymd_(a.t)+' → '+ymd_(b.t):'—')+'</td><td><button class="btn" data-impdel="'+i+'">إزالة</button></td></tr>'; }).join('')+'</tbody></table></div>'+
     '<div class="grid" style="margin-top:10px;max-width:640px"><label class="f">من تاريخ<input type="date" id="impFrom" value="'+esc(I.from||'')+'"></label><label class="f">إلى تاريخ<input type="date" id="impTo" value="'+esc(I.to||'')+'"></label></div>'+
-    '<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnImpExtract"'+(I.busy?' disabled':'')+'>استخراج الحالات</button><span class="note" id="impExtractMsg">'+esc(I.extractMsg||'')+'</span></div>':'';
+    '<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnImpExtract"'+(I.busy?' disabled':'')+'>استخراج الحالات</button><span class="note" id="impExtractMsg">'+esc(I.extractMsg||'')+'</span></div>'+
+    ((I.dropped||[]).length&&!I.busy?'<details style="margin-top:8px"><summary class="note" style="cursor:pointer">عرض الرسائل المستبعدة ('+I.dropped.length+'): ردود ومدح وتعليقات بدون مرفق</summary><div class="tw" style="margin-top:6px;max-height:320px;overflow:auto"><table><thead><tr><th>المجموعة</th><th>التاريخ</th><th>المرسل</th><th>السبب</th><th>النص</th></tr></thead><tbody>'+I.dropped.slice().sort((a,b)=>b.t-a.t).map(d=>'<tr><td>'+esc(d.g)+'</td><td class="mono" style="white-space:nowrap">'+ymd_(d.t)+' '+hm_(d.t)+'</td><td>'+esc(d.sender)+'</td><td>'+esc(d.why)+'</td><td style="font-size:12.5px">'+esc(String(d.text||'').slice(0,160))+'</td></tr>').join('')+'</tbody></table></div></details>':''):'';
   const s2=$('#impStep2'), s3=$('#impStep3'); s2.hidden=s3.hidden=!I.cases.length; if(!I.cases.length) return;
   const cats=impCats(), cnt={}; let none=0; I.cases.forEach(c=>{ c.cats.forEach(x=>{cnt[x]=(cnt[x]||0)+1;}); if(!c.cats.length) none++; });
   const gcnt={}; I.cases.forEach(c=>{ gcnt[c.group]=(gcnt[c.group]||0)+1; });
@@ -1593,22 +1600,25 @@ async function impLoadFiles(files){
   I.busy=false; updateImport();
 }
 async function impExtract(){
-  const I=impState(); if(I.busy||!I.srcs.length) return; I.busy=true; I.cases=[]; I.sel=new Set(); I.groupMsgs={}; I.groupNames={}; I.an=null; I.extractMsg='جارٍ استخراج الحالات وقراءة الفواتير…'; updateImport();
+  const I=impState(); if(I.busy||!I.srcs.length) return; I.busy=true; I.cases=[]; I.sel=new Set(); I.dropped=[]; I.groupMsgs={}; I.groupNames={}; I.an=null; I.extractMsg='جارٍ استخراج الحالات وقراءة الفواتير…'; updateImport();
   try{
     const from=I.from?new Date(I.from+'T00:00:00'):null, to=I.to?new Date(I.to+'T23:59:59'):null; const cats=impCats(); let all=[];
-    let filled=0;
+    let filled=0, replies=0;
     for(const s0 of I.srcs){
       const same=I.srcs.filter(x=>x.group===s0.group);
       if(!s0.media&&same.some(x=>x.media)) continue;            // ملف نص فقط: يُستخدم لإكمال ملف الجوال
       let s=s0; const helpers=same.filter(x=>x!==s0&&!x.media);
       if(s0.media&&helpers.length){ const mg=WA.mergeText(s0.msgs,helpers); filled+=mg.msgs.filter(m=>m.web&&(!from||m.t>=from)&&(!to||m.t<=to)).length; s=Object.assign({},s0,{msgs:mg.msgs,names:mg.names}); }
       I.groupMsgs[s.group]={msgs:s.msgs,names:s.names||{}}; (I.groupNames=I.groupNames||{})[s.group]=normN_(same.map(x=>x.file.name).join(' '));
-      const cs=await WA.buildCases(s,from,to,cats,(i,n)=>{ const m=$('#impExtractMsg'); if(m) m.textContent=s.group+': قراءة الحالة '+i+' من '+n+'…'; });
+      const cs0=await WA.buildCases(s,from,to,cats,(i,n)=>{ const m=$('#impExtractMsg'); if(m) m.textContent=s.group+': قراءة الحالة '+i+' من '+n+'…'; });
+      // ردود المشرفين وفريق Talent بدون مرفق، والرسائل التي لا تبدو حالة، لا تُحسب حالات
+      let res=null; try{ if(S.me&&S.me.canEdit){ await hcLoad(); if(hcIndex().n) res=anResolver(s.group,s.names||{}); } }catch(e){}
+      const cs=cs0.filter(c=>{ if(c.reply){ replies++; I.dropped.push({g:s.group,t:c.t,sender:cleanSender_(c.sender),text:c.text,why:'لا تبدو حالة'}); return false; } if(res&&!c.atts.length){ const r=res(c.sender); if(r.p&&r.p.role!=='pharm'){ replies++; I.dropped.push({g:s.group,t:c.t,sender:r.name,text:c.text,why:({sup:'مشرف',talent:'Talent',am:'مدير منطقة'})[r.p.role]}); return false; } } return true; });
       cs.forEach(c=>{ c.src=s; c.group=s.group; c.key=[c.group,c.t.toISOString().slice(0,16),WA.normA(c.sender)].join('|'); }); all=all.concat(cs);
     }
     all.sort((a,b)=>a.t-b.t); all.forEach(c=>impScore(c,(I.groupMsgs[c.group]||{}).msgs)); I.cases=all;
     const inv=all.filter(c=>c.invoices.length).length, noText=all.filter(c=>!c.text).length;
-    I.extractMsg='استُخرجت '+all.length+' حالة (مرشحة بقوة: '+all.filter(c=>c.tier===3).length+')، منها '+inv+' بفاتورة مقروءة'+(filled?'، وأُكمل نص '+filled+' رسالة من تصدير الويب':'')+(noText?'. '+noText+' حالة بدون نص':'')+'. اختر التصنيفات ثم حدّد الحالات.';
+    I.extractMsg='استُخرجت '+all.length+' حالة (مرشحة بقوة: '+all.filter(c=>c.tier===3).length+')، منها '+inv+' بفاتورة مقروءة'+(filled?'، وأُكمل نص '+filled+' رسالة من تصدير الويب':'')+(noText?'. '+noText+' حالة بدون نص':'')+(replies?'. استُبعدت '+replies+' رسالة رد أو تعليق':'')+'. اختر التصنيفات ثم حدّد الحالات.';
   }catch(e){ I.extractMsg=''; toast(e.message||'تعذر الاستخراج.',true); }
   I.busy=false; updateImport();
 }
