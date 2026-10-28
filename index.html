@@ -1334,6 +1334,8 @@ const WA=(()=>{
     // iOS document caption: "file.pdf • 2 pages"
     text=text.replace(/^\s*[^\n]{1,120}?\.(?:pdf|jpe?g|png)\s*•\s*\d+\s*(?:pages?|صفحات|صفحة)\s*/gim,' ');
     text=text.replace(/<This message was edited>|<تم تعديل هذه الرسالة>/g,' ');
+    // تصدير الويب يكتب اسم الملف و«[Forwarded]» بعد المرفق: ليست نص الحالة
+    if(atts.length) text=text.replace(/\[(?:Forwarded|معاد توجيهه|تمت إعادة التوجيه)\]/gi,' ').replace(/(^|\s)[^\s<>][^\n<>]{0,80}?\.(?:pdf|jpe?g|png|webp|heic|docx?|xlsx?)(?=\s|$)/gi,' ');
     const kind=n=>/\.pdf$/i.test(n)?'pdf':/\.(jpe?g|png|webp|heic)$/i.test(n)?'image':/sticker|\.webp$/i.test(n)?'sticker':'other';
     return {text:text.replace(/[ \t]+\n/g,'\n').trim(), atts:atts.map(a=>Object.assign(a,{kind:/sticker/i.test(a.name)?'sticker':kind(a.name)})).filter(a=>a.kind!=='sticker'&&a.kind!=='other'||a.omitted&&!/sticker/i.test(a.name))};
   }
@@ -1358,18 +1360,19 @@ const WA=(()=>{
       }
       let join=false;
       if(c&&gap<=WINDOW){
-        if(longText&&!c.text) join=true;                       // file first, then the text
-        else if(hasAtt&&!longText&&(!c.text||gap<=SAME)) join=true;   // more files, or a file sent with the text
-        else if(hasAtt&&!longText&&c.text&&!c.atts.length) join=true; // text first, then the file
-        else if(longText&&!hasAtt&&c.text&&gap<=2*60*1000) join=true;  // تكملة النص في رسالة ثانية خلال دقيقتين
+        if(longText&&!c.long) join=true;                       // file first, then the text
+        else if(hasAtt&&!longText&&(!c.long||gap<=SAME)) join=true;   // more files, or a file sent with the text
+        else if(hasAtt&&!longText&&c.long&&!c.atts.length) join=true; // text first, then the file
+        else if(longText&&!hasAtt&&c.long&&gap<=2*60*1000) join=true;  // تكملة النص في رسالة ثانية خلال دقيقتين
       }
       // حتى 10 دقائق: فاتورة بدون نص ثم نص بدون مرفق (أو العكس) من نفس الصيدلي = حالة واحدة
       if(!join&&c&&gap<=LATE){
-        if(longText&&!hasAtt&&!c.text&&c.atts.length) join=true;
-        else if(hasAtt&&!longText&&c.text&&!c.atts.length) join=true;
+        if(longText&&!hasAtt&&!c.long&&c.atts.length) join=true;
+        else if(hasAtt&&!longText&&c.long&&!c.atts.length) join=true;
       }
       if(!join){ c={sender:m.sender,t:m.t,lastT:m.t,text:'',mention:'',atts:[]}; cases.push(c); last[m.sender]=c; }
-      if(longText) c.text=(c.text?c.text+'\n':'')+text.replace(/@\s*~?\s*/g,'@').trim();
+      // النص الطويل يُضاف دائمًا، والتعليق القصير المكتوب مع صورة أو ملف (مثل Friday offer) يُضاف أيضًا حتى لا يضيع
+      if(longText||(hasAtt&&letters>=2)){ c.text=(c.text?c.text+'\n':'')+text.replace(/@\s*~?\s*/g,'@').trim(); if(longText) c.long=true; }
       if(men&&!c.mention) c.mention=men;
       atts.forEach(a=>c.atts.push(a)); c.lastT=m.t;
     }
@@ -1576,7 +1579,7 @@ function updateImport(){
   const rows=impFiltered(); const oldKeys=new Set(S.inboxKeys||[]);
   $('#impRows').innerHTML=rows.length?rows.map(c=>{ const nm=c.invoices[0]&&fixName_(c.invoices[0].pharmacist);
     const miss=c.atts.filter(a=>a.missing);
-    const att=(miss.length?'<span class="pill p-no" title="'+esc(miss.map(a=>a.name).join('\n'))+'">✖ '+(miss.length>1?miss.length+' ':'')+'ناقص</span> ':'')+c.atts.filter(a=>!a.missing).map(a=>a.parsed?'<span class="pill p-ok" title="'+esc(a.name)+'">✔ فاتورة</span>':'<span class="pill p-wait" title="'+esc(a.name)+'">🖼 '+(a.kind==='pdf'?'PDF ممسوح':'صورة')+'</span>').join(' ')||'—';
+    const att=(miss.length?'<span class="pill p-no" title="'+esc(miss.map(a=>a.name).join('\n'))+'">✖ '+(miss.length>1?miss.length+' ':'')+'ناقص</span> ':'')+c.atts.map((a,ix)=>a.missing?'':'<button type="button" class="pill '+(a.parsed?'p-ok':'p-wait')+'" style="border:0;cursor:pointer;font:inherit;font-size:12px" data-impview="'+esc(c.key)+'|'+ix+'" title="اضغط لعرض الملف: '+esc(a.name)+'">'+(a.parsed?'✔ فاتورة':'🖼 '+(a.kind==='pdf'?'PDF ممسوح':'صورة'))+'</button>').join(' ')||'—';
     const st=I.done&&I.done[c.key]?'<span class="pill p-ok">أُضيفت</span>':oldKeys.has(c.key)?'<span class="pill p-na">مستوردة سابقًا</span>':'<span class="pill p-na">جديدة</span>';
     const sc='<span class="pill '+(c.tier===3?'p-ok':c.tier===2?'p-wait':'p-na')+'" title="'+esc((c.why||[]).join(' · '))+'" style="white-space:nowrap">'+'⭐'.repeat(c.tier||1)+' '+(c.score||0)+'</span>'+((c.sigs||[]).length?'<div class="note" style="margin:2px 0 0;font-size:11px">'+esc(c.sigs.join(' · '))+'</div>':'');
     return '<tr><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td style="min-width:110px">'+sc+'</td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+(nm?'<div class="note" style="margin:0">'+esc(nm)+(c.invoices[0].branch?' · فرع '+esc(c.invoices[0].branch):'')+'</div>':'')+'</td><td>'+esc(c.mention||'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+'</td><td style="max-width:340px;font-size:12.5px" title="'+esc(c.text)+'">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+att+'</td><td class="num">'+(c.total!=null?c.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="11"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
@@ -1650,6 +1653,21 @@ async function impRun(){
     }catch(e){ I.log.push({t:'✖ '+label+': '+(e.message||'خطأ'),bad:true}); }
   }
   I.busy=false; I.progress='انتهى: أُضيفت '+ok+' حالة لصندوق الوارد.'; try{ await load(); }catch(e){} updateImport(); toast(I.progress);
+}
+
+/* ----- عرض مرفق الحالة من ملف ZIP (على الجهاز فقط) ----- */
+async function impView(v){
+  const i=v.lastIndexOf('|'), key=v.slice(0,i), ix=+v.slice(i+1); const c=impState().cases.find(x=>x.key===key); const a=c&&c.atts[ix]; if(!a||!a.entry) return toast('الملف غير موجود في ملف التصدير.',true);
+  try{
+    const data=await c.src.zip.file(a.entry).async('uint8array'); const type=a.kind==='pdf'?'application/pdf':/\.png$/i.test(a.entry)?'image/png':/\.webp$/i.test(a.entry)?'image/webp':'image/jpeg';
+    const url=URL.createObjectURL(new Blob([data],{type})); const others=c.atts.map((x,j)=>x.entry&&j!==ix?'<button class="btn" data-impview="'+esc(key)+'|'+j+'">'+(j+1)+'</button>':'').join('');
+    let m=$('#impModal'); if(m) m.remove(); m=document.createElement('div'); m.id='impModal';
+    m.style.cssText='position:fixed;inset:0;background:rgba(10,20,40,.72);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px';
+    m.innerHTML='<div style="background:var(--surface,#fff);border-radius:12px;max-width:1100px;width:100%;max-height:94vh;display:flex;flex-direction:column;overflow:hidden"><div style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-bottom:1px solid var(--line)"><div style="flex:1;min-width:0"><b>'+esc(cleanSender_(c.sender))+' · '+ymd_(c.t)+' '+hm_(c.t)+'</b><div class="note" style="margin:2px 0 0;white-space:pre-wrap;max-height:90px;overflow:auto">'+esc(c.text||'(بدون نص)')+'</div><div class="note" style="margin:4px 0 0">المرفق '+(ix+1)+' من '+c.atts.length+': '+esc(a.name)+'</div></div>'+(others?'<div class="actions" style="margin:0">'+others+'</div>':'')+'<button class="btn" id="impModalX" aria-label="إغلاق">✕</button></div>'+
+      '<div style="flex:1;overflow:auto;background:#f2f4f7;text-align:center">'+(a.kind==='pdf'?'<iframe src="'+url+'" style="width:100%;height:78vh;border:0"></iframe>':'<img src="'+url+'" alt="" style="max-width:100%;height:auto;display:block;margin:0 auto">')+'</div></div>';
+    m.addEventListener('click',e=>{ if(e.target===m||e.target.id==='impModalX'){ m.remove(); URL.revokeObjectURL(url); } });
+    document.body.appendChild(m);
+  }catch(e){ toast('تعذر فتح الملف.',true); }
 }
 
 /* ----- ترشيح الحالات: درجة جاهزية فورية بدون ذكاء اصطناعي ----- */
@@ -2935,6 +2953,7 @@ document.addEventListener('click',e=>{
   if(t.dataset&&t.dataset.impdel!==undefined){ const I=impState(); I.srcs.splice(+t.dataset.impdel,1); I.cases=[]; I.sel=new Set(); return updateImport(); }
   if(t.dataset&&t.dataset.take) return inboxTake(t.dataset.take);
   if(t.dataset&&(t.dataset.inbdis||t.dataset.inbback)){ const id=t.dataset.inbdis||t.dataset.inbback; if(S.busy) return; S.busy=true; return call('inboxSet',{id,status:t.dataset.inbdis?'dismissed':'new'}).then(load).then(()=>{ S.inboxOpen=true; onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
+  if(t.dataset&&t.dataset.impview) return impView(t.dataset.impview);
   if(t.id==='btnImpTop') return impTop();
   if(t.id==='btnScAdd'){ S.scEdit.push({n:'',k:''}); return updateSc(); }
   if(t.dataset&&t.dataset.scdel!==undefined){ S.scEdit.splice(+t.dataset.scdel,1); return updateSc(); }
