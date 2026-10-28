@@ -202,6 +202,7 @@ button.kpi[aria-pressed="true"] span,button.kpi[aria-pressed="true"] b{color:#ff
 .seg button[aria-pressed="true"][data-v="Y"]{background:var(--navy);color:#fff}
 @media (max-width:820px){#pList section{grid-template-columns:1fr!important}}
 @media (max-width:640px){.topbar{padding:12px 16px}.topbar h1{font-size:18px}.tab{padding:8px 12px}}
+.rs{width:1000px;background:#fff;color:#1c2633;padding:28px 30px;border:1px solid var(--line);border-radius:10px;font-size:13px;margin:0 auto}.rs h2{margin:4px 0;font-size:20px;color:#0a2f5c}.rs h3{margin:18px 0 8px;font-size:14.5px;color:#0a2f5c}.rs-h{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0a2f5c;padding-bottom:12px}.rs-k0{font-size:11px;font-weight:700;color:#6b7686}.rs-sub,.rs-meta{color:#6b7686;font-size:12px}.rs-meta{text-align:left}.rs-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:14px}.rs-k{border:1px solid #dfe5ee;border-radius:8px;padding:8px 10px}.rs-k span{display:block;font-size:11px;color:#6b7686;font-weight:700}.rs-k b{display:block;font-size:20px;color:#0a2f5c;margin:2px 0}.rs-k i{font-style:normal;font-size:11px;color:#6b7686}.rs-t{width:100%;border-collapse:collapse;font-size:12px}.rs-t th{background:#0a2f5c;color:#fff;padding:6px;text-align:right;font-weight:600;letter-spacing:normal;text-transform:none}.rs *{letter-spacing:normal!important}.rs-t td{padding:5px 6px;border-bottom:1px solid #e6ebf2}.rs-p{display:inline-block;padding:1px 8px;border-radius:999px;font-weight:700;font-size:11px}.rs-p.ok{background:#e6f5ec;color:#1f8a4c}.rs-p.w{background:#fdf3e1;color:#b7791f}.rs-p.no{background:#fbe9e7;color:#c0392b}.rs-2{display:grid;grid-template-columns:1.2fr 1fr;gap:20px}.rs-b{display:flex;align-items:center;gap:8px;margin:5px 0}.rs-b span{width:150px}.rs-b i{flex:1;height:12px;background:#e6ebf2;border-radius:3px;overflow:hidden}.rs-b u{display:block;height:100%;background:#0b4f8a}.rs-b b{width:36px;text-align:left;color:#6b7686}.rs-n{color:#6b7686;font-size:11px;margin-top:14px}
 .hb{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px;width:100%;background:none;border:0;padding:2px 4px;border-radius:6px;cursor:pointer;font:inherit;color:inherit;text-align:start}.hb.static{cursor:default}.hb:not(.static):hover,.hb.on{background:var(--brand-soft)}.hb .l{width:150px;flex:none}.hb .t{flex:1;background:var(--line);border-radius:4px;height:14px;overflow:hidden}.hb .t i{display:block;height:100%;background:var(--brand)}.hb .v{width:40px;text-align:end;color:var(--muted);font-variant-numeric:tabular-nums}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px}.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-inline-end:5px}
 tr.clickable{cursor:pointer}tr.clickable:hover td,tr.sel td{background:var(--brand-soft)}
@@ -928,12 +929,20 @@ const ACTIONS={
       await Store.put('hc','meta',{parts,count:clean.length,at:now_(),by:u.name});
       await audit_(u,'','headcount','قائمة الموظفين: '+clean.length+' شخص'); return {count:clean.length}; }); },
   anSave:(u,p)=>{ needAdmin_(u); const id=String(p.month||''); if(!/^\d{4}-\d{2}$/.test(id)) throw err('شهر غير صالح.');
-    return withLock_(async()=>{ const doc=(await Store.get('wastats',id))||{id,groups:{},sups:{}}; const g=p.groups&&typeof p.groups==='object'?p.groups:{};
-      Object.keys(g).slice(0,12).forEach(k=>{ if(!/^[A-Za-z0-9\u0600-\u06FF ]{1,10}$/.test(k)) return; const v=g[k]||{}; const o={}; ['cases','ph','inv','net','avg','rate','med','talent','un','team','part'].forEach(f=>{ const n=Number(v[f]); o[f]=isFinite(n)?Math.round(n*10)/10:0; }); doc.groups[k]=o; });
-      doc.sups[Object.keys(g).sort().join('-')]=(Array.isArray(p.sups)?p.sups:[]).slice(0,80).map(s=>({name:String(s.name||'').slice(0,80),n:+s.n||0,rep:+s.rep||0,rate:+s.rate||0,med:s.med==null?null:+s.med}));
-      doc.from=String(p.from||'').slice(0,10); doc.to=String(p.to||'').slice(0,10); doc.savedAt=now_(); doc.savedBy=u.name;
-      await Store.put('wastats',id,doc); await audit_(u,'','wa_stats','ملخص تحليل الواتساب '+id+': '+Object.keys(g).join('، ')); return {id}; }); },
-  anList: async(u)=>{ needAdmin_(u); return {items:(await Store.list('wastats')).map(d=>({id:d.id,groups:d.groups,savedAt:d.savedAt}))}; },
+    const sn=p.snap&&typeof p.snap==='object'?p.snap:null; if(sn&&JSON.stringify(sn).length>150000) throw err('الملخص أكبر من المسموح.');
+    return withLock_(async()=>{ const doc=(await Store.get('wastats',id))||{id,groups:{},sups:{}}; doc.groups=doc.groups||{}; doc.snaps=doc.snaps||{}; const g=p.groups&&typeof p.groups==='object'?p.groups:{};
+      Object.keys(g).slice(0,12).forEach(k=>{ if(!/^[A-Za-z0-9؀-ۿ ]{1,10}$/.test(k)) return; const v=g[k]||{}; const o={}; ['cases','ph','inv','net','avg','rate','med','talent','un','team','part'].forEach(f=>{ const n=Number(v[f]); o[f]=isFinite(n)?Math.round(n*10)/10:0; }); doc.groups[k]=o; });
+      if(sn){ const key=String(sn.key||'').slice(0,120)||'all'; doc.snaps[key]=JSON.parse(JSON.stringify(Object.assign({},sn,{key,label:String(sn.label||'').slice(0,160),savedAt:now_(),by:u.name}))); }
+      doc.savedAt=now_(); doc.savedBy=u.name;
+      await Store.put('wastats',id,doc); await audit_(u,'','wa_stats','ملخص تحليل الواتساب '+id+(sn?': '+String(sn.label||''):'')); return {id}; }); },
+  anList: async(u)=>{ needAdmin_(u); return {items:(await Store.list('wastats')).map(d=>({id:d.id,groups:d.groups||{},savedAt:d.savedAt,
+    snaps:Object.values(d.snaps||{}).map(s=>({key:s.key,label:s.label,from:s.from,to:s.to,savedAt:s.savedAt,by:s.by,cases:(s.kpi||{}).cases||0,rate:(s.kpi||{}).rate||0,med:(s.kpi||{}).med}))}))}; },
+  anGet: async(u,p)=>{ needAdmin_(u); const d=await Store.get('wastats',String(p.id||'')); if(!d) throw err('الملخص غير موجود.'); return d; },
+  anDel:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{ const id=String(p.id||''), key=String(p.key||''); const d=await Store.get('wastats',id); if(!d||!d.snaps||!d.snaps[key]) throw err('الملخص غير موجود.');
+    const sn=d.snaps[key]; delete d.snaps[key];
+    // أرقام المجموعات للمقارنة الشهرية: تُحذف إن كانت من هذا الملخص ولا يغطيها ملخص آخر
+    (sn.groups||[]).forEach(x=>{ if(!Object.values(d.snaps).some(o=>(o.groups||[]).some(y=>y.g===x.g))) delete (d.groups||{})[x.g]; });
+    await Store.put('wastats',id,d); await audit_(u,'','wa_stats','حذف ملخص '+id+': '+(sn.label||'')); return {ok:true}; }); },
   // ---- صندوق الوارد من الواتساب ----
   inboxAdd:(u,p)=>{ needAdmin_(u); const items=Array.isArray(p.items)?p.items.slice(0,20):[]; if(!items.length) throw err('لا توجد حالات.'); return withLock_(async()=>{
     let n=0; const S_=(v,m)=>String(v==null?'':v).slice(0,m);
@@ -1521,14 +1530,14 @@ function impCats(){ return (S.settings.importCats&&S.settings.importCats.length)
 
 function mountImport(){
   impState();
-  $('#main').innerHTML='<div class="actions" style="margin:0 0 12px"><button class="chip'+(S.impTab!=='an'?' on':'')+'" data-imptab="imp">استيراد الحالات</button><button class="chip'+(S.impTab==='an'?' on':'')+'" data-imptab="an">📊 تحليل المجموعات</button></div><div id="impPane"'+(S.impTab==='an'?' hidden':'')+'>'+
+  $('#main').innerHTML='<div class="actions" style="margin:0 0 12px"><button class="chip'+(!S.impTab||S.impTab==='imp'?' on':'')+'" data-imptab="imp">استيراد الحالات</button><button class="chip'+(S.impTab==='an'?' on':'')+'" data-imptab="an">📊 تحليل المجموعات</button><button class="chip'+(S.impTab==='rep'?' on':'')+'" data-imptab="rep">📁 ملخصات الشهور</button></div><div id="impPane"'+(S.impTab&&S.impTab!=='imp'?' hidden':'')+'>'+
   '<section class="panel sec"><h3>1) ملفات تصدير المجموعات</h3>'+
   '<p class="note" style="margin:0 0 10px">لكل مجموعة: تصدير الجوال مع الوسائط (ZIP، فيه الفواتير) + تصدير الويب (ZIP نصي، فيه الكلام المكتوب مع الفواتير). اختر الملفات كلها معًا؛ تتعرف المنصة على مجموعة كل ملف وتدمج الاثنين بالوقت. تتم القراءة على جهازك ولا يُرفع أي ملف للخادم.</p>'+
   '<div class="actions"><label class="btn primary">📁 اختيار ملفات ZIP<input type="file" id="impFiles" accept=".zip,application/zip" multiple hidden></label><span class="note" id="impLoadMsg"></span></div>'+
   '<div id="impSrcs" style="margin-top:10px"></div></section>'+
   '<section class="panel sec" id="impStep2" hidden><h3>2) الفلترة والاختيار</h3><div id="impFilters"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="impSelAllBox" aria-label="تحديد الكل"></th><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>نص الحالة</th><th>المرفقات</th><th>الفاتورة</th><th>الحالة</th></tr></thead><tbody id="impRows"></tbody></table></div></section>'+
-  '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><button class="btn primary" id="btnImpRun"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><div id="impLog" style="margin-top:10px"></div></section></div><div id="anBox"'+(S.impTab==='an'?'':' hidden')+'></div>';
-  updateImport(); if(S.impTab==='an') updateAn();
+  '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><button class="btn primary" id="btnImpRun"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><div id="impLog" style="margin-top:10px"></div></section></div><div id="anBox"'+(S.impTab==='an'?'':' hidden')+'></div><div id="repBox"'+(S.impTab==='rep'?'':' hidden')+'></div>';
+  updateImport(); if(S.impTab==='an') updateAn(); if(S.impTab==='rep') updateRep();
 }
 function impFiltered(){
   const I=impState(), oldKeys=new Set((S.inboxKeys||[]));
@@ -1819,9 +1828,11 @@ async function hcDownload(){
 // المجموعة في القائمة قد تكون D4 أو اسم الـ District (Dr. Deiaa) الموجود في اسم ملف التصدير
 function hcGroupOf(p){ const I=impState(); const G=Object.keys(I.groupMsgs||{}); if(!p.group) return ''; if(G.includes(p.group)) return p.group; const k=normN_(p.group); if(k.length<3) return '';
   return G.find(g=>((I.groupNames||{})[g]||'').split(' ').join(' ').includes(k))||''; }
-function anState(){ if(!S.an) S.an={groups:new Set(),cat:'',sup:'',win:24,showAllUn:false}; return S.an; }
+// كل الردود تُحسب مهما تأخرت (حد أمان 7 أيام حتى لا تُنسب رسائل عامة لحالات قديمة)
+const AN_WIN=7*86400000;
+function anState(){ if(!S.an) S.an={groups:new Set(),cat:'',sup:'',showAllUn:false}; return S.an; }
 function anResolver(group,names){
-  const idx=hcIndex(); const n2p={}; Object.keys(names||{}).forEach(ph=>{ n2p[normN_(names[ph])]=phoneKey_(ph); });
+  const idx=hcIndex(); const n2p={}, disp={}; Object.keys(names||{}).forEach(ph=>{ const k=normN_(names[ph]); n2p[k]=phoneKey_(ph); disp[k]=cleanSender_(names[ph]); });
   const cache=new Map();
   const fn=function(sender,pharmNo){
     const ck=sender+'|'+(pharmNo||''); if(cache.has(ck)) return cache.get(ck);
@@ -1833,10 +1844,10 @@ function anResolver(group,names){
     const r={p, key:p?hcId_(p):'n:'+normN_(cleanSender_(sender)||sender), name:p?(p.alias||p.ar||p.en):cleanSender_(sender), phone};
     cache.set(ck,r); return r;
   };
-  fn.n2p=n2p; return fn;
+  fn.n2p=n2p; fn.disp=disp; return fn;
 }
 function anCompute(){
-  const I=impState(), A=anState(), win=A.win*3600000; const idx=hcIndex();
+  const I=impState(), A=anState(), win=AN_WIN; const idx=hcIndex();
   const groups=Object.keys(I.groupMsgs||{}).filter(g=>!A.groups.size||A.groups.has(g)).sort();
   const cases=[], replies=[], unknown={};
   for(const g of groups){
@@ -1845,7 +1856,7 @@ function anCompute(){
     // منشن بصيغة الويب قد يلتصق به أول كلمات النص: نطابق أطول اسم معروف في بدايته
     const nameKeys=[...new Set(Object.keys(res.n2p).concat([...idx.byName.keys()]))].filter(k=>k.length>=5);
     const resM=mn=>{ const r=res(mn); if(r.p) return r; const k=normN_(mn); let best=''; nameKeys.forEach(key=>{ if(key.length>best.length&&(k===key||k.startsWith(key+' '))) best=key; });
-      if(!best) return r; if(res.n2p[best]) return res('+'+res.n2p[best]); const p=idx.byName.get(best); return p?{p,key:hcId_(p),name:p.ar||p.en,phone:p.phone}:r; };
+      if(!best) return r; if(res.n2p[best]){ const x=res('+'+res.n2p[best]); return x.p?x:{p:null,key:'n:'+best,name:res.disp[best]||mn,phone:x.phone}; } const p=idx.byName.get(best); return p?{p,key:hcId_(p),name:p.ar||p.en,phone:p.phone}:r; };
     gc.forEach(c=>{ if(c.mention){ const r=resM(c.mention); c._m=r; } });
     const mentionKeys=new Set(gc.map(c=>c._m&&c._m.key.startsWith('n:')?normN_(c.mention):'').filter(Boolean));
     gc.forEach(c=>{ if(c._m&&c._m.p) [c._m.p.ar,c._m.p.en].forEach(n=>{ if(n) mentionKeys.add(normN_(n)); }); });
@@ -1853,7 +1864,7 @@ function anCompute(){
       const inv0=c.invoices[0]||{}; const ph=res(c.sender,inv0.pharmNo);
       if(!ph.p) unknown[g+'|'+ph.name]={g,name:ph.name,n:((unknown[g+'|'+ph.name]||{}).n||0)+1};
       let sup=null;
-      if(c.mention){ const m=c._m||res(c.mention); sup=(m.p&&(m.p.role==='sup'||m.p.role==='am'))?{key:m.key,name:m.name,p:m.p}:(m.p&&ph.p&&ph.p.sup&&idx.supByName.get(normN_(ph.p.sup)))?{key:hcId_(idx.supByName.get(normN_(ph.p.sup))),name:ph.p.sup,p:idx.supByName.get(normN_(ph.p.sup))}:m.p?null:(idx.supByName.get(normN_(c.mention))?{key:hcId_(idx.supByName.get(normN_(c.mention))),name:idx.supByName.get(normN_(c.mention)).alias||idx.supByName.get(normN_(c.mention)).en,p:idx.supByName.get(normN_(c.mention))}:{key:'n:'+normN_(c.mention),name:c.mention}); }
+      if(c.mention){ const m=c._m||res(c.mention); sup=(m.p&&(m.p.role==='sup'||m.p.role==='am'))?{key:m.key,name:m.name,p:m.p}:(m.p&&ph.p&&ph.p.sup&&idx.supByName.get(normN_(ph.p.sup)))?{key:hcId_(idx.supByName.get(normN_(ph.p.sup))),name:ph.p.sup,p:idx.supByName.get(normN_(ph.p.sup))}:m.p?null:(idx.supByName.get(normN_(c.mention))?{key:hcId_(idx.supByName.get(normN_(c.mention))),name:idx.supByName.get(normN_(c.mention)).alias||idx.supByName.get(normN_(c.mention)).en,p:idx.supByName.get(normN_(c.mention))}:{key:m.key,name:m.name}); }
       else if(ph.p&&ph.p.sup){ const sp=idx.supByName.get(normN_(ph.p.sup)); sup=sp?{key:hcId_(sp),name:sp.alias||sp.ar||sp.en,p:sp}:{key:'n:'+normN_(ph.p.sup),name:ph.p.sup}; }
       const branch=inv0.branch||(ph.p&&ph.p.branch)||'';
       const toks=[...new Set([ph.p&&ph.p.ar,fixName_(inv0.pharmacist||''),cleanSender_(c.sender),ph.p&&ph.p.en].filter(Boolean).map(s=>normN_(s).split(' ')[0]).filter(k=>k&&k.length>=3&&!/^\d+$/.test(k)))];
@@ -1873,10 +1884,14 @@ function anCompute(){
       if(!open.length) continue;
       const notMine=x=>!x.replies.some(r=>r.key===who.key);
       const words=new Set(WA.normA(m.body).split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>=3));
-      // 1) الرد يذكر اسم الصيدلي (برافو د أسامة)، 2) حالة من فريق المشرف أو ذكرته بالمنشن، 3) أقرب حالة خلال 3 ساعات
-      let tgt=open.filter(x=>notMine(x)&&x.toks.some(k=>words.has(k))).pop();
-      if(!tgt) tgt=open.filter(x=>notMine(x)&&x.sup&&x.sup.key===who.key).pop();
+      // خلال 24 ساعة: 1) الرد يذكر اسم الصيدلي، 2) حالة من فريق المشرف أو ذكرته بالمنشن، 3) أقرب حالة خلال 3 ساعات
+      // ثم الردود المتأخرة (حتى 7 أيام): بالاسم ثم بالمشرف المسؤول، مع تفضيل الحالة التي لم يُرد عليها
+      const day=open.filter(x=>m.t-x.c.t<=86400000);
+      const byName=L=>L.filter(x=>notMine(x)&&x.toks.some(k=>words.has(k))), bySup=L=>L.filter(x=>notMine(x)&&x.sup&&x.sup.key===who.key);
+      const pick=L=>L.filter(x=>!x.replies.length).pop()||L.pop();
+      let tgt=byName(day).pop()||bySup(day).pop();
       if(!tgt){ const recent=open.filter(x=>m.t-x.c.lastT<=3*3600000); tgt=recent.filter(x=>!x.replies.length).pop()||recent.filter(notMine).pop(); }
+      if(!tgt) tgt=pick(byName(open))||pick(bySup(open));
       if(!tgt) continue;
       const r={key:who.key,name:who.name,role,t:m.t,g}; tgt.replies.push(r); replies.push(Object.assign({x:tgt},r));
       if(!tgt.first||m.t<tgt.first) tgt.first=m.t; if(tgt.sup&&tgt.sup.key===who.key&&!tgt.supT) tgt.supT=m.t;
@@ -1886,7 +1901,7 @@ function anCompute(){
   return {groups,cases:sel,allCases:cases,replies:replies.filter(r=>sel.includes(r.x)),unknown:Object.values(unknown).sort((a,b)=>b.n-a.n)};
 }
 const mins_=ms=>Math.round(ms/60000);
-const fmtDur_=m=>m==null||!isFinite(m)?'—':(m<60?m+'د':Math.floor(m/60)+'س'+(m%60?' '+(m%60)+'د':''));
+const fmtDur_=m=>m==null||!isFinite(m)?'—':(m<60?m+'د':m<1440?Math.floor(m/60)+'س'+(m%60?' '+(m%60)+'د':''):Math.floor(m/1440)+' يوم'+(Math.floor(m%1440/60)?' '+Math.floor(m%1440/60)+'س':''));
 const median_=a=>{ if(!a.length) return null; const s=a.slice().sort((x,y)=>x-y); const k=s.length>>1; return s.length%2?s[k]:Math.round((s[k-1]+s[k])/2); };
 const pct_=(a,b)=>b?Math.round(a*100/b):0;
 const money_=v=>Number(v||0).toLocaleString('en-US',{maximumFractionDigits:0});
@@ -1942,8 +1957,7 @@ function updateAn(){
   const chip=(attr,val,label,n,on)=>'<label class="chip'+(on?' on':'')+'"><input type="checkbox" '+attr+'="'+esc(val)+'"'+(on?' checked':'')+'>'+esc(label)+(n!=null?' <b>'+n+'</b>':'')+'</label>';
   const hasHc=!!hcIndex().n;
   let h='<div class="bar" style="flex-wrap:wrap;gap:8px"><b>الفترة:</b> <span class="mono">'+from+' → '+to+'</span> <b style="margin-inline-start:10px">المجموعات:</b> '+allG.map(g=>chip('data-angrp',g,g,null,A.groups.has(g))).join('')+
-    ' <label class="f" style="display:inline-flex;gap:6px;align-items:center;margin:0">مدة الرد <select id="anWin">'+[6,12,24,48].map(v=>'<option value="'+v+'"'+(A.win===v?' selected':'')+'>'+v+' ساعة</option>').join('')+'</select></label>'+
-    '<span style="flex:1"></span><button class="btn" id="btnAnSave">💾 حفظ ملخص '+esc(mon)+'</button><button class="btn primary" id="btnAnXlsx">⬇ تصدير Excel</button></div>';
+    '<span style="flex:1"></span><button class="btn" id="btnAnSave">💾 حفظ ملخص الشهر '+esc(mon)+'</button><button class="btn primary" id="btnAnXlsx">⬇ تصدير Excel</button></div>';
   if(!hasHc) h+='<p class="note" style="color:var(--warn)">⚠️ لم تُرفع قائمة الموظفين بعد (المستخدمون والإعدادات). بدونها تظهر الأسماء كما في الواتساب، ويُعرف المشرف من المنشن فقط، ولا تُحسب ردود Talent ولا نسبة المشاركة.</p>';
   if(A.cat) h+='<p class="note">مفلتر على التصنيف: <b>'+esc(A.cat==='__none'?'غير مصنّف':A.cat)+'</b> <button class="btn" data-ancat="">إلغاء الفلتر</button></p>';
   h+='<div class="kpis">'+kp('إجمالي الحالات',K.cases,cmp||(K.ph+' صيدلي'),'')+kp('صيادلة مشاركون',K.ph,'في '+K.br+' فرعًا')+kp('حالات بفاتورة',K.inv+'%','صافي المقروء منها '+money_(K.net)+' ر.س')+kp('متوسط الفاتورة',money_(K.avg),'ر.س · '+K.units+' قطعة')+
@@ -1968,21 +1982,74 @@ function updateAn(){
     shown.map(c=>'<tr><td>'+esc(c.g)+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.c.t)+' '+hm_(c.c.t)+'</td><td>'+esc(c.ph.name)+'</td><td class="num">'+esc(c.branch||'—')+'</td><td>'+esc(c.sup?c.sup.name:'—')+'</td><td>'+c.c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')+'</td><td style="max-width:300px;font-size:12.5px">'+esc((c.c.text||'(بدون نص)').slice(0,110))+'</td><td><button class="btn" data-anpick="'+esc(c.c.key)+'"'+(I.sel.has(c.c.key)?' disabled':'')+'>'+(I.sel.has(c.c.key)?'محددة للاستيراد':'تحديد للاستيراد')+'</button></td></tr>').join('')+'</tbody></table></div>'+(un.length>shown.length?'<div class="actions"><button class="btn" id="btnAnMoreUn">عرض الكل ('+un.length+')</button></div>':''):'<div class="empty">كل الحالات تم الرد عليها 👏</div>')+'</section>';
   if(hasHc&&G.nonPart.length) h+='<section class="panel sec"><details><summary style="cursor:pointer;font-weight:700">صيادلة لم يشاركوا في الفترة: '+G.nonPart.length+' (حسب قائمة الموظفين للمجموعات المحمّلة)</summary><div class="tw" style="margin-top:8px"><table><thead><tr><th>الاسم</th><th>الفرع</th><th>المجموعة</th><th>المشرف</th></tr></thead><tbody>'+G.nonPart.slice(0,300).map(p=>'<tr><td>'+esc(p.ar||p.en)+'</td><td class="num">'+esc(p.branch)+'</td><td>'+esc(p.group)+'</td><td>'+esc(p.sup)+'</td></tr>').join('')+'</tbody></table></div></details></section>';
   if(R.unknown.length) h+='<section class="panel sec"><details><summary style="cursor:pointer;font-weight:700">مرسلون غير موجودين في قائمة الموظفين: '+R.unknown.length+'</summary><p class="note">أضف أرقامهم أو أسماءهم للقائمة حتى تُنسب حالاتهم للمشرف الصحيح. رفع تصدير الويب مع تصدير الجوال يظهر أرقام الجوالات ويحسّن الربط.</p><div class="tw"><table><thead><tr><th>الاسم في الواتساب</th><th>المجموعة</th><th>الحالات</th></tr></thead><tbody>'+R.unknown.slice(0,200).map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.g)+'</td><td class="num">'+u.n+'</td></tr>').join('')+'</tbody></table></div></details></section>';
-  h+='<p class="note">طريقة احتساب الرد: أي رسالة من مشرف أو Talent أو مدير منطقة خلال '+A.win+' ساعة بعد الحالة تُنسب أولًا لحالة ذكرته بالمنشن أو تتبع فريقه، ثم لحالة ذُكر اسم صيدليها في الرد، ثم لأقرب حالة خلال 3 ساعات لم يُرد عليها. التصدير لا يحفظ الرسالة المقتبسة، فالنسبة تقديرية ودقيقة في الغالب.</p>';
+  h+='<p class="note">طريقة احتساب الرد: تُحسب أي رسالة من مشرف أو Talent أو مدير منطقة بعد الحالة مهما تأخرت. تُنسب أولًا لحالة ذُكر اسم صيدليها في الرد، ثم لحالة من فريق المشرف أو ذكرته بالمنشن، ثم لأقرب حالة خلال 3 ساعات لم يُرد عليها. التصدير لا يحفظ الرسالة المقتبسة، فالنسبة تقديرية ودقيقة في الغالب.</p>';
   box.innerHTML=h;
 }
 async function anSave(){
-  const I=impState(); if(!I.an) return; const {R,G}=I.an; const to=ymd_(new Date(Math.max(...R.cases.map(c=>c.c.t))));
+  const I=impState(); if(!I.an) return; const {R,G}=I.an; const A=anState(); const K=G.kpi;
+  const to=ymd_(new Date(Math.max(...R.cases.map(c=>c.c.t)))), from=ymd_(new Date(Math.min(...R.cases.map(c=>c.c.t))));
   const groups={}; G.groups.forEach(x=>{ groups[x.g]={cases:x.cases,ph:x.ph,inv:x.inv,net:Math.round(x.net),avg:x.avg,rate:x.rate,med:x.med,talent:x.talent,un:x.un,team:x.team||0,part:x.part||0}; });
-  const sups=G.sups.slice(0,80).map(s=>({name:s.name,n:s.n,rep:s.rep,rate:s.rate,med:s.med}));
-  const r=await call('anSave',{month:to.slice(0,7),from:ymd_(new Date(Math.min(...R.cases.map(c=>c.c.t)))),to,groups,sups,cat:anState().cat||''});
-  S.anHist=null; toast('حُفظ ملخص '+r.id+' للمجموعات: '+Object.keys(groups).join('، ')); updateAn();
+  const snap={key:R.groups.join('-')+(A.cat?'|'+A.cat:''),label:(R.groups.length>1?'المجموعات ':'المجموعة ')+R.groups.join('، ')+(A.cat?' · تصنيف: '+(A.cat==='__none'?'غير مصنّف':A.cat):''),from,to,
+    kpi:{cases:K.cases,ph:K.ph,br:K.br,inv:K.inv,net:Math.round(K.net),avg:K.avg,units:K.units,rate:K.rate,med:K.med,un:K.un,talent:K.talent},
+    groups:G.groups.map(x=>({g:x.g,cases:x.cases,ph:x.ph,team:x.team||0,part:x.part||0,inv:x.inv,net:Math.round(x.net),avg:x.avg,rate:x.rate,med:x.med,talent:x.talent,un:x.un})),
+    sups:G.sups.slice(0,80).map(s=>({name:s.name,region:s.region||'',groups:s.groups,n:s.n,rep:s.rep,rate:s.rate,med:s.med,team:s.team||0,part:s.part||0})),
+    tal:G.tal.slice(0,40).map(t=>({name:t.name,n:t.n,groups:t.groups,med:t.med})),
+    cats:Object.keys(G.cats).map(k=>[k==='__none'?'غير مصنّف':k,G.cats[k]]).sort((a,b)=>b[1]-a[1]).slice(0,30),
+    top:G.topPh.slice(0,10).map(p=>({name:p.name,branch:p.branch||'',n:p.n}))};
+  const r=await call('anSave',{month:to.slice(0,7),from,to,groups:A.cat?{}:groups,snap});
+  S.anHist=null; S.repDoc=null; S.repOpen={id:r.id,key:snap.key}; S.impTab='rep'; toast('حُفظ ملخص '+r.id+'. تقدر تنزّله PDF أو صورة من هنا، ويبقى محفوظًا في «ملخصات الشهور».'); mountImport();
+}
+/* ----- ملخصات الشهور المحفوظة ----- */
+const H2C_URL='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', JSPDF_URL='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+function libOnce_(url,test){ if(test()) return Promise.resolve(); return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=url; s.onload=()=>res(); s.onerror=()=>rej(new Error('تعذر تحميل مكتبة التصدير. تحقق من الاتصال بالإنترنت.')); document.head.appendChild(s); }); }
+const monthAr_=id=>{ try{ return new Date(id+'-01T00:00:00').toLocaleDateString('ar-EG-u-nu-latn',{month:'long',year:'numeric'}); }catch(e){ return id; } };
+function repHtml(doc,sn){
+  const K=sn.kpi||{}; const tbl=(head,rows)=>'<table class="rs-t"><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';
+  const rc=r=>'<span class="rs-p '+(r>=80?'ok':r>=70?'w':'no')+'">'+r+'%</span>';
+  const kp=(l,v,s)=>'<div class="rs-k"><span>'+l+'</span><b>'+v+'</b>'+(s?'<i>'+s+'</i>':'')+'</div>';
+  const cmax=Math.max(1,...(sn.cats||[]).map(c=>c[1]));
+  return '<div class="rs" id="repSheet"><div class="rs-h"><div><div class="rs-k0">USE Community · Talent Management</div><h2>ملخص تحليل مجموعات الواتساب — '+esc(monthAr_(doc.id))+'</h2><div class="rs-sub">'+esc(sn.label||'')+' · الفترة '+esc(sn.from||'')+' → '+esc(sn.to||'')+'</div></div><div class="rs-meta">حُفظ '+esc(String(sn.savedAt||'').slice(0,16).replace('T',' '))+'<br>بواسطة '+esc(sn.by||'')+'</div></div>'+
+   '<div class="rs-kpis">'+kp('إجمالي الحالات',K.cases,K.ph+' صيدلي · '+K.br+' فرع')+kp('حالات بفاتورة',K.inv+'%','صافي المقروء '+money_(K.net)+' ر.س')+kp('متوسط الفاتورة',money_(K.avg)+' ر.س',K.units+' قطعة')+kp('نسبة الرد',K.rate+'%',K.un+' حالة بلا رد')+kp('وسيط وقت الرد',fmtDur_(K.med),'')+kp('ردود Talent',K.talent,'حالة')+'</div>'+
+   '<h3>المجموعات</h3>'+tbl(['المجموعة','الحالات','صيادلة','المشاركة','بفاتورة','صافي الفواتير','متوسط الفاتورة','نسبة الرد','وسيط الرد','Talent','بلا رد'],(sn.groups||[]).map(x=>'<tr><td><b>'+esc(x.g)+'</b></td><td>'+x.cases+'</td><td>'+x.ph+'</td><td>'+(x.team?x.part+' من '+x.team+' ('+pct_(x.part,x.team)+'%)':'—')+'</td><td>'+x.inv+'%</td><td>'+money_(x.net)+'</td><td>'+money_(x.avg)+'</td><td>'+rc(x.rate)+'</td><td>'+fmtDur_(x.med)+'</td><td>'+x.talent+'</td><td>'+x.un+'</td></tr>'))+
+   '<h3>أداء المشرفين في الرد</h3>'+tbl(['المشرف','المنطقة','المجموعات','حالات فريقه','ردّ عليها','نسبة الرد','وسيط الوقت','مشاركة الفريق'],(sn.sups||[]).map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.region||'—')+'</td><td>'+esc(x.groups||'')+'</td><td>'+x.n+'</td><td>'+x.rep+'</td><td>'+rc(x.rate)+'</td><td>'+fmtDur_(x.med)+'</td><td>'+(x.team?x.part+' من '+x.team:'—')+'</td></tr>'))+
+   '<div class="rs-2"><div><h3>ردود فريق Talent</h3>'+((sn.tal||[]).length?tbl(['العضو','حالات ردّ عليها','المجموعات','وسيط الوقت'],sn.tal.map(t=>'<tr><td>'+esc(t.name)+'</td><td>'+t.n+'</td><td>'+esc(t.groups)+'</td><td>'+fmtDur_(t.med)+'</td></tr>')):'<p class="rs-n">لا توجد ردود من Talent.</p>')+
+   '<h3>أكثر الصيادلة مشاركة</h3>'+tbl(['الصيدلي','الفرع','الحالات'],(sn.top||[]).map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+esc(p.branch||'—')+'</td><td>'+p.n+'</td></tr>'))+'</div>'+
+   '<div><h3>التصنيفات</h3>'+(sn.cats||[]).map(c=>'<div class="rs-b"><span>'+esc(c[0])+'</span><i><u style="width:'+Math.round(c[1]*100/cmax)+'%"></u></i><b>'+c[1]+'</b></div>').join('')+'</div></div>'+
+   '<p class="rs-n">نسبة الرد ووقته تقديريان: يُحسب أي رد من مشرف أو Talent أو مدير منطقة بعد الحالة، ويُنسب للحالة بذكر اسم الصيدلي أو المشرف المسؤول أو الأقرب زمنيًا. «وسيط وقت الرد» = نصف الحالات المجاب عليها حصلت على أول رد خلال هذه المدة.</p></div>';
+}
+async function updateRep(){
+  const box=$('#repBox'); if(!box) return;
+  if(!S.anHist){ box.innerHTML='<p class="note">جارٍ التحميل…</p>'; await anHist(); if(!$('#repBox')) return; }
+  const L=(S.anHist||[]).filter(m=>(m.snaps||[]).length).sort((a,b)=>b.id.localeCompare(a.id));
+  let h='<section class="panel sec"><h3>ملخصات الشهور المحفوظة</h3><p class="note" style="margin:0 0 10px">كل ملخص تحفظه من «تحليل المجموعات» يبقى هنا على المنصة، وتقدر تفتحه وتنزّله PDF أو صورة في أي وقت دون رفع ملفات الواتساب.</p>'+
+    (L.length?'<div class="tw"><table><thead><tr><th>الشهر</th><th>الملخص</th><th>الفترة</th><th>الحالات</th><th>نسبة الرد</th><th>وسيط الرد</th><th>حُفظ</th><th></th></tr></thead><tbody>'+
+      L.map(m=>m.snaps.map(sn=>'<tr class="'+(S.repOpen&&S.repOpen.id===m.id&&S.repOpen.key===sn.key?'sel':'')+'"><td class="mono">'+esc(m.id)+'</td><td>'+esc(sn.label)+'</td><td class="mono" style="white-space:nowrap">'+esc(sn.from)+' → '+esc(sn.to)+'</td><td class="num">'+sn.cases+'</td><td><span class="pill '+anRateCls(sn.rate)+'">'+sn.rate+'%</span></td><td class="num">'+fmtDur_(sn.med)+'</td><td class="note" style="margin:0">'+esc(String(sn.savedAt||'').slice(0,10))+' · '+esc(sn.by||'')+'</td><td style="white-space:nowrap"><button class="btn primary" data-repopen="'+esc(m.id+'|'+sn.key)+'">عرض</button> <button class="btn bad" data-repdel="'+esc(m.id+'|'+sn.key)+'" aria-label="حذف الملخص">×</button></td></tr>').join('')).join('')+'</tbody></table></div>'
+      :'<div class="empty">لا توجد ملخصات محفوظة بعد. افتح «تحليل المجموعات» واضغط «💾 حفظ ملخص الشهر».</div>')+'</section>';
+  if(S.repOpen){
+    if(!S.repDoc||S.repDoc.id!==S.repOpen.id){ box.innerHTML=h+'<p class="note">جارٍ فتح الملخص…</p>'; try{ S.repDoc=await call('anGet',{id:S.repOpen.id}); }catch(e){ toast(e.message,true); S.repOpen=null; } if(!$('#repBox')) return; }
+    const sn=S.repDoc&&S.repDoc.snaps&&S.repDoc.snaps[S.repOpen.key];
+    if(sn) h+='<section class="panel sec"><div class="actions" style="margin:0 0 12px"><button class="btn primary" id="btnRepPdf">⬇ تنزيل PDF</button><button class="btn" id="btnRepPng">⬇ تنزيل صورة PNG</button><button class="btn" id="btnRepClose">إغلاق</button></div><div style="overflow:auto">'+repHtml(S.repDoc,sn)+'</div></section>';
+  }
+  box.innerHTML=h;
+}
+async function repCanvas(){
+  await libOnce_(H2C_URL,()=>window.html2canvas); const el=$('#repSheet'); if(!el) throw new Error('افتح الملخص أولًا.');
+  return window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+}
+const repName_=()=>'ملخص_USE_'+S.repOpen.id+'_'+String(S.repOpen.key).replace(/[|\s،]+/g,'_');
+async function repPng(){ const cv=await repCanvas(); const b=await new Promise(r=>cv.toBlob(r,'image/png')); await saveFile(repName_()+'.png',b); }
+async function repPdf(){
+  const cv=await repCanvas(); await libOnce_(JSPDF_URL,()=>window.jspdf&&window.jspdf.jsPDF);
+  const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); const W=190, pageH=277; const pxPerMm=cv.width/W, slice=Math.floor(pageH*pxPerMm);
+  for(let y=0,pg=0;y<cv.height;y+=slice,pg++){ const h=Math.min(slice,cv.height-y); const c=document.createElement('canvas'); c.width=cv.width; c.height=h; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,h); g.drawImage(cv,0,y,cv.width,h,0,0,cv.width,h);
+    if(pg) pdf.addPage(); pdf.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',10,10,W,h/pxPerMm); }
+  await saveFile(repName_()+'.pdf',pdf.output('blob'));
 }
 async function anXlsx(){
   const I=impState(); if(!I.an) return; const {R,G}=I.an; const X=await xlsxLib(); const wb=X.utils.book_new();
   const add=(name,aoa)=>X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(aoa),name);
   const K=G.kpi;
-  add('الملخص',[['المؤشر','القيمة'],['الحالات',K.cases],['صيادلة مشاركون',K.ph],['فروع',K.br],['حالات بفاتورة %',K.inv],['صافي الفواتير المقروءة',Math.round(K.net)],['متوسط الفاتورة',K.avg],['متوسط القطع',K.units],['نسبة الرد %',K.rate],['وسيط وقت الرد (دقيقة)',K.med],['حالات بلا رد',K.un],['ردود Talent',K.talent],['مدة احتساب الرد (ساعة)',anState().win]]);
+  add('الملخص',[['المؤشر','القيمة'],['الحالات',K.cases],['صيادلة مشاركون',K.ph],['فروع',K.br],['حالات بفاتورة %',K.inv],['صافي الفواتير المقروءة',Math.round(K.net)],['متوسط الفاتورة',K.avg],['متوسط القطع',K.units],['نسبة الرد %',K.rate],['وسيط وقت الرد (دقيقة)',K.med],['حالات بلا رد',K.un],['ردود Talent',K.talent]]);
   add('المجموعات',[['المجموعة','الحالات','صيادلة','فريق المجموعة','شاركوا','بفاتورة %','صافي الفواتير','متوسط الفاتورة','نسبة الرد %','وسيط وقت الرد (د)','ردود Talent','بلا رد']].concat(G.groups.map(x=>[x.g,x.cases,x.ph,x.team||'',x.part||'',x.inv,Math.round(x.net),x.avg,x.rate,x.med,x.talent,x.un])));
   add('المشرفون',[['المشرف','المنطقة','المجموعات','حالات فريقه','ردّ عليها','نسبة الرد %','وسيط الوقت (د)','حجم الفريق','شاركوا']].concat(G.sups.map(s=>[s.name,s.region,s.groups,s.n,s.rep,s.rate,s.med,s.team==null?'':s.team,s.part==null?'':s.part])));
   add('Talent',[['العضو','حالات ردّ عليها','المجموعات','وسيط الوقت (د)']].concat(G.tal.map(t=>[t.name,t.n,t.groups,t.med])));
@@ -2794,6 +2861,10 @@ document.addEventListener('click',e=>{
   if(t.dataset&&t.dataset.ancat!==undefined){ const A=anState(); A.cat=A.cat===t.dataset.ancat?'':t.dataset.ancat; return updateAn(); }
   if(t.dataset&&t.dataset.ansup!==undefined){ anState().sup=t.dataset.ansup; return updateAn(); }
   if(t.dataset&&t.dataset.anpick){ impState().sel.add(t.dataset.anpick); toast('حُددت الحالة. حلّلها من «استيراد الحالات» لتُضاف لصندوق الوارد.'); return updateAn(); }
+  if(t.dataset&&t.dataset.repopen){ const [id,key]=t.dataset.repopen.split('|'); S.repOpen={id,key}; return updateRep(); }
+  if(t.id==='btnRepClose'){ S.repOpen=null; return updateRep(); }
+  if(t.dataset&&t.dataset.repdel){ const [id,key]=t.dataset.repdel.split('|'); if(!confirm('حذف ملخص '+id+'؟ لا يمكن التراجع.')) return; if(S.busy) return; S.busy=true; return call('anDel',{id,key}).then(()=>{ S.anHist=null; S.repDoc=null; if(S.repOpen&&S.repOpen.id===id&&S.repOpen.key===key) S.repOpen=null; toast('حُذف الملخص.'); return updateRep(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
+  if(t.id==='btnRepPdf'||t.id==='btnRepPng'){ if(S.busy) return; S.busy=true; const old=t.textContent; t.textContent='جارٍ التجهيز…'; return (t.id==='btnRepPdf'?repPdf():repPng()).catch(e=>toast(e.message,true)).then(()=>{ S.busy=false; t.textContent=old; }); }
   if(t.id==='btnAnMoreUn'){ anState().showAllUn=true; return updateAn(); }
   if(t.id==='btnAnXlsx'){ if(S.busy) return; S.busy=true; return anXlsx().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.id==='btnAnSave'){ if(S.busy) return; S.busy=true; return anSave().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
@@ -2855,7 +2926,6 @@ document.addEventListener('change',e=>{
   const el=e.target;
   if(el.id==='hcFile'&&el.files&&el.files[0]){ const f=el.files[0]; el.value=''; return hcOnFile(f); }
   if(el.dataset&&el.dataset.angrp){ const A=anState(); el.checked?A.groups.add(el.dataset.angrp):A.groups.delete(el.dataset.angrp); return updateAn(); }
-  if(el.id==='anWin'){ anState().win=+el.value||24; return updateAn(); }
   if(el.id==='impFiles'&&el.files&&el.files.length){ const fs=[...el.files]; el.value=''; return impLoadFiles(fs); }
   if(el.dataset&&el.dataset.impgsel!==undefined){ const I=impState(); I.srcs[+el.dataset.impgsel].group=el.value; I.cases=[]; I.sel=new Set(); return updateImport(); }
   if(el.id==='impFrom'||el.id==='impTo'){ const I=impState(); I[el.id==='impFrom'?'from':'to']=el.value; return; }
