@@ -668,7 +668,7 @@ const DEFAULT_BADGES=[
 ];
 const DEFAULT_STRENGTH={USE:'كشف الاحتياج الحقيقي',OFFERS:'الاستفادة من العروض',COMPLETE:'تقديم حل متكامل',CROSS:'البيع المتقاطع المناسب',WASFATY:'توظيف وصفتي'};
 const STAGES=['selected','design','final','sent','published'];
-const SET_DEFAULT={importCats:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
+const SET_DEFAULT={importCats:null,scoreSigs:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
 const now_=()=>new Date().toISOString();
 const today_=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const rid=()=>Math.random().toString(36).slice(2,10);
@@ -1082,13 +1082,15 @@ const ACTIONS={
     ['sep','reqQuote','reqBadge','aiOn'].forEach(k=>{ if(k in p) s[k]=!!p[k]; });
     if('brandPrimary' in p){ if(!isHex_(p.brandPrimary)) throw err('لون غير صالح.'); s.brandPrimary=p.brandPrimary; }
     if('brandAccent' in p){ if(!isHex_(p.brandAccent)) throw err('لون غير صالح.'); s.brandAccent=p.brandAccent; }
+    if('scoreSigs' in p&&p.scoreSigs!=null){ const L=Array.isArray(p.scoreSigs)?p.scoreSigs:null; if(!L||L.length>12) throw err('قائمة الإشارات غير صالحة.');
+      s.scoreSigs=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
     if('importCats' in p&&p.importCats!=null){ const L=Array.isArray(p.importCats)?p.importCats:null; if(!L||L.length>30) throw err('قائمة التصنيفات غير صالحة.');
       s.importCats=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
     if('bestCount' in p){ const n=parseInt(p.bestCount,10); if(!(n>=1&&n<=20)) throw err('عدد أفضل المشاركات بين 1 و20.'); s.bestCount=n; }
     if('brandLogo' in p){ const lg=String(p.brandLogo||''); if(lg&&(lg.indexOf('data:image/')!==0||lg.length>60000)) throw err('صورة الشعار غير صالحة أو كبيرة جدًا.'); s.brandLogo=lg; }
     delete s.aiEnabled; delete s.aiSource;
     await Store.put('settings','main',s);
-    await audit_(u,'','settings',JSON.stringify(Object.assign({},p,{importCats:('importCats' in p)?'(تصنيفات الاستيراد: '+(s.importCats||[]).length+')':undefined,aiEnabled:undefined,aiSource:undefined,brandLogo:('brandLogo' in p)?(p.brandLogo?'(صورة)':'(إزالة)'):undefined})));
+    await audit_(u,'','settings',JSON.stringify(Object.assign({},p,{importCats:('importCats' in p)?'(تصنيفات الاستيراد: '+(s.importCats||[]).length+')':undefined,scoreSigs:('scoreSigs' in p)?'(إشارات الترشيح: '+(s.scoreSigs||[]).length+')':undefined,aiEnabled:undefined,aiSource:undefined,brandLogo:('brandLogo' in p)?(p.brandLogo?'(صورة)':'(إزالة)'):undefined})));
     return settings_();
   }); },
   addUser:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
@@ -1320,7 +1322,7 @@ const WA=(()=>{
     }
     return out;
   }
-  const isSystem=b=>/<message_history_notice|joined using|created group|created this group|added|left$|removed|changed the (subject|group)|This message was deleted|تم حذف هذه الرسالة|انضم|غادر|أضاف|Messages and calls are end-to-end/i.test(b)&&b.length<160;
+  const isSystem=b=>/<message_history_notice|changed their phone number|changed the phone number|security code|joined using|created group|created this group|added|left$|removed|changed the (subject|group)|This message was deleted|تم حذف هذه الرسالة|انضم|غادر|أضاف|Messages and calls are end-to-end/i.test(b)&&b.length<160;
   function attachmentsOf(body){
     const atts=[]; let text=body;
     text=text.replace(/<(image|video|audio|GIF|sticker|document) omitted>/gi,(m,k)=>{ if(!/sticker/i.test(k)) atts.push({name:'('+k+')',omitted:true}); return ' '; });
@@ -1520,7 +1522,7 @@ const WA=(()=>{
 
 /* ===== WhatsApp import UI + inbox ===== */
 const IMP_GROUPS=['D1','D2','D3','D4','D5'];
-function impState(){ if(!S.imp) S.imp={srcs:[],cases:[],sel:new Set(),f:{cats:new Set(),groups:new Set(),att:new Set(),inv:false,hideOld:true},busy:false,stop:false,log:[],msg:''}; return S.imp; }
+function impState(){ if(!S.imp) S.imp={srcs:[],cases:[],sel:new Set(),f:{cats:new Set(),groups:new Set(),att:new Set(),tier:new Set(),inv:false,hideOld:true},sort:'score',busy:false,stop:false,log:[],msg:''}; return S.imp; }
 const fixName_=s=>{ s=String(s||'').normalize('NFKC').replace(/\s+/g,' ').trim(); if(/^(?:[؀-ۿ]\s)+[؀-ۿ]$/.test(s)) s=s.split(' ').reverse().join(''); return s; };
 const cleanSender_=s=>String(s||'').replace(/[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}☀-➿]/gu,'').trim();
 function hashId_(s){ let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return 'wa'+h.toString(36)+s.length.toString(36); }
@@ -1535,13 +1537,13 @@ function mountImport(){
   '<p class="note" style="margin:0 0 10px">لكل مجموعة: تصدير الجوال مع الوسائط (ZIP، فيه الفواتير) + تصدير الويب (ZIP نصي، فيه الكلام المكتوب مع الفواتير). اختر الملفات كلها معًا؛ تتعرف المنصة على مجموعة كل ملف وتدمج الاثنين بالوقت. تتم القراءة على جهازك ولا يُرفع أي ملف للخادم.</p>'+
   '<div class="actions"><label class="btn primary">📁 اختيار ملفات ZIP<input type="file" id="impFiles" accept=".zip,application/zip" multiple hidden></label><span class="note" id="impLoadMsg"></span></div>'+
   '<div id="impSrcs" style="margin-top:10px"></div></section>'+
-  '<section class="panel sec" id="impStep2" hidden><h3>2) الفلترة والاختيار</h3><div id="impFilters"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="impSelAllBox" aria-label="تحديد الكل"></th><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>نص الحالة</th><th>المرفقات</th><th>الفاتورة</th><th>الحالة</th></tr></thead><tbody id="impRows"></tbody></table></div></section>'+
+  '<section class="panel sec" id="impStep2" hidden><h3>2) الفلترة والاختيار</h3><div id="impFilters"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="impSelAllBox" aria-label="تحديد الكل"></th><th>الترشيح</th><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>نص الحالة</th><th>المرفقات</th><th>الفاتورة</th><th>الحالة</th></tr></thead><tbody id="impRows"></tbody></table></div></section>'+
   '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><button class="btn primary" id="btnImpRun"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><div id="impLog" style="margin-top:10px"></div></section></div><div id="anBox"'+(S.impTab==='an'?'':' hidden')+'></div><div id="repBox"'+(S.impTab==='rep'?'':' hidden')+'></div>';
   updateImport(); if(S.impTab==='an') updateAn(); if(S.impTab==='rep') updateRep();
 }
 function impFiltered(){
   const I=impState(), oldKeys=new Set((S.inboxKeys||[]));
-  return I.cases.filter(c=>(!I.f.groups.size||I.f.groups.has(c.group))&&(!I.f.cats.size||c.cats.some(x=>I.f.cats.has(x))||(I.f.cats.has('__none')&&!c.cats.length))&&(!I.f.inv||c.invoices.length||c.aiFiles.length)&&(!I.f.att.size||impAttKinds(c).some(k=>I.f.att.has(k)))&&(!I.f.hideOld||!oldKeys.has(c.key)));
+  return I.cases.filter(c=>(!I.f.groups.size||I.f.groups.has(c.group))&&(!I.f.cats.size||c.cats.some(x=>I.f.cats.has(x))||(I.f.cats.has('__none')&&!c.cats.length))&&(!I.f.inv||c.invoices.length||c.aiFiles.length)&&(!I.f.att.size||impAttKinds(c).some(k=>I.f.att.has(k)))&&(!I.f.tier.size||I.f.tier.has(String(c.tier)))&&(!I.f.hideOld||!oldKeys.has(c.key))).sort((a,b)=>I.sort==='score'?(b.score-a.score||a.t-b.t):a.t-b.t);
 }
 // حالة مرفقات الحالة: missing ناقص من التصدير، parsed فاتورة مقروءة، scan صورة/PDF ممسوح، none بدون مرفق
 function impAttKinds(c){ if(!c.atts.length) return ['none']; const k=[]; if(c.atts.some(a=>a.missing)) k.push('missing'); if(c.atts.some(a=>a.parsed)) k.push('parsed'); if(c.atts.some(a=>!a.missing&&!a.parsed)) k.push('scan'); return k; }
@@ -1559,6 +1561,9 @@ function updateImport(){
   const chip=(attr,val,label,n,on)=>'<label class="chip'+(on?' on':'')+'"><input type="checkbox" '+attr+'="'+esc(val)+'"'+(on?' checked':'')+'>'+esc(label)+' <b>'+n+'</b></label>';
   $('#impFilters').innerHTML='<div><b style="font-size:13px">التصنيف:</b> '+cats.map(c=>chip('data-impcat',c.n,c.n,cnt[c.n]||0,I.f.cats.has(c.n))).join('')+chip('data-impcat','__none','غير مصنّف',none,I.f.cats.has('__none'))+'<span class="note"> (بدون اختيار = الكل)</span></div>'+
     '<div style="margin-top:6px"><b style="font-size:13px">المجموعة:</b> '+Object.keys(gcnt).sort().map(g=>chip('data-impgrp',g,g,gcnt[g],I.f.groups.has(g))).join('')+
+    '</div><div style="margin-top:6px"><b style="font-size:13px">الترشيح:</b> '+[3,2,1].map(t=>chip('data-imptier',String(t),TIER_AR[t],I.cases.filter(c=>c.tier===t).length,I.f.tier.has(String(t)))).join('')+
+    ' <label class="f" style="display:inline-flex;gap:6px;align-items:center;margin:0 8px">الترتيب <select id="impSort"><option value="score"'+(I.sort==='score'?' selected':'')+'>الأعلى ترشيحًا</option><option value="time"'+(I.sort!=='score'?' selected':'')+'>حسب الوقت</option></select></label>'+
+    '<span style="display:inline-flex;gap:6px;align-items:center">حدد أفضل <input type="number" id="impTopN" min="1" max="200" value="'+(I.topN||20)+'" style="width:70px"> <button class="btn" id="btnImpTop">تحديد</button></span>'+
     '</div><div style="margin-top:6px"><b style="font-size:13px">المرفقات:</b> '+IMP_ATT.map(([k,l])=>chip('data-impatt',k,l,I.cases.filter(c=>impAttKinds(c).includes(k)).length,I.f.att.has(k))).join('')+
     ' <label class="chip"><input type="checkbox" id="impInvOnly"'+(I.f.inv?' checked':'')+'>بفاتورة فقط</label><label class="chip"><input type="checkbox" id="impHideOld"'+(I.f.hideOld?' checked':'')+'>إخفاء المستوردة سابقًا</label></div>';
   const rows=impFiltered(); const oldKeys=new Set(S.inboxKeys||[]);
@@ -1566,7 +1571,8 @@ function updateImport(){
     const miss=c.atts.filter(a=>a.missing);
     const att=(miss.length?'<span class="pill p-no" title="'+esc(miss.map(a=>a.name).join('\n'))+'">✖ '+(miss.length>1?miss.length+' ':'')+'ناقص</span> ':'')+c.atts.filter(a=>!a.missing).map(a=>a.parsed?'<span class="pill p-ok" title="'+esc(a.name)+'">✔ فاتورة</span>':'<span class="pill p-wait" title="'+esc(a.name)+'">🖼 '+(a.kind==='pdf'?'PDF ممسوح':'صورة')+'</span>').join(' ')||'—';
     const st=I.done&&I.done[c.key]?'<span class="pill p-ok">أُضيفت</span>':oldKeys.has(c.key)?'<span class="pill p-na">مستوردة سابقًا</span>':'<span class="pill p-na">جديدة</span>';
-    return '<tr><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+(nm?'<div class="note" style="margin:0">'+esc(nm)+(c.invoices[0].branch?' · فرع '+esc(c.invoices[0].branch):'')+'</div>':'')+'</td><td>'+esc(c.mention||'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+'</td><td style="max-width:340px;font-size:12.5px" title="'+esc(c.text)+'">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+att+'</td><td class="num">'+(c.total!=null?c.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="10"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
+    const sc='<span class="pill '+(c.tier===3?'p-ok':c.tier===2?'p-wait':'p-na')+'" title="'+esc((c.why||[]).join(' · '))+'" style="white-space:nowrap">'+'⭐'.repeat(c.tier||1)+' '+(c.score||0)+'</span>'+((c.sigs||[]).length?'<div class="note" style="margin:2px 0 0;font-size:11px">'+esc(c.sigs.join(' · '))+'</div>':'');
+    return '<tr><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td style="min-width:110px">'+sc+'</td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+(nm?'<div class="note" style="margin:0">'+esc(nm)+(c.invoices[0].branch?' · فرع '+esc(c.invoices[0].branch):'')+'</div>':'')+'</td><td>'+esc(c.mention||'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+'</td><td style="max-width:340px;font-size:12.5px" title="'+esc(c.text)+'">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+att+'</td><td class="num">'+(c.total!=null?c.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="11"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
   const sab=$('#impSelAllBox'); if(sab){ sab.checked=rows.length>0&&rows.every(c=>I.sel.has(c.key)); }
   const n=[...I.sel].filter(k=>I.cases.some(c=>c.key===k)).length;
   const rb=$('#btnImpRun'); rb.textContent=I.busy?'جارٍ التحليل…':'حلّل المختار وأضفه لصندوق الوارد ('+n+')'; rb.disabled=I.busy||!n;
@@ -1600,9 +1606,9 @@ async function impExtract(){
       const cs=await WA.buildCases(s,from,to,cats,(i,n)=>{ const m=$('#impExtractMsg'); if(m) m.textContent=s.group+': قراءة الحالة '+i+' من '+n+'…'; });
       cs.forEach(c=>{ c.src=s; c.group=s.group; c.key=[c.group,c.t.toISOString().slice(0,16),WA.normA(c.sender)].join('|'); }); all=all.concat(cs);
     }
-    all.sort((a,b)=>a.t-b.t); I.cases=all;
+    all.sort((a,b)=>a.t-b.t); all.forEach(c=>impScore(c,(I.groupMsgs[c.group]||{}).msgs)); I.cases=all;
     const inv=all.filter(c=>c.invoices.length).length, noText=all.filter(c=>!c.text).length;
-    I.extractMsg='استُخرجت '+all.length+' حالة، منها '+inv+' بفاتورة مقروءة'+(filled?'، وأُكمل نص '+filled+' رسالة من تصدير الويب':'')+(noText?'. '+noText+' حالة بدون نص':'')+'. اختر التصنيفات ثم حدّد الحالات.';
+    I.extractMsg='استُخرجت '+all.length+' حالة (مرشحة بقوة: '+all.filter(c=>c.tier===3).length+')، منها '+inv+' بفاتورة مقروءة'+(filled?'، وأُكمل نص '+filled+' رسالة من تصدير الويب':'')+(noText?'. '+noText+' حالة بدون نص':'')+'. اختر التصنيفات ثم حدّد الحالات.';
   }catch(e){ I.extractMsg=''; toast(e.message||'تعذر الاستخراج.',true); }
   I.busy=false; updateImport();
 }
@@ -1634,6 +1640,45 @@ async function impRun(){
     }catch(e){ I.log.push({t:'✖ '+label+': '+(e.message||'خطأ'),bad:true}); }
   }
   I.busy=false; I.progress='انتهى: أُضيفت '+ok+' حالة لصندوق الوارد.'; try{ await load(); }catch(e){} updateImport(); toast(I.progress);
+}
+
+/* ----- ترشيح الحالات: درجة جاهزية فورية بدون ذكاء اصطناعي ----- */
+const SCORE_SIGS_DEFAULT=[
+ {n:'USE Model',k:'سألت, سالت, سألتها, سالتها, سألته, سالته, استفسرت, تشتكي, يشتكي, بتشتكي, بيشتكي, تعاني, يعاني, بتعاني, بيعاني, شكوى, مشكلة, مشكله, محتاج, محتاجه, احتياج, طلبت, طلب'},
+ {n:'Utilizing Offers',k:'عرض, العرض, عروض, العروض, خصم, الخصم, اونلاين, أونلاين, الاونلاين, online, التطبيق, تطبيق, offer, offers, استفاد, الاستفادة, الاستفاده'},
+ {n:'Complete Solution',k:'روتين, الروتين, متكامل, متكامله, متكاملة, حل متكامل, routine, بالإضافة, بالاضافة, كمان, بجانب'},
+ {n:'Cross Selling',k:'رشحت, ترشيح, اقترحت, اقتراح, اضفت, أضفت, اضافة, إضافة, اضافه, عرضت, نصحت, نصحته, نصحتها, cross selling, cross-selling, up selling, upselling'},
+ {n:'Wasfaty',k:'وصفتي, وصفة, وصفه, روشتة, روشته, wasfaty'}
+];
+function impSigs(){ return (S.settings.scoreSigs&&S.settings.scoreSigs.length)?S.settings.scoreSigs:SCORE_SIGS_DEFAULT; }
+const PRAISE_RX=/ممتاز|برافو|براڤو|احسنت|أحسنت|الله ينور|تسلم|ما ?شاء الله|رائع|👏|💪/;
+function impScore(c,msgs){
+  const why=[]; let s=0;
+  const L=(String(c.text||'').match(/[\p{L}\p{N}]/gu)||[]).length;
+  s+=L>=400?20:L>=200?15:L>=80?10:L?5:0; why.push(L>=200?'نص مفصّل':L>=80?'نص متوسط':L?'نص قصير':'بدون نص');
+  const k=impAttKinds(c), parsed=k.includes('parsed'), scan=k.includes('scan'), miss=k.includes('missing');
+  s+=parsed?20:scan?14:miss?5:0; why.push(parsed?'فاتورة مقروءة':scan?'فاتورة صورة/ممسوحة':miss?'فاتورة ناقصة':'بدون فاتورة');
+  const items=new Set([].concat(...c.invoices.map(v=>v.items.map(i=>WA.normA(i.name))))).size;
+  s+=parsed?(items>=3?15:items===2?10:items?4:0):scan?7:0; if(parsed&&items) why.push(items+(items>2?' أصناف':items===2?' صنفان':' صنف'));
+  const sig=WA.categorize(c.text||'',[],impSigs()); s+=Math.min(35,sig.length*7); if(sig.length) why.push('إشارات: '+sig.join('، '));
+  let pr=false;
+  if(msgs&&msgs.length){ const t0=c.lastT.getTime(), toks=[fixName_((c.invoices[0]||{}).pharmacist||''),cleanSender_(c.sender)].map(x=>WA.normA(String(x).replace(/^(د|dr)\.?\s*/i,'')).split(/\s+/)[0]).filter(x=>x&&x.length>=3);
+    pr=msgs.some(m=>{ const d=m.t.getTime()-t0; if(d<=0||d>6*3600000||m.sender===c.sender||m.body.length>300||!PRAISE_RX.test(m.body)) return false; if(d<=15*60000) return true; const b=WA.normA(m.body); return toks.some(t=>b.includes(t)); }); }
+  if(pr){ s+=10; why.push('تفاعل/مدح من المشرف'); }
+  c.score=Math.min(100,s); c.sigs=sig; c.why=why; c.tier=c.score>=70?3:c.score>=45?2:1;
+}
+const TIER_AR={3:'⭐⭐⭐ قوية',2:'⭐⭐ متوسطة',1:'⭐ ضعيفة'};
+function impTop(){
+  const I=impState(), n=Math.max(1,Math.min(200,parseInt(($('#impTopN')||{}).value,10)||20)); I.topN=n; const old=new Set(S.inboxKeys||[]);
+  const L=impFiltered().filter(c=>!old.has(c.key)&&!(I.done&&I.done[c.key])).sort((a,b)=>b.score-a.score||b.t-a.t).slice(0,n);
+  I.sel=new Set(L.map(c=>c.key)); toast('حُددت أفضل '+L.length+' حالة حسب الترشيح ضمن الفلاتر الحالية.'); updateImport();
+}
+/* محرر إشارات الشارات (الإعدادات) */
+function updateSc(){
+  const box=$('#scBox'); if(!box) return; if(!S.scEdit) S.scEdit=JSON.parse(JSON.stringify(impSigs()));
+  box.innerHTML='<p class="note" style="margin:0 0 10px">كلمات تدل على كل شارة في نص الحالة. كل شارة تظهر إشارتها تضيف 7 نقاط لدرجة ترشيح الحالة (من 35). الدرجة الكاملة: النص 20، الفاتورة 20، عدد الأصناف 15، إشارات الشارات 35، تفاعل المشرف 10.</p>'+
+   S.scEdit.map((c,i)=>'<div class="grid" style="grid-template-columns:200px 1fr auto;align-items:start;margin-bottom:8px"><input type="text" data-scn="'+i+'" value="'+esc(c.n)+'" placeholder="اسم الشارة"><textarea data-sck="'+i+'" rows="2" placeholder="كلمات مفصولة بفواصل">'+esc(c.k)+'</textarea><button class="btn bad" data-scdel="'+i+'" aria-label="حذف">×</button></div>').join('')+
+   '<div class="actions"><button class="btn" id="btnScAdd">+ شارة</button><button class="btn primary" id="btnScSave">حفظ الإشارات</button><button class="btn" id="btnScReset">استعادة الافتراضي</button></div>';
 }
 
 /* ----- inbox (cases tab) ----- */
@@ -2529,7 +2574,7 @@ function mountRules(){
 /* ---------- Log & settings ---------- */
 function mountUsers(){ $('#main').innerHTML=usersHtml(); }
 function mountLog(){
-  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">قائمة الموظفين (مرجع تحليل الواتساب)</h2><div class="panel sec" id="hcBox"></div><h2 class="sh">تصنيفات استيراد الواتساب</h2><div class="panel sec" id="icBox"></div><h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
+  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">قائمة الموظفين (مرجع تحليل الواتساب)</h2><div class="panel sec" id="hcBox"></div><h2 class="sh">تصنيفات استيراد الواتساب</h2><div class="panel sec" id="icBox"></div><h2 class="sh">إشارات ترشيح الحالات</h2><div class="panel sec" id="scBox"></div><h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
 }
 function updateDeleted(){
   const box=$('#delBox'); if(!box) return; const L=S.deleted||[];
@@ -2538,7 +2583,7 @@ function updateDeleted(){
     L.map(x=>'<tr><td class="mono">'+esc(x.id)+'</td><td>'+esc(x.pharmacist||'—')+' / '+esc(x.branch||'—')+'</td><td>'+esc(x.reviewerName||'—')+'</td><td>'+esc(x.deletedBy)+'</td><td class="mono">'+esc(String(x.deletedAt).slice(0,10))+'</td><td>'+esc(x.deleteReason)+'</td><td><button class="btn" data-restore="'+esc(x.id)+'">استرجاع</button></td></tr>').join('')+'</tbody></table></div>';
 }
 function updateLog(){
-  updateDeleted(); updateIc(); updateHc();
+  updateDeleted(); updateIc(); updateHc(); updateSc();
   const ab=$('#aiBox');
   if(ab){
     const srcAr={backend:'متصل بـ Claude عبر الخادم',claude:'متصل بـ Claude (داخل Claude)',endpoint:'متصل عبر خادم القسم التقني',none:'غير متصل في هذه النسخة'}[S.settings.aiSource||'none'];
@@ -2880,6 +2925,11 @@ document.addEventListener('click',e=>{
   if(t.dataset&&t.dataset.impdel!==undefined){ const I=impState(); I.srcs.splice(+t.dataset.impdel,1); I.cases=[]; I.sel=new Set(); return updateImport(); }
   if(t.dataset&&t.dataset.take) return inboxTake(t.dataset.take);
   if(t.dataset&&(t.dataset.inbdis||t.dataset.inbback)){ const id=t.dataset.inbdis||t.dataset.inbback; if(S.busy) return; S.busy=true; return call('inboxSet',{id,status:t.dataset.inbdis?'dismissed':'new'}).then(load).then(()=>{ S.inboxOpen=true; onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
+  if(t.id==='btnImpTop') return impTop();
+  if(t.id==='btnScAdd'){ S.scEdit.push({n:'',k:''}); return updateSc(); }
+  if(t.dataset&&t.dataset.scdel!==undefined){ S.scEdit.splice(+t.dataset.scdel,1); return updateSc(); }
+  if(t.id==='btnScReset'){ S.scEdit=JSON.parse(JSON.stringify(SCORE_SIGS_DEFAULT)); return updateSc(); }
+  if(t.id==='btnScSave'){ const L=S.scEdit.filter(c=>c.n.trim()); if(S.busy) return; S.busy=true; return call('saveSettings',{scoreSigs:L}).then(s=>{ S.settings=Object.assign({},S.settings,s); S.scEdit=null; toast('حُفظت الإشارات. تُطبّق على الاستخراج القادم.'); updateSc(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.id==='btnIcAdd'){ S.icEdit.push({n:'',k:''}); return updateIc(); }
   if(t.dataset&&t.dataset.icdel!==undefined){ S.icEdit.splice(+t.dataset.icdel,1); return updateIc(); }
   if(t.id==='btnIcReset'){ S.icEdit=JSON.parse(JSON.stringify(IMPORT_CATS_DEFAULT)); return updateIc(); }
@@ -2910,6 +2960,8 @@ document.addEventListener('input',e=>{
   if(el.id==='fQ'){S.filters.q=el.value;return updateCases();}
   if(el.id==='railReason'){S.rail.reason=el.value;return;}
   if(el.dataset&&el.dataset.hmf&&S.hcMan){ const [i,f]=el.dataset.hmf.split(':'); if(S.hcMan[+i]) S.hcMan[+i][f]=el.value; return; }
+  if(el.dataset&&el.dataset.scn!==undefined&&S.scEdit){ S.scEdit[+el.dataset.scn].n=el.value; return; }
+  if(el.dataset&&el.dataset.sck!==undefined&&S.scEdit){ S.scEdit[+el.dataset.sck].k=el.value; return; }
   if(el.dataset&&el.dataset.icn!==undefined&&S.icEdit){ S.icEdit[+el.dataset.icn].n=el.value; return; }
   if(el.dataset&&el.dataset.ick!==undefined&&S.icEdit){ S.icEdit[+el.dataset.ick].k=el.value; return; }
   if(el.id==='pickReason'&&S.pick){S.pick.reason=el.value;return;}
@@ -2930,6 +2982,8 @@ document.addEventListener('change',e=>{
   if(el.dataset&&el.dataset.impgsel!==undefined){ const I=impState(); I.srcs[+el.dataset.impgsel].group=el.value; I.cases=[]; I.sel=new Set(); return updateImport(); }
   if(el.id==='impFrom'||el.id==='impTo'){ const I=impState(); I[el.id==='impFrom'?'from':'to']=el.value; return; }
   if(el.dataset&&el.dataset.impcat){ const I=impState(); el.checked?I.f.cats.add(el.dataset.impcat):I.f.cats.delete(el.dataset.impcat); return updateImport(); }
+  if(el.dataset&&el.dataset.imptier){ const I=impState(); el.checked?I.f.tier.add(el.dataset.imptier):I.f.tier.delete(el.dataset.imptier); return updateImport(); }
+  if(el.id==='impSort'){ impState().sort=el.value; return updateImport(); }
   if(el.dataset&&el.dataset.impatt){ const I=impState(); el.checked?I.f.att.add(el.dataset.impatt):I.f.att.delete(el.dataset.impatt); return updateImport(); }
   if(el.dataset&&el.dataset.impgrp){ const I=impState(); el.checked?I.f.groups.add(el.dataset.impgrp):I.f.groups.delete(el.dataset.impgrp); return updateImport(); }
   if(el.id==='impInvOnly'){ impState().f.inv=el.checked; return updateImport(); }
