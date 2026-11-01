@@ -1613,13 +1613,15 @@ async function impLoadFiles(files){
       I.msg='جارٍ قراءة '+f.name+'…'; updateImport();
       const src=await WA.readZip(f); if(!src.group) src.group='أخرى'; I.srcs.push(src);
     }
-    const all=[].concat(...I.srcs.map(s=>s.msgs)); if(all.length){ const last=all.reduce((a,m)=>m.t>a?m.t:a,all[0].t); const first=new Date(last.getFullYear(),last.getMonth(),1); if(!I.from) I.from=ymd_(first); if(!I.to) I.to=ymd_(last); }
+    const all=[].concat(...I.srcs.map(s=>s.msgs)); if(all.length){ const last=all.reduce((a,m)=>m.t>a?m.t:a,all[0].t); let first=new Date(last.getFullYear(),last.getMonth(),1), end=last; if(last.getDate()<=5){ first=new Date(last.getFullYear(),last.getMonth()-1,1); end=new Date(last.getFullYear(),last.getMonth(),0); } if(!I.from) I.from=ymd_(first); if(!I.to) I.to=ymd_(end); I.span=[all.reduce((a,m)=>m.t<a?m.t:a,all[0].t),last]; }
     I.msg='تمت قراءة '+I.srcs.length+' ملف. حدّد الفترة ثم اضغط «استخراج الحالات».';
   }catch(e){ I.msg=''; toast(e.message||'تعذرت قراءة الملف.',true); }
   I.busy=false; updateImport();
 }
 async function impExtract(){
-  const I=impState(); if(I.busy||!I.srcs.length) return; I.busy=true; I.cases=[]; I.sel=new Set(); I.dropped=[]; I.groupMsgs={}; S._gmemo={}; I.groupNames={}; I.an=null; I.extractMsg='جارٍ استخراج الحالات وقراءة الفواتير…'; updateImport();
+  const I=impState(); if(I.busy||!I.srcs.length) return; I.busy=true; I.cases=[]; I.sel=new Set(); I.dropped=[]; I.groupMsgs={}; S._gmemo={}; I.groupNames={}; I.diag={}; I.an=null; I.extractMsg='جارٍ استخراج الحالات وقراءة الفواتير…'; updateImport();
+  const fIn=$('#impFrom'), tIn=$('#impTo'); if(fIn&&fIn.value) I.from=fIn.value; if(tIn&&tIn.value) I.to=tIn.value;
+  if(I.from&&I.to&&I.from>I.to){ I.busy=false; I.extractMsg=''; toast('تاريخ البداية بعد تاريخ النهاية. صحّح الفترة.',true); return updateImport(); }
   try{
     const from=I.from?new Date(I.from+'T00:00:00'):null, to=I.to?new Date(I.to+'T23:59:59'):null; const cats=impCats(); let all=[];
     let filled=0, replies=0;
@@ -1629,6 +1631,7 @@ async function impExtract(){
       let s=s0; const helpers=same.filter(x=>x!==s0&&!x.media);
       if(s0.media&&helpers.length){ const mg=WA.mergeText(s0.msgs,helpers); filled+=mg.msgs.filter(m=>m.web&&(!from||m.t>=from)&&(!to||m.t<=to)).length; s=Object.assign({},s0,{msgs:mg.msgs,names:mg.names}); }
       I.groupMsgs[s.group]={msgs:s.msgs,names:s.names||{}}; (I.groupNames=I.groupNames||{})[s.group]=normN_(same.map(x=>x.file.name).join(' '));
+      (I.diag=I.diag||{})[s.group]=s.msgs.filter(m=>(!from||m.t>=from)&&(!to||m.t<=to)).length;
       const cs0=await WA.buildCases(s,from,to,cats,(i,n)=>{ const m=$('#impExtractMsg'); if(m) m.textContent=s.group+': قراءة الحالة '+i+' من '+n+'…'; });
       // ردود المشرفين وفريق Talent بدون مرفق، والرسائل التي لا تبدو حالة، لا تُحسب حالات
       let res=null; try{ if(S.me&&S.me.canEdit){ await hcLoad(); if(hcIndex().n) res=anResolver(s.group,s.names||{}); } }catch(e){}
@@ -1637,7 +1640,9 @@ async function impExtract(){
     }
     all.sort((a,b)=>a.t-b.t); all.forEach(c=>impScore(c,(I.groupMsgs[c.group]||{}).msgs)); I.cases=all;
     const inv=all.filter(c=>c.invoices.length).length, noText=all.filter(c=>!c.text).length;
-    I.extractMsg='استُخرجت '+all.length+' حالة (مرشحة بقوة: '+all.filter(c=>c.tier===3).length+')، منها '+inv+' بفاتورة مقروءة'+(filled?'، وأُكمل نص '+filled+' رسالة من تصدير الويب':'')+(noText?'. '+noText+' حالة بدون نص':'')+(replies?'. استُبعدت '+replies+' رسالة رد أو تعليق':'')+'. اختر التصنيفات ثم حدّد الحالات.';
+    I.extractMsg='استُخرجت '+all.length+' حالة (مرشحة بقوة: '+all.filter(c=>c.tier===3).length+')، منها '+inv+' بفاتورة مقروءة'+(filled?'، وأُكمل نص '+filled+' رسالة من تصدير الويب':'')+(noText?'. '+noText+' حالة بدون نص':'')+(replies?'. استُبعدت '+replies+' رسالة رد أو تعليق':'')+'. اختر التصنيفات ثم حدّد الحالات.'
+      +' (الفترة '+(I.from||'—')+' → '+(I.to||'—')+' · رسائل الفترة: '+Object.keys(I.diag).sort().map(g=>g+' '+I.diag[g]).join('، ')+')';
+    if(!all.length){ const sp=I.span; I.extractMsg='لم تُستخرج أي حالة في الفترة '+(I.from||'—')+' → '+(I.to||'—')+'. رسائل الفترة في الملفات: '+Object.keys(I.diag).sort().map(g=>g+' '+I.diag[g]).join('، ')+(sp?'. الملفات تغطي من '+ymd_(sp[0])+' إلى '+ymd_(sp[1]):'')+'. تأكد من الفترة، وأن التقويم في الجوال ميلادي.'; }
   }catch(e){ I.extractMsg=''; toast(e.message||'تعذر الاستخراج.',true); }
   I.busy=false; updateImport();
 }
