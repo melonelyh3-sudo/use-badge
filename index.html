@@ -1596,7 +1596,7 @@ function updateImport(){
     '<div style="margin-top:6px"><b style="font-size:13px">المجموعة:</b> '+Object.keys(gcnt).sort().map(g=>chip('data-impgrp',g,g,gcnt[g],I.f.groups.has(g))).join('')+
     '</div><div style="margin-top:6px"><b style="font-size:13px">الترشيح:</b> '+[3,2,1].map(t=>chip('data-imptier',String(t),TIER_AR[t],I.cases.filter(c=>c.tier===t).length,I.f.tier.has(String(t)))).join('')+
     ' '+
-    '<span style="display:inline-flex;gap:6px;align-items:center">حدد أفضل <input type="number" id="impTopN" min="1" max="200" value="'+(I.topN||20)+'" style="width:70px"> <button class="btn" id="btnImpTop">تحديد</button></span>'+impSelDist()+
+    '<span style="display:inline-flex;gap:6px;align-items:center">حدد أفضل <input type="number" id="impTopN" min="1" max="200" value="'+(I.topN||20)+'" style="width:70px"> <button class="btn" id="btnImpTop">تحديد</button></span>'+impTopCatsUI(cats)+impSelDist()+
     '</div><div style="margin-top:6px"><b style="font-size:13px">المرفقات:</b> '+IMP_ATT.map(([k,l])=>chip('data-impatt',k,l,I.cases.filter(c=>impAttKinds(c).includes(k)).length,I.f.att.has(k))).join('')+
     ' <label class="chip"><input type="checkbox" id="impInvOnly"'+(I.f.inv?' checked':'')+'>بفاتورة فقط</label></div>';
   const rows=impFiltered(); const oldKeys=new Set(S.inboxKeys||[]);
@@ -1742,15 +1742,28 @@ const TIER_AR={3:'⭐⭐⭐ قوية',2:'⭐⭐ متوسطة',1:'⭐ ضعيفة'
 // توزيع الحالات المحددة على المجموعات، يظهر بجانب زر «تحديد» ويتحدث مع أي تغيير في الاختيار
 function impSelDist(){ const I=impState(); const S_=I.cases.filter(c=>I.sel.has(c.key)); if(!S_.length) return '';
   const d={}; S_.forEach(c=>{ d[c.group||'—']=(d[c.group||'—']||0)+1; });
-  return ' <span class="pill p-ok" style="margin-inline-start:8px">المحدد '+S_.length+' حالة: '+Object.keys(d).sort().map(g=>esc(g)+' '+d[g]).join('، ')+'</span>'; }
-function impTop(){
-  const I=impState(), n=Math.max(1,Math.min(200,parseInt(($('#impTopN')||{}).value,10)||20)); I.topN=n; const old=new Set(S.inboxKeys||[]);
-  const cand=impFiltered().filter(c=>!(I.done&&I.done[c.key])).sort((a,b)=>b.score-a.score||b.t-a.t);
-  // توزيع متوازن: بالتناوب على المجموعات (D1، D2، …)، وداخل كل مجموعة صيدلي مختلف قبل تكرار نفس الصيدلي
-  const byG={}; cand.forEach(c=>{ (byG[c.group||'—']=byG[c.group||'—']||[]).push(c); });
+  return ' <span class="pill p-ok" style="margin-inline-start:8px">المحدد '+S_.length+' حالة: '+Object.keys(d).sort().map(g=>esc(g)+' '+d[g]).join('، ')+'</span>'+((I.topCats&&I.topCats.size)?' <span class="pill p-na">'+[...I.topCats].map(k=>esc(k==='__none'?'غير مصنّف':k)+' '+S_.filter(c=>k==='__none'?!c.cats.length:c.cats.includes(k)).length).join('، ')+'</span>':''); }
+function impTopCatsUI(cats){ const I=impState(); I.topCats=I.topCats||new Set(); const n=I.topCats.size;
+  const cnt=k=>I.cases.filter(c=>k==='__none'?!c.cats.length:c.cats.includes(k)).length;
+  return ' <details class="topcats" style="display:inline-block;vertical-align:middle;position:relative"'+(I.topCatsOpen?' open':'')+'><summary class="btn" style="list-style:none;cursor:pointer">من التصنيفات: '+(n?'<b>'+n+'</b> مختار':'الكل')+' ▾</summary>'+
+    '<div class="panel" style="position:absolute;z-index:20;top:110%;inset-inline-start:0;min-width:260px;max-height:320px;overflow:auto;padding:8px;box-shadow:0 6px 20px rgba(0,0,0,.15)">'+
+    cats.map(c=>c.n).concat(['__none']).map(k=>'<label style="display:flex;gap:6px;align-items:center;padding:3px 2px;font-size:13px"><input type="checkbox" data-imptopcat="'+esc(k)+'"'+(I.topCats.has(k)?' checked':'')+'>'+esc(k==='__none'?'غير مصنّف':k)+' <span class="note" style="margin:0">('+cnt(k)+')</span></label>').join('')+
+    (n?'<button class="btn" type="button" id="btnTopCatsClear" style="margin-top:6px">مسح الاختيار</button>':'')+'</div></details>';
+}
+// ترتيب متوازن: بالتناوب على المجموعات (D1، D2، …)، وداخل كل مجموعة صيدلي مختلف قبل تكرار نفس الصيدلي
+function impBalanced_(list){ const byG={}; list.forEach(c=>{ (byG[c.group||'—']=byG[c.group||'—']||[]).push(c); });
   Object.keys(byG).forEach(g=>{ const seen=new Set(), first=[], rest=[]; byG[g].forEach(c=>{ const k=WA.normA(cleanSender_(c.sender)); (seen.has(k)?rest:first).push(c); seen.add(k); }); byG[g]=first.concat(rest); });
-  const L=[]; while(L.length<n){ const G=Object.keys(byG).filter(g=>byG[g].length).sort((a,b)=>byG[b][0].score-byG[a][0].score); if(!G.length) break; for(const g of G){ if(L.length>=n) break; L.push(byG[g].shift()); } }
-  I.sel=new Set(L.map(c=>c.key)); updateImport();
+  const L=[]; for(;;){ const G=Object.keys(byG).filter(g=>byG[g].length).sort((a,b)=>byG[b][0].score-byG[a][0].score); if(!G.length) break; for(const g of G) L.push(byG[g].shift()); } return L; }
+function impTop(){
+  const I=impState(), n=Math.max(1,Math.min(200,parseInt(($('#impTopN')||{}).value,10)||20)); I.topN=n;
+  // المستبعدة والمستوردة سابقًا تُعامل كالجديدة؛ فقط ما أُضيف في هذه الجلسة لا يُعاد اختياره
+  const cand=impFiltered().filter(c=>!(I.done&&I.done[c.key])).sort((a,b)=>b.score-a.score||b.t-a.t);
+  const tc=[...(I.topCats||[])]; let L=[];
+  if(!tc.length) L=impBalanced_(cand).slice(0,n);
+  else{ // بالتناوب على التصنيفات المختارة، وكل تصنيف موزّع بالتناوب على المجموعات؛ الحالة تُختار مرة واحدة
+    const lists=tc.map(k=>impBalanced_(cand.filter(c=>k==='__none'?!c.cats.length:c.cats.includes(k)))); const used=new Set();
+    while(L.length<n&&lists.some(x=>x.length)){ for(const x of lists){ if(L.length>=n) break; while(x.length&&used.has(x[0].key)) x.shift(); if(x.length){ const c=x.shift(); used.add(c.key); L.push(c); } } } }
+  I.sel=new Set(L.map(c=>c.key)); if(L.length<n) toast('المتاح '+L.length+' حالة فقط بهذه الاختيارات.'); updateImport();
 }
 /* محرر إشارات الشارات (الإعدادات) */
 function updateSc(){
@@ -3159,7 +3172,8 @@ document.addEventListener('click',e=>{
   if(t.dataset&&t.dataset.take) return inboxTake(t.dataset.take);
   if(t.dataset&&(t.dataset.inbdis||t.dataset.inbback)){ const id=t.dataset.inbdis||t.dataset.inbback; if(S.busy) return; S.busy=true; return call('inboxSet',{id,status:t.dataset.inbdis?'dismissed':'new'}).then(load).then(()=>{ S.inboxOpen=true; onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.dataset&&t.dataset.impview) return impView(t.dataset.impview);
-  if(t.id==='btnImpTop') return impTop();
+  if(t.id==='btnTopCatsClear'){ const I=impState(); I.topCats=new Set(); I.topCatsOpen=true; return updateImport(); }
+  if(t.id==='btnImpTop'){ impState().topCatsOpen=false; return impTop(); }
   if(t.id==='btnScAdd'){ S.scEdit.push({n:'',k:''}); return updateSc(); }
   if(t.dataset&&t.dataset.scdel!==undefined){ S.scEdit.splice(+t.dataset.scdel,1); return updateSc(); }
   if(t.id==='btnScReset'){ S.scEdit=JSON.parse(JSON.stringify(SCORE_SIGS_DEFAULT)); return updateSc(); }
@@ -3209,7 +3223,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('click',e=>{ const th=e.target.closest&&e.target.closest('th[data-impsort]'); if(!th) return; const so=impSortState(), k=th.dataset.impsort;
   if(so.k===k) so.dir=-so.dir; else { so.k=k; so.dir=(IMP_SORT[k]&&IMP_SORT[k].num)?-1:1; } updateImport(); });
 document.addEventListener('click',e=>{ const tr=e.target.closest&&e.target.closest('tr[data-ansup]'); if(!tr||e.target.closest('button')) return; const A=anState(); A.sup=A.sup===tr.dataset.ansup?'':tr.dataset.ansup; updateAn(); });
-document.addEventListener('toggle',e=>{ if(e.target&&e.target.id==='inboxPanel') S.inboxOpen=e.target.open; },true);
+document.addEventListener('toggle',e=>{ if(e.target&&e.target.classList&&e.target.classList.contains('topcats')) impState().topCatsOpen=e.target.open; if(e.target&&e.target.id==='inboxPanel') S.inboxOpen=e.target.open; },true);
 document.addEventListener('change',e=>{
   const el=e.target;
   if(el.id==='hcFile'&&el.files&&el.files[0]){ const f=el.files[0]; el.value=''; return hcOnFile(f); }
@@ -3223,6 +3237,7 @@ document.addEventListener('change',e=>{
   if(el.dataset&&el.dataset.impgrp){ const I=impState(); el.checked?I.f.groups.add(el.dataset.impgrp):I.f.groups.delete(el.dataset.impgrp); return updateImport(); }
   if(el.id==='impInvOnly'){ impState().f.inv=el.checked; return updateImport(); }
   if(el.dataset&&el.dataset.impsel){ const I=impState(); el.checked?I.sel.add(el.dataset.impsel):I.sel.delete(el.dataset.impsel); return updateImport(); }
+  if(el.dataset&&el.dataset.imptopcat!==undefined){ const I=impState(); I.topCats=I.topCats||new Set(); el.checked?I.topCats.add(el.dataset.imptopcat):I.topCats.delete(el.dataset.imptopcat); I.topCatsOpen=true; return updateImport(); }
   if(el.id==='impSelAllBox'){ const I=impState(); impFiltered().forEach(c=>{ el.checked?I.sel.add(c.key):I.sel.delete(c.key); }); return updateImport(); }
   if(el.id==='inboxSt'){ S.inboxSt=el.value; S.inboxSel=new Set(); S.inboxOpen=true; return updateCases(); }
   if(el.dataset&&el.dataset.inbsel){ const s_=S.inboxSel||(S.inboxSel=new Set()); el.checked?s_.add(el.dataset.inbsel):s_.delete(el.dataset.inbsel); S.inboxOpen=true; return updateCases(); }
