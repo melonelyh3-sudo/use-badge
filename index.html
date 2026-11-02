@@ -1713,18 +1713,21 @@ async function impExclude(){
 }
 async function impRun(){
   const I=impState(); if(I.busy) return; const todo=I.cases.filter(c=>I.sel.has(c.key)&&!(I.done&&I.done[c.key])); if(!todo.length) return;
-  if(S.settings.aiEnabled){ const need=[...new Set(todo.filter(c=>c.aiFiles.length&&c.src&&c.src.stub).map(c=>c.group))].sort(); if(need.length) return toast('حالات مختارة فيها صور فواتير، والجلسة مسترجعة: ارفع ملف ZIP الجوال للمجموعات '+need.join('، ')+' ثم أعد المحاولة (بدون إعادة استخراج).',true); }
+  // جلسة مسترجعة: صور الفواتير غير موجودة حتى يُرفع ZIP المجموعة — نخيّر المستخدم بدل الإيقاف
+  let noImg=false;
+  if(S.settings.aiEnabled){ const nc=todo.filter(c=>c.aiFiles.length&&c.src&&c.src.stub); const need=[...new Set(nc.map(c=>c.group))].sort();
+    if(need.length){ if(!confirm(nc.length+' من الحالات المختارة فواتيرها صور أو PDF ممسوح، وملفات ZIP للمجموعات '+need.join('، ')+' غير مرفوعة بعد الاسترجاع.\n\n«موافق»: أرسلها الآن، ويحلل الذكاء الاصطناعي النص والفواتير المقروءة فقط (بدون الصور).\n«إلغاء»: ارفع ملف ZIP الجوال لهذه المجموعات أولًا (من «اختيار ملفات ZIP»، بدون إعادة استخراج) ثم اضغط التحليل من جديد.')) return; noImg=true; } }
   I.busy=true; I.stop=false; I.log=[]; I.done=I.done||{}; let ok=0;
   for(let k=0;k<todo.length;k++){
     if(I.stop){ I.log.push({t:'أُوقف التحليل. أُضيفت '+ok+' حالة.'}); break; }
     const c=todo[k]; I.progress='الحالة '+(k+1)+' من '+todo.length+'…'; updateImport();
     const label=cleanSender_(c.sender)+' · '+ymd_(c.t)+' '+hm_(c.t);
     try{
-      let ai=null, aiErr='';
+      let ai=null, aiErr=S.settings.aiEnabled?'':'الذكاء الاصطناعي غير مفعّل من الإعدادات';
       const invText=c.invoices.length?WA.invoiceText(c):'';
       const canAI=S.settings.aiEnabled&&(c.text||invText||c.aiFiles.length);
       if(canAI){
-        const file=c.aiFiles.length?await WA.aiImage(c.src,c):null;
+        const file=c.aiFiles.length&&!(c.src&&c.src.stub)?await WA.aiImage(c.src,c):null;
         try{ ai=await call('aiSuggest',{caseId:'',bulk:true,text:c.text||'',invoiceText:invText,file:file||undefined}); }catch(e){ if(e.code==='auth') return logout(true); aiErr=e.message||'تعذر التحليل'; }
       }
       const {light,detail}=impPayload(c,ai,aiErr);
