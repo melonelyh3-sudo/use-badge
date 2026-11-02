@@ -1098,12 +1098,29 @@ const TR_EXACT = {
   "⚡ إضافة فورية بدون AI": "⚡ Quick Add without AI",
   "جارٍ الإضافة الفورية لصندوق الوارد…": "Adding cases to Inbox immediately…",
   "أُضيفت بدون تحليل AI": "Added without AI analysis",
-  "لا توجد بيانات استخراج مرفوعة على السحابة بعد. افتح حساب المقيّم واضغط «مزامنة مع المعتمد» أو «استخراج الحالات».": "No extracted data uploaded to the cloud yet. Open the Reviewer account and click 'Sync to Admin' or 'Extract Cases'."
+  "لا توجد بيانات استخراج مرفوعة على السحابة بعد. افتح حساب المقيّم واضغط «مزامنة مع المعتمد» أو «استخراج الحالات».": "No extracted data uploaded to the cloud yet. Open the Reviewer account and click 'Sync to Admin' or 'Extract Cases'.",
+  "حدّد حالة واحدة على الأقل.": "Please select at least one case.",
+  "↩ للصندوق": "↩ To Inbox",
+  "محفوظة كمسودة جاهزة. افتحها للمراجعة أو أرسل المسودات دفعة واحدة.": "Saved as draft. Click to review or submit all drafts at once.",
+  "لا توجد مسودات جاهزة للإرسال.": "No drafts ready to submit.",
+  "أُرجعت المسودة إلى صندوق الوارد.": "Draft returned to Inbox."
 
 };
 const TR_RX = [
   // Inbox & Cases
-  [/^📥 صندوق الوارد من الواتساب: (\d+) حالة جديدة$/, "📥 WhatsApp Inbox: $1 new cases"],
+  [/^📥 صندوق الوارد من الواتساب: (\d+) حالة جديدة(\s*·)?$/, "📥 WhatsApp Inbox: $1 new cases$2"],
+  [/^📥 سحب المحدد لحالاتي \(مسودات\) \((\d+)\)$/, "📥 Move Selected to My Cases ($1)"],
+  [/^🚀 إرسال المحدد للاعتماد مباشرة \((\d+)\)$/, "🚀 Submit Selected for Approval ($1)"],
+  [/^🚀 إرسال كل المسودات للاعتماد \((\d+)\)$/, "🚀 Submit All Drafts for Approval ($1)"],
+  [/^إرسال (\d+) حالة محددة مباشرة إلى «بانتظار الاعتماد» بالاعتماد على تحليل الذكاء الاصطناعي؟$/, "Submit $1 selected case(s) directly to 'Pending Approval' using the AI evaluation?"],
+  [/^إرسال (\d+) مسودة دفعة واحدة إلى «بانتظار الاعتماد»؟$/, "Submit $1 draft(s) at once to 'Pending Approval'?"],
+  [/^✔ تم سحب (\d+) حالة إلى جدول «حالاتي» كمسودات جاهزة\.$/, "✔ Moved $1 case(s) to 'My Cases' as ready drafts."],
+  [/^✔ تم إرسال (\d+) حالة مباشرة للاعتماد\.(.*)$/, (_, n, r) => "✔ Submitted " + n + " case(s) directly for approval." + (r ? " " + trStr(r.trim()) : "")],
+  [/^\(ونُقلت (\d+) حالة للمسودات لإكمال النواقص\)$/, "(and moved $1 case(s) to drafts to complete missing info)"],
+  [/^\(وبقيت (\d+) مسودة تحتاج إكمال النواقص\)$/, "(and $1 draft(s) remain due to missing info)"],
+  [/^سحب جماعي للتقييم: (\d+) حالة$/, "Bulk taken for evaluation: $1 case(s)"],
+  [/^إرسال جماعي للاعتماد من الصندوق: (\d+) حالة$/, "Bulk submitted from Inbox: $1 case(s)"],
+  [/^إرسال جماعي للمسودات: (\d+) حالة$/, "Bulk submitted drafts: $1 case(s)"],
   [/^· مُسندة لك: (\d+)$/, "· Assigned to you: $1"],
   [/^مُسندة لك: (\d+)$/, "Assigned to you: $1"],
   [/^المستبعدة \((\d+)\)$/, "Dismissed ($1)"],
@@ -2131,11 +2148,107 @@ const ACTIONS={
   }); },
   inboxTake:(u,p)=>withLock_(async()=>{
     const id=String(p.id||''); const x=await Store.get('inbox',id); if(!x) throw err('الحالة غير موجودة في صندوق الوارد.');
-    if(x.status==='taken'&&x.takenBy!==u.id) throw err('أخذ هذه الحالة '+(x.takenByName||'مقيّم آخر')+'.');
+    if(x.status==='taken'&&x.takenBy!==u.id&&u.role!=='admin') throw err('أخذ هذه الحالة '+(x.takenByName||'مقيّم آخر')+'.');
     if(x.status==='done'||x.status==='dismissed') throw err('هذه الحالة لم تعد في صندوق الوارد.');
     x.status='taken'; x.takenBy=u.id; x.takenByName=u.name; x.takenAt=now_(); await Store.put('inbox',id,x);
     const detail=await Store.get('inboxd',id); await audit_(u,'','inbox_take',x.group+' '+x.date+' '+x.time+' · '+x.sender);
     return {item:Object.assign({},x,{key:undefined}),detail};
+  }),
+  inboxTakeMany:(u,p)=>withLock_(async()=>{
+    const ids=(Array.isArray(p.ids)?p.ids:[]).map(String).slice(0,200); if(!ids.length) throw err('حدّد حالة واحدة على الأقل.');
+    const details={}; for(let i=0;i<ids.length;i+=25){ Object.assign(details,await Store.getMany('inboxd',ids.slice(i,i+25))); }
+    const items=[];
+    for(const id of ids){
+      const x=await Store.get('inbox',id); if(!x||x.status==='done'||x.status==='dismissed') continue;
+      if(x.status==='taken'&&x.takenBy!==u.id&&u.role!=='admin') continue;
+      if(x.status!=='taken'||!x.takenBy){ x.status='taken'; x.takenBy=u.id; x.takenByName=u.name; x.takenAt=now_(); await Store.put('inbox',id,x); }
+      items.push({item:Object.assign({},x,{key:undefined}),detail:details[id]||{}});
+    }
+    if(items.length) await audit_(u,'','inbox_take','سحب جماعي للتقييم: '+items.length+' حالة');
+    return {items};
+  }),
+  inboxSubmitMany:(u,p)=>withLock_(async()=>{
+    const ids=(Array.isArray(p.ids)?p.ids:[]).map(String).slice(0,100); if(!ids.length) throw err('حدّد حالة واحدة على الأقل.');
+    const badges=await activeBadges_(), set=await settings_(), all=await Store.list('cases');
+    const usedIds=new Set(all.map(c=>c.id)); const nextByM={};
+    const allocId=m=>{ let n=nextByM[m]||(all.filter(c=>c.id.indexOf(m+'-')===0).length+1); let id; do{ id=m+'-'+String(n).padStart(3,'0'); n++; }while(usedIds.has(id)); usedIds.add(id); nextByM[m]=n; return id; };
+    const codeToBadge={}; badges.forEach(b=>(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;}));
+    const details={}; for(let i=0;i<ids.length;i+=25){ Object.assign(details,await Store.getMany('inboxd',ids.slice(i,i+25))); }
+    const submitted=[], drafts=[];
+    for(const inbId of ids){
+      const x=await Store.get('inbox',inbId); if(!x||x.status==='done'||x.status==='dismissed') continue;
+      if(x.status==='taken'&&x.takenBy!==u.id&&u.role!=='admin') continue;
+      const dt=details[inbId]||{}, ai=dt.ai||{};
+      const month=/^\d{4}-\d{2}$/.test(String(x.date||'').slice(0,7))?x.date.slice(0,7):today_().slice(0,7);
+      const parsedItems=[].concat(...(dt.invoices||[]).map(v=>(v.items||[]).map(i=>i.name+(i.qty>1?' × '+i.qty:''))));
+      const invoiceItems=clean_(ai.invoiceItems&&ai.invoiceItems.length?ai.invoiceItems:parsedItems,20,120);
+      const summary=String(dt.text||(invoiceItems.length?'فاتورة بيع: '+invoiceItems.join('، '):'')||'').trim().slice(0,5000);
+      const pharmacist=String(x.pharmacist||x.sender||'').trim().slice(0,120);
+      const answers={}, reasons={};
+      (ai.suggestions||[]).forEach(s=>{ if(s.answer==='Y'||s.answer==='N'){ answers[s.code]=s.answer; const bk=codeToBadge[s.code]; if(bk&&s.quote&&!reasons[bk]) reasons[bk]=String(s.quote).slice(0,2000); } });
+      badges.forEach(b=>{
+        const qs=b.qs||[], g=qs.find(q=>q.t==='gate'), rest=qs.filter(q=>q.t!=='gate');
+        if(g&&!answers[g.c]) answers[g.c]=rest.some(q=>q.t==='must'&&answers[q.c]==='Y')?'Y':'N';
+        rest.forEach(q=>{ if(!answers[q.c]) answers[q.c]='N'; });
+      });
+      const r=resultsLive_(answers,badges);
+      const startPoint=String(ai.startPoint||(summary?summary.split(/[\n.،]/)[0].trim().slice(0,160):'')||'').trim().slice(0,400);
+      const outcome=String(ai.outcome||(summary?'تقديم الرعاية الصيدلانية والحل المناسب لاحتياج العميل':'')||'').trim().slice(0,400);
+      const rec={id:'',month,pharmacist,branch:String(x.branch||'').slice(0,120),supervisor:String(x.mention||'').slice(0,120),
+        reviewerId:u.id,reviewerName:u.name,summary,startPoint,outcome,
+        situation:clean_(ai.situation,6,400),products:clean_(ai.products,8,80),
+        invoiceItems,invoiceNote:String(ai.invoiceNote||'').slice(0,400),invoiceTotal:num_(x.total,0,1000000,2),invoiceCount:num_(x.units,0,500,0),
+        source:('واتساب '+x.group+' · '+x.date+' '+x.time+' · '+x.sender+((dt.atts||[]).some(a=>a.missing)?' · ⚠️ مرفق ناقص في التصدير':'')).slice(0,200),
+        inboxId:x.id,answers,reasons,results:r,metCount:metCount_(r),nominated:true,submittedAt:now_(),createdAt:now_(),updatedAt:now_(),example:false};
+      const miss=issues_(rec,r,badges,set,null);
+      if(miss.length){
+        if(x.status!=='taken'||!x.takenBy){ x.status='taken'; x.takenBy=u.id; x.takenByName=u.name; x.takenAt=now_(); await Store.put('inbox',inbId,x); }
+        drafts.push({item:Object.assign({},x,{key:undefined}),detail:dt,reason:miss[0]});
+        continue;
+      }
+      const id=allocId(month); rec.id=id;
+      await Store.put('cases',id,rec);
+      await Store.put('decisions',id,{caseId:id,status:'Pending',approverId:'',approverName:'',approvedAt:'',rejectReason:'',returnReason:'',results:null,metCount:0,updatedAt:now_(),postStage:'',featured:false,featuredNote:''});
+      x.status='done'; x.caseId=id; x.takenBy=u.id; x.takenByName=u.name; await Store.put('inbox',inbId,x);
+      submitted.push(id);
+    }
+    if(submitted.length) await audit_(u,submitted[0],'submitted','إرسال جماعي للاعتماد من الصندوق: '+submitted.length+' حالة');
+    return {submitted:submitted.length,drafts};
+  }),
+  saveCasesMany:(u,p)=>withLock_(async()=>{
+    const list=(Array.isArray(p.items)?p.items:[]).slice(0,100); if(!list.length) throw err('لا توجد حالات.');
+    const badges=await activeBadges_(), set=await settings_(), all=await Store.list('cases');
+    const usedIds=new Set(all.map(c=>c.id)); const nextByM={};
+    const allocId=m=>{ let n=nextByM[m]||(all.filter(c=>c.id.indexOf(m+'-')===0).length+1); let id; do{ id=m+'-'+String(n).padStart(3,'0'); n++; }while(usedIds.has(id)); usedIds.add(id); nextByM[m]=n; return id; };
+    const submitted=[], failed=[];
+    for(const it of list){
+      const month=/^\d{4}-\d{2}$/.test(String(it.month||''))?it.month:today_().slice(0,7);
+      const answers={}; Object.keys(it.answers||{}).forEach(k=>{ if(it.answers[k]==='Y'||it.answers[k]==='N') answers[k]=it.answers[k]; });
+      badges.forEach(b=>{
+        const qs=b.qs||[], g=qs.find(q=>q.t==='gate'), rest=qs.filter(q=>q.t!=='gate');
+        if(g&&!answers[g.c]) answers[g.c]=rest.some(q=>q.t==='must'&&answers[q.c]==='Y')?'Y':'N';
+        rest.forEach(q=>{ if(!answers[q.c]) answers[q.c]='N'; });
+      });
+      const reasons={}; Object.keys(it.reasons||{}).forEach(k=>{ reasons[k]=String(it.reasons[k]||'').slice(0,2000); });
+      const r=resultsLive_(answers,badges);
+      const summary=String(it.summary||'').trim().slice(0,5000);
+      const startPoint=String(it.startPoint||(summary?summary.split(/[\n.،]/)[0].trim().slice(0,160):'')||'').trim().slice(0,400);
+      const outcome=String(it.outcome||(summary?'تقديم الرعاية الصيدلانية والحل المناسب لاحتياج العميل':'')||'').trim().slice(0,400);
+      const rec={id:'',month,pharmacist:String(it.pharmacist||'').slice(0,120),branch:String(it.branch||'').slice(0,120),supervisor:String(it.supervisor||'').slice(0,120),
+        reviewerId:u.id,reviewerName:u.name,summary,startPoint,outcome,situation:clean_(it.situation,6,400),products:clean_(it.products,8,80),
+        invoiceItems:clean_(it.invoiceItems,20,120),invoiceNote:String(it.invoiceNote||'').slice(0,400),invoiceTotal:num_(it.invoiceTotal,0,1000000,2),invoiceCount:num_(it.invoiceCount,0,500,0),
+        source:String(it.source||'').slice(0,200),inboxId:String(it.inboxId||'').slice(0,60),
+        answers,reasons,results:r,metCount:metCount_(r),nominated:true,submittedAt:now_(),createdAt:now_(),updatedAt:now_(),example:false};
+      const miss=issues_(rec,r,badges,set,null);
+      if(miss.length){ failed.push({localKey:it.localKey||'',reason:miss[0]}); continue; }
+      const id=allocId(month); rec.id=id;
+      await Store.put('cases',id,rec);
+      await Store.put('decisions',id,{caseId:id,status:'Pending',approverId:'',approverName:'',approvedAt:'',rejectReason:'',returnReason:'',results:null,metCount:0,updatedAt:now_(),postStage:'',featured:false,featuredNote:''});
+      if(rec.inboxId){ const ib=await Store.get('inbox',rec.inboxId); if(ib&&ib.status!=='done'){ ib.status='done'; ib.caseId=id; await Store.put('inbox',rec.inboxId,ib); } }
+      submitted.push({localKey:it.localKey||'',id});
+    }
+    if(submitted.length) await audit_(u,submitted[0].id,'submitted','إرسال جماعي للمسودات: '+submitted.length+' حالة');
+    return {submitted,failed};
   }),
   // إسناد حالات الصندوق للمقيّمين (توزيع متوازن يحسبه المتصفح؛ الخادم يتحقق من كل مقيّم وحالة)
   inboxAssign:(u,p)=>{ needAdmin_(u); const items=(Array.isArray(p.items)?p.items:[]).slice(0,500); return withLock_(async()=>{
@@ -3091,17 +3204,24 @@ function updateSc(){
 /* ----- inbox (cases tab) ----- */
 function inboxHtml(){
   const admin=adminMode(); const stF=admin?(S.inboxSt||'open'):'open'; const all=(S.inbox||[]);
-  const L=all.filter(x=>stF==='dismissed'?x.status==='dismissed':(x.status==='new'||x.status==='taken'&&(admin||x.takenBy===S.me.id)));
-  if(!all.some(x=>x.status==='new'||x.status==='taken'||(admin&&x.status==='dismissed'))) return '';
+  const inDraftIds=new Set(Object.values(getDrafts()).filter(d=>!d.id&&d.inboxId).map(d=>d.inboxId));
+  const L=all.filter(x=>stF==='dismissed'?x.status==='dismissed':((x.status==='new'||x.status==='taken'&&(admin||x.takenBy===S.me.id))&&!(!admin&&inDraftIds.has(x.id))));
+  if(!L.length&&!(admin&&all.some(x=>x.status==='new'||x.status==='taken'||x.status==='dismissed'))) return '';
   const sel=S.inboxSel||(S.inboxSel=new Set()); [...sel].forEach(id=>{ if(!L.some(x=>x.id===id)) sel.delete(id); });
-  const nNew=all.filter(x=>x.status==='new').length, nDis=all.filter(x=>x.status==='dismissed').length, nMine=all.filter(x=>x.status==='taken'&&x.takenBy===S.me.id).length; const f=S.inboxCat||'';
+  const nNew=L.filter(x=>x.status==='new').length, nDis=all.filter(x=>x.status==='dismissed').length, nMine=L.filter(x=>x.status==='taken'&&x.takenBy===S.me.id).length;
+  const f=S.inboxCat||'', gF=S.inboxGrp||'';
+  const grps=[...new Set(L.map(x=>x.group).filter(Boolean))].sort();
   const cats=[...new Set([].concat(...L.map(x=>x.cats||[])))];
-  const rows=L.filter(x=>!f||(x.cats||[]).includes(f)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const rows=L.filter(x=>(!gF||x.group===gF)&&(!f||(x.cats||[]).includes(f))).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const canTakeSel=[...sel].filter(id=>{ const x=L.find(o=>o.id===id); return x&&(x.status==='new'||x.takenBy===S.me.id||admin); }).length;
+  const bulkEvalBtns=S.me.canWrite?'<button class="btn" id="btnInbTakeMany"'+(canTakeSel?'':' disabled')+'>📥 سحب المحدد لحالاتي (مسودات) ('+canTakeSel+')</button><button class="btn primary" id="btnInbSubmitMany"'+(canTakeSel?'':' disabled')+'>🚀 إرسال المحدد للاعتماد مباشرة ('+canTakeSel+')</button>':'';
   return '<details class="panel sec" id="inboxPanel"'+(S.inboxOpen?' open':'')+'><summary style="cursor:pointer;font-weight:700">📥 صندوق الوارد من الواتساب: '+nNew+' حالة جديدة'+(nMine?' · <span style="color:var(--accent,#1f6feb)">مُسندة لك: '+nMine+'</span>':'')+'</summary>'+
-   '<div class="bar" style="margin-top:10px">'+(admin?'<select id="inboxSt" aria-label="الحالة"><option value="open"'+(stF==='open'?' selected':'')+'>الجديدة ومع المقيّمين</option><option value="dismissed"'+(stF==='dismissed'?' selected':'')+'>المستبعدة ('+nDis+')</option></select>':'')+'<select id="inboxCat" aria-label="التصنيف"><option value="">كل التصنيفات</option>'+cats.map(c=>'<option'+(c===f?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select><span class="note">خذ الحالة لتقييمها؛ تتحول لمسودة باسمك وفيها اقتراحات الذكاء الاصطناعي، ثم راجعها وأرسلها للاعتماد.</span></div>'+
-   (admin?'<div class="actions" style="margin:8px 0">'+(stF==='dismissed'?'<button class="btn primary" id="btnInbBulkBack"'+(sel.size?'':' disabled')+'>↩ إرجاع المحدد للصندوق ('+sel.size+')</button>':inbAssignUi_(L,sel)+'<button class="btn" id="btnInbBulkDis"'+(sel.size?'':' disabled')+'>🚫 استبعاد المحدد ('+sel.size+')</button><button class="btn" id="btnInbBulkBack"'+([...sel].some(id=>(L.find(x=>x.id===id)||{}).status==='taken')?'':' disabled')+'>↩ إرجاع المحدد للصندوق</button>')+'</div>':'')+
-   '<div class="tw"><table><thead><tr>'+(admin?'<th style="width:34px"><input type="checkbox" id="inboxAll" aria-label="تحديد الكل"'+(rows.length&&rows.every(x=>sel.has(x.id))?' checked':'')+'></th>':'')+'<th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>النص</th><th>الفاتورة</th><th></th></tr></thead><tbody>'+
-   rows.map(x=>'<tr>'+(admin?'<td><input type="checkbox" data-inbsel="'+esc(x.id)+'"'+(sel.has(x.id)?' checked':'')+'></td>':'')+'<td>'+esc(x.group)+'</td><td class="mono" style="white-space:nowrap">'+esc(x.date)+'<br>'+esc(x.time)+'</td><td>'+esc(x.pharmacist||x.sender)+(x.branch?'<div class="note" style="margin:0">فرع '+esc(x.branch)+'</div>':'')+'</td><td>'+esc(x.mention||'—')+'</td><td>'+(x.cats||[]).map(c=>'<span class="pill p-na" style="margin:1px">'+esc(c)+'</span>').join(' ')+'</td><td style="max-width:320px;font-size:12.5px">'+(x.preview?esc(x.preview)+'…':'<span class="note">بدون نص</span>')+(x.hasAI?'':'<div class="note" style="margin:0;color:var(--warn)">بدون تحليل AI</div>')+'</td><td class="num">'+(x.total?Number(x.total).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td><td style="white-space:nowrap">'+
+   '<div class="bar" style="margin-top:10px">'+(admin?'<select id="inboxSt" aria-label="الحالة"><option value="open"'+(stF==='open'?' selected':'')+'>الجديدة ومع المقيّمين</option><option value="dismissed"'+(stF==='dismissed'?' selected':'')+'>المستبعدة ('+nDis+')</option></select>':'')+
+   '<select id="inboxGrp" aria-label="المجموعة"><option value="">كل المجموعات</option>'+grps.map(g=>'<option value="'+esc(g)+'"'+(g===gF?' selected':'')+'>'+esc(g)+'</option>').join('')+'</select>'+
+   '<select id="inboxCat" aria-label="التصنيف"><option value="">كل التصنيفات</option>'+cats.map(c=>'<option'+(c===f?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select><span class="note">خذ الحالة لتقييمها؛ تتحول لمسودة باسمك وفيها اقتراحات الذكاء الاصطناعي، ثم راجعها وأرسلها للاعتماد.</span></div>'+
+   (admin?'<div class="actions" style="margin:8px 0">'+(stF==='dismissed'?'<button class="btn primary" id="btnInbBulkBack"'+(sel.size?'':' disabled')+'>↩ إرجاع المحدد للصندوق ('+sel.size+')</button>':inbAssignUi_(L,sel)+bulkEvalBtns+'<button class="btn" id="btnInbBulkDis"'+(sel.size?'':' disabled')+'>🚫 استبعاد المحدد ('+sel.size+')</button><button class="btn" id="btnInbBulkBack"'+([...sel].some(id=>(L.find(x=>x.id===id)||{}).status==='taken')?'':' disabled')+'>↩ إرجاع المحدد للصندوق</button>')+'</div>':'<div class="actions" style="margin:8px 0">'+bulkEvalBtns+'</div>')+
+   '<div class="tw"><table><thead><tr><th style="width:34px"><input type="checkbox" id="inboxAll" aria-label="تحديد الكل"'+(rows.length&&rows.every(x=>sel.has(x.id))?' checked':'')+'></th><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>النص</th><th>الفاتورة</th><th></th></tr></thead><tbody>'+
+   rows.map(x=>'<tr><td><input type="checkbox" data-inbsel="'+esc(x.id)+'"'+(sel.has(x.id)?' checked':'')+'></td><td>'+esc(x.group)+'</td><td class="mono" style="white-space:nowrap">'+esc(x.date)+'<br>'+esc(x.time)+'</td><td>'+esc(x.pharmacist||x.sender)+(x.branch?'<div class="note" style="margin:0">فرع '+esc(x.branch)+'</div>':'')+'</td><td>'+esc(x.mention||'—')+'</td><td>'+(x.cats||[]).map(c=>'<span class="pill p-na" style="margin:1px">'+esc(c)+'</span>').join(' ')+'</td><td style="max-width:320px;font-size:12.5px">'+(x.preview?esc(x.preview)+'…':'<span class="note">بدون نص</span>')+(x.hasAI?'':'<div class="note" style="margin:0;color:var(--warn)">بدون تحليل AI</div>')+'</td><td class="num">'+(x.total?Number(x.total).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td><td style="white-space:nowrap">'+
      (x.status==='dismissed'?'<span class="pill p-no">مستبعدة</span> <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':x.status==='new'?'<button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>'+(admin?' <button class="btn" data-inbdis="'+esc(x.id)+'">استبعاد</button>':''):x.takenBy===S.me.id&&!admin?'<span class="pill p-ok">مُسندة لك</span> <button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>':'<span class="pill p-wait">مع '+esc(x.takenByName||'—')+'</span>'+(admin&&x.takenBy===S.me.id?' <button class="btn primary" data-take="'+esc(x.id)+'">ابدأ التقييم</button>':'')+(admin?' <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':''))+'</td></tr>').join('')+'</tbody></table></div></details>';
 }
 // إسناد يدوي: المدير يحدد الحالات ويختار المقيّم
@@ -3118,19 +3238,82 @@ async function inboxAssignTo(){
   catch(e){ toast(e.message,true); }
   S.busy=false;
 }
+function draftFromInbox_(x,dt){
+  dt=dt||{}; const ai=dt.ai||{};
+  const existing=Object.values(getDrafts()).find(o=>!o.id&&o.inboxId===x.id);
+  const d=existing?JSON.parse(JSON.stringify(existing)):newDraft();
+  if(!existing) d.localKey='n'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
+  d.month=(x.date||'').slice(0,7)||d.month; d.pharmacist=x.pharmacist||x.sender||''; d.branch=x.branch||''; d.supervisor=x.mention||''; d.summary=dt.text||'';
+  d.inboxId=x.id; d.source='واتساب '+x.group+' · '+x.date+' '+x.time+' · '+x.sender+((dt.atts||[]).some(a=>a.missing)?' · ⚠️ مرفق ناقص في التصدير':'');
+  const codeToBadge={}; activeBadges().forEach(b=>(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;})); d.aiCodes=[];
+  (ai.suggestions||[]).forEach(s=>{ d.answers[s.code]=s.answer; d.aiCodes.push(s.code); const bk=codeToBadge[s.code]; if(bk&&s.quote&&!d.reasons[bk]) d.reasons[bk]=s.quote; });
+  if((ai.suggestions||[]).length){
+    activeBadges().forEach(b=>{
+      const qs=b.qs||[], g=qs.find(q=>q.t==='gate'), rest=qs.filter(q=>q.t!=='gate');
+      if(g&&!d.answers[g.c]) d.answers[g.c]=rest.some(q=>q.t==='must'&&d.answers[q.c]==='Y')?'Y':'N';
+      rest.forEach(q=>{ if(!d.answers[q.c]) d.answers[q.c]='N'; });
+    });
+  }
+  d.startPoint=ai.startPoint||''; d.outcome=ai.outcome||''; d.situation=(ai.situation||[]).slice(0,6); d.products=(ai.products||[]).slice(0,8);
+  const parsedItems=[].concat(...(dt.invoices||[]).map(v=>(v.items||[]).map(i=>i.name+(i.qty>1?' × '+i.qty:''))));
+  d.invoiceItems=(ai.invoiceItems&&ai.invoiceItems.length?ai.invoiceItems:parsedItems).slice(0,20); d.invoiceNote=ai.invoiceNote||'';
+  d.invoiceTotal=x.total||''; d.invoiceCount=x.units||'';
+  if(!d.summary&&d.invoiceItems.length) d.summary='فاتورة بيع: '+d.invoiceItems.join('، ');
+  return d;
+}
 async function inboxTake(id){
   if(S.busy) return; S.busy=true;
   try{
-    const r=await call('inboxTake',{id}); const x=r.item, dt=r.detail||{}, ai=dt.ai||{};
-    const d=newDraft(); d.month=(x.date||'').slice(0,7)||d.month; d.pharmacist=x.pharmacist||x.sender||''; d.branch=x.branch||''; d.supervisor=x.mention||''; d.summary=dt.text||'';
-    d.inboxId=x.id; d.source='واتساب '+x.group+' · '+x.date+' '+x.time+' · '+x.sender+((dt.atts||[]).some(a=>a.missing)?' · ⚠️ مرفق ناقص في التصدير':'');
-    const codeToBadge={}; activeBadges().forEach(b=>(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;})); d.aiCodes=[];
-    (ai.suggestions||[]).forEach(s=>{ d.answers[s.code]=s.answer; d.aiCodes.push(s.code); const bk=codeToBadge[s.code]; if(bk&&s.quote&&!d.reasons[bk]) d.reasons[bk]=s.quote; });
-    d.startPoint=ai.startPoint||''; d.outcome=ai.outcome||''; d.situation=(ai.situation||[]).slice(0,6); d.products=(ai.products||[]).slice(0,8);
-    const parsedItems=[].concat(...(dt.invoices||[]).map(v=>v.items.map(i=>i.name+(i.qty>1?' × '+i.qty:''))));
-    d.invoiceItems=(ai.invoiceItems&&ai.invoiceItems.length?ai.invoiceItems:parsedItems).slice(0,20); d.invoiceNote=ai.invoiceNote||'';
-    d.invoiceTotal=x.total||''; d.invoiceCount=x.units||'';
+    const r=await call('inboxTake',{id});
+    const d=draftFromInbox_(r.item,r.detail);
     putDraft(d); S.busy=false; await load().catch(()=>{}); toast('أصبحت الحالة مسودة باسمك. راجع الاقتراحات ثم أرسلها للاعتماد.'); return openDraft(d.localKey);
+  }catch(e){ if(e.code==='auth') return logout(true); toast(e.message,true); }
+  S.busy=false;
+}
+async function inboxTakeMany(){
+  if(S.busy) return; const ids=[...(S.inboxSel||[])]; if(!ids.length) return toast('حدّد حالة واحدة على الأقل.',true);
+  S.busy=true; const btn=$('#btnInbTakeMany'); if(btn) btn.disabled=true;
+  try{
+    const r=await call('inboxTakeMany',{ids});
+    (r.items||[]).forEach(it=>{ const d=draftFromInbox_(it.item,it.detail); putDraft(d); });
+    S.inboxSel=new Set(); await load().catch(()=>{}); S.inboxOpen=true; onData();
+    toast('✔ تم سحب '+(r.items||[]).length+' حالة إلى جدول «حالاتي» كمسودات جاهزة.');
+  }catch(e){ if(e.code==='auth') return logout(true); toast(e.message,true); }
+  S.busy=false;
+}
+async function inboxSubmitMany(){
+  if(S.busy) return; const ids=[...(S.inboxSel||[])]; if(!ids.length) return toast('حدّد حالة واحدة على الأقل.',true);
+  if(!confirm('إرسال '+ids.length+' حالة محددة مباشرة إلى «بانتظار الاعتماد» بالاعتماد على تحليل الذكاء الاصطناعي؟')) return;
+  S.busy=true; const btn=$('#btnInbSubmitMany'); if(btn) btn.disabled=true;
+  try{
+    let sub=0, dr=[];
+    for(let i=0;i<ids.length;i+=25){
+      const r=await call('inboxSubmitMany',{ids:ids.slice(i,i+25)});
+      sub+=(r.submitted||0); dr=dr.concat(r.drafts||[]);
+    }
+    const existingDrafts=getDrafts();
+    Object.entries(existingDrafts).forEach(([k,d])=>{ if(!d.id&&d.inboxId&&ids.includes(d.inboxId)) dropDraft(k); });
+    dr.forEach(it=>{ const d=draftFromInbox_(it.item,it.detail); putDraft(d); });
+    S.inboxSel=new Set(); await load().catch(()=>{}); S.inboxOpen=true; onData();
+    toast('✔ تم إرسال '+sub+' حالة مباشرة للاعتماد.'+(dr.length?' (ونُقلت '+dr.length+' حالة للمسودات لإكمال النواقص)':''));
+  }catch(e){ if(e.code==='auth') return logout(true); toast(e.message,true); }
+  S.busy=false;
+}
+async function submitAllDrafts(){
+  if(S.busy) return; const entries=Object.entries(getDrafts()).filter(([k,d])=>!d.id);
+  if(!entries.length) return toast('لا توجد مسودات جاهزة للإرسال.',true);
+  if(!confirm('إرسال '+entries.length+' مسودة دفعة واحدة إلى «بانتظار الاعتماد»؟')) return;
+  S.busy=true; const btn=$('#btnSubmitAllDrafts'); if(btn) btn.disabled=true;
+  try{
+    const items=entries.map(([k,d])=>Object.assign({localKey:k},payload(d)));
+    let sub=0, fail=0;
+    for(let i=0;i<items.length;i+=25){
+      const r=await call('saveCasesMany',{items:items.slice(i,i+25)});
+      (r.submitted||[]).forEach(s=>{ dropDraft(s.localKey); sub++; });
+      fail+=(r.failed||[]).length;
+    }
+    await load().catch(()=>{}); onData();
+    toast('✔ تم إرسال '+sub+' حالة مباشرة للاعتماد.'+(fail?' (وبقيت '+fail+' مسودة تحتاج إكمال النواقص)':''));
   }catch(e){ if(e.code==='auth') return logout(true); toast(e.message,true); }
   S.busy=false;
 }
@@ -3867,7 +4050,7 @@ function mountCases(){
   '<div class="bar"><select id="fMonth" aria-label="الشهر"></select>'+
   '<select id="fStatus" aria-label="الحالة"><option value="all">كل الحالات</option><option value="Returned">معادة للتصحيح</option><option value="Pending">بانتظار الاعتماد</option>'+(admin?'<option value="Ready">جاهزة للاعتماد</option>':'')+'<option value="Approved">معتمدة</option>'+(admin?'<option value="Featured">أفضل المشاركات</option>':'')+'<option value="Rejected">مرفوضة</option></select>'+
   '<input type="text" id="fQ" placeholder="بحث باسم الصيدلي أو المشرف أو الفرع أو رقم الحالة" style="max-width:320px" aria-label="بحث">'+
-  '<span class="sp"></span>'+(admin?'<button class="btn" id="btnReport">تصدير التقرير (Excel)</button>':'')+
+  '<span class="sp"></span><span id="draftsBulkBox"></span>'+(admin?'<button class="btn" id="btnReport">تصدير التقرير (Excel)</button>':'')+
   '<button class="btn primary" id="btnNew"'+(S.me.canWrite?'':' disabled')+'>+ حالة جديدة</button></div>'+
   '<div class="panel"><div class="tw"><table><thead><tr><th>رقم الحالة</th><th>الشهر</th><th>الصيدلي</th><th>الفرع</th><th>المشرف</th>'+(admin?'<th>المقيّم</th>':'')+'<th>القطع</th><th>الفاتورة (ر.س)</th><th>الشارات</th><th>الحالة</th><th>'+(admin?'الجاهزية / أفضل مشاركة':'ملاحظة')+'</th></tr></thead><tbody id="tb"></tbody></table></div>'+
   '<div class="legend" id="legend"></div></div>';
@@ -3896,11 +4079,13 @@ function updateCases(){
   const bs=activeBadges();
   $('#legend').innerHTML='<span><i class="dot d-Met">U</i> متحققة</span><span><i class="dot d-NotMet">U</i> غير متحققة</span><span><i class="dot d-NA">U</i> لا تنطبق</span><span><i class="dot d-Incomplete">U</i> غير مكتملة</span><span style="margin-inline-start:auto">'+bs.map(b=>esc(abOf(b))+'='+esc(b.name)).join('، ')+'</span>';
   const rows=filteredCases(); const cols=admin?11:10;
-  if(!rows.length&&!Object.values(getDrafts()).some(d=>!d.id)){
+  const allDrafts=Object.entries(getDrafts()).filter(([k,d])=>!d.id);
+  const dbb=$('#draftsBulkBox'); if(dbb) dbb.innerHTML=(!S.preview&&allDrafts.length)?'<button class="btn primary" id="btnSubmitAllDrafts"'+(S.busy?' disabled':'')+'>🚀 إرسال كل المسودات للاعتماد ('+allDrafts.length+')</button>':'';
+  if(!rows.length&&!allDrafts.length){
     $('#tb').innerHTML='<tr><td colspan="'+cols+'"><div class="empty"><b>'+(vis.length?'لا نتائج مطابقة':'لا توجد حالات بعد')+'</b>'+(vis.length?'غيّر الفلاتر أو البحث.':(admin?'تظهر هنا الحالات التي يدخلها المقيّمون.':'ابدأ بإدخال حالتك الأولى.'))+'</div></td></tr>'; return;
   }
-  const drafts=(S.filters.status==='all'&&!S.preview)?Object.entries(getDrafts()).filter(([k,d])=>!d.id):[];
-  const draftRows=drafts.map(([k,d])=>'<tr class="row" data-draft="'+esc(k)+'" tabindex="0" style="background:var(--row-alt)"><td><span class="pill p-na">مسودة</span></td><td>'+esc(monthLabel(d.month))+'</td><td>'+esc(d.pharmacist||'—')+'</td><td>'+esc(d.branch||'—')+'</td><td>'+esc(d.supervisor||'—')+'</td>'+(admin?'<td>'+esc(S.me.name)+'</td>':'')+'<td>—</td><td><span class="pill p-na">لم تُرسل</span></td><td class="note">محفوظة على هذا الجهاز فقط. افتحها لإكمالها وإرسالها.</td></tr>').join('');
+  const drafts=(S.filters.status==='all'&&!S.preview)?allDrafts:[];
+  const draftRows=drafts.map(([k,d])=>'<tr class="row" data-draft="'+esc(k)+'" tabindex="0" style="background:var(--row-alt)"><td><span class="pill p-na">مسودة</span></td><td>'+esc(monthLabel(d.month))+'</td><td>'+esc(d.pharmacist||'—')+'</td><td>'+esc(d.branch||'—')+'</td><td>'+esc(d.supervisor||'—')+'</td>'+(admin?'<td>'+esc(S.me.name)+'</td>':'')+'<td class="num">'+(d.invoiceCount?esc(d.invoiceCount):'—')+'</td><td class="num">'+(d.invoiceTotal?esc(Number(d.invoiceTotal).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})):'—')+'</td><td>'+dotsFor('',d)+'</td><td><span class="pill p-na">لم تُرسل</span></td><td class="note"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span>محفوظة كمسودة جاهزة. افتحها للمراجعة أو أرسل المسودات دفعة واحدة.</span>'+(d.inboxId?'<button class="btn" type="button" data-dropdraft="'+esc(k)+'" style="padding:2px 8px;min-height:0">↩ للصندوق</button>':'')+'</div></td></tr>').join('');
   $('#tb').innerHTML=draftRows+rows.map(([id,c])=>{ const nomTag='';
     const st=statusOf(id); const stp=STATUS[st]; const dec=S.dec.get(id)||{};
     let last;
@@ -4629,6 +4814,8 @@ document.addEventListener('click',e=>{
   if(t.id==='btnBack'){ if(S.adminEdit){ S.adminEdit=false; S.openId=null; S.draft=null; return mount(); } if(S.draft&&!locked()) putDraft(S.draft); S.openId=null;S.draft=null; return mount(); }
   if(t.id==='btnSubmit') return submitCase();
   if(t.id==='btnDropDraft'&&S.draft){ dropDraft(S.draft.id||S.draft.localKey); S.openId=null; S.draft=null; toast('حُذفت المسودة.'); return mount(); }
+  if(t.dataset&&t.dataset.dropdraft){ dropDraft(t.dataset.dropdraft); S.inboxOpen=true; toast('أُرجعت المسودة إلى صندوق الوارد.'); return updateCases(); }
+  if(t.id==='btnSubmitAllDrafts') return submitAllDrafts();
   if(t.dataset.draft) return openDraft(t.dataset.draft);
   if(t.dataset.q&&S.draft&&!locked()){ const a=S.draft.answers; S.aiCodes.delete(t.dataset.q); if(a[t.dataset.q]===t.dataset.v) delete a[t.dataset.q]; else a[t.dataset.q]=t.dataset.v; refreshEditor(); return touch(); }
   if(t.id==='btnApprove') return decide('approve');
@@ -4667,6 +4854,8 @@ document.addEventListener('click',e=>{
   if(t.id==='btnInbBulkDis'||t.id==='btnInbBulkBack'){ const ids=[...(S.inboxSel||[])]; if(!ids.length||S.busy) return; const dis=t.id==='btnInbBulkDis'; if(dis&&!confirm('استبعاد '+ids.length+' حالة من صندوق الوارد؟')) return;
     S.busy=true; return call('inboxSetMany',{ids,status:dis?'dismissed':'new'}).then(r=>{ toast((dis?'استُبعدت ':'أُرجعت للصندوق ')+r.n+' حالة.'); S.inboxSel=new Set(); return load(); }).then(()=>{ S.inboxOpen=true; onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.id==='btnInbAssign') return inboxAssignTo();
+  if(t.id==='btnInbTakeMany') return inboxTakeMany();
+  if(t.id==='btnInbSubmitMany') return inboxSubmitMany();
   if(t.dataset&&t.dataset.pscale) return postScaleStep(t.dataset.pscale);
   if(t.id==='btnBestZip') return bestZip();
   if(t.dataset&&t.dataset.take) return inboxTake(t.dataset.take);
@@ -4751,6 +4940,7 @@ document.addEventListener('change',e=>{
   if(el.dataset&&el.dataset.inbsel){ const s_=S.inboxSel||(S.inboxSel=new Set()); el.checked?s_.add(el.dataset.inbsel):s_.delete(el.dataset.inbsel); S.inboxOpen=true; return updateCases(); }
   if(el.id==='inboxAll'){ const s_=S.inboxSel||(S.inboxSel=new Set()); el.closest('table').querySelectorAll('[data-inbsel]').forEach(b=>{ el.checked?s_.add(b.dataset.inbsel):s_.delete(b.dataset.inbsel); }); S.inboxOpen=true; return updateCases(); }
   if(el.id==='inbAssignTo'){ S.inbAssignTo=el.value; S.inboxOpen=true; return updateCases(); }
+  if(el.id==='inboxGrp'){ S.inboxGrp=el.value; S.inboxOpen=true; return updateCases(); }
   if(el.id==='inboxCat'){ S.inboxCat=el.value; S.inboxOpen=true; return updateCases(); }
   if(el.id==='invFile'&&el.files&&el.files[0]&&S.draft){ const f=el.files[0]; el.value=''; prepInvoice(f).then(x=>{ x.draft=S.draft; S.invoice=x; invUi(); toast('أُرفقت الفاتورة. اضغط «اقترح» لقراءتها مع النص.'); }).catch(e=>toast(e.message,true)); return; }
   if(el.id==='stageSel'){ call('setPostStage',{id:S.draft.id,stage:el.value}).then(load).then(onData).catch(e=>{toast(e.message,true);}); return; }
