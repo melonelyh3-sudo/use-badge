@@ -1875,23 +1875,22 @@ function inboxHtml(){
   const rows=L.filter(x=>!f||(x.cats||[]).includes(f)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   return '<details class="panel sec" id="inboxPanel"'+(S.inboxOpen?' open':'')+'><summary style="cursor:pointer;font-weight:700">📥 صندوق الوارد من الواتساب: '+nNew+' حالة جديدة'+(nMine?' · <span style="color:var(--accent,#1f6feb)">مُسندة لك: '+nMine+'</span>':'')+'</summary>'+
    '<div class="bar" style="margin-top:10px">'+(admin?'<select id="inboxSt" aria-label="الحالة"><option value="open"'+(stF==='open'?' selected':'')+'>الجديدة ومع المقيّمين</option><option value="dismissed"'+(stF==='dismissed'?' selected':'')+'>المستبعدة ('+nDis+')</option></select>':'')+'<select id="inboxCat" aria-label="التصنيف"><option value="">كل التصنيفات</option>'+cats.map(c=>'<option'+(c===f?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select><span class="note">خذ الحالة لتقييمها؛ تتحول لمسودة باسمك وفيها اقتراحات الذكاء الاصطناعي، ثم راجعها وأرسلها للاعتماد.</span></div>'+
-   (admin?'<div class="actions" style="margin:8px 0">'+(stF==='dismissed'?'<button class="btn primary" id="btnInbBulkBack"'+(sel.size?'':' disabled')+'>↩ إرجاع المحدد للصندوق ('+sel.size+')</button>':'<button class="btn primary" id="btnInbAssign"'+(nNew?'':' disabled')+' title="بدون تحديد: تُوزَّع كل الحالات الجديدة الظاهرة">👥 توزيع '+([...sel].some(id=>(L.find(x=>x.id===id)||{}).status==='new')?'المحدد':'الجديدة')+' على المقيّمين</button><button class="btn" id="btnInbBulkDis"'+(sel.size?'':' disabled')+'>🚫 استبعاد المحدد ('+sel.size+')</button><button class="btn" id="btnInbBulkBack"'+([...sel].some(id=>(L.find(x=>x.id===id)||{}).status==='taken')?'':' disabled')+'>↩ إرجاع المحدد للصندوق</button>')+'</div>':'')+
+   (admin?'<div class="actions" style="margin:8px 0">'+(stF==='dismissed'?'<button class="btn primary" id="btnInbBulkBack"'+(sel.size?'':' disabled')+'>↩ إرجاع المحدد للصندوق ('+sel.size+')</button>':inbAssignUi_(L,sel)+'<button class="btn" id="btnInbBulkDis"'+(sel.size?'':' disabled')+'>🚫 استبعاد المحدد ('+sel.size+')</button><button class="btn" id="btnInbBulkBack"'+([...sel].some(id=>(L.find(x=>x.id===id)||{}).status==='taken')?'':' disabled')+'>↩ إرجاع المحدد للصندوق</button>')+'</div>':'')+
    '<div class="tw"><table><thead><tr>'+(admin?'<th style="width:34px"><input type="checkbox" id="inboxAll" aria-label="تحديد الكل"'+(rows.length&&rows.every(x=>sel.has(x.id))?' checked':'')+'></th>':'')+'<th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>النص</th><th>الفاتورة</th><th></th></tr></thead><tbody>'+
    rows.map(x=>'<tr>'+(admin?'<td><input type="checkbox" data-inbsel="'+esc(x.id)+'"'+(sel.has(x.id)?' checked':'')+'></td>':'')+'<td>'+esc(x.group)+'</td><td class="mono" style="white-space:nowrap">'+esc(x.date)+'<br>'+esc(x.time)+'</td><td>'+esc(x.pharmacist||x.sender)+(x.branch?'<div class="note" style="margin:0">فرع '+esc(x.branch)+'</div>':'')+'</td><td>'+esc(x.mention||'—')+'</td><td>'+(x.cats||[]).map(c=>'<span class="pill p-na" style="margin:1px">'+esc(c)+'</span>').join(' ')+'</td><td style="max-width:320px;font-size:12.5px">'+(x.preview?esc(x.preview)+'…':'<span class="note">بدون نص</span>')+(x.hasAI?'':'<div class="note" style="margin:0;color:var(--warn)">بدون تحليل AI</div>')+'</td><td class="num">'+(x.total?Number(x.total).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td><td style="white-space:nowrap">'+
      (x.status==='dismissed'?'<span class="pill p-no">مستبعدة</span> <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':x.status==='new'?'<button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>'+(admin?' <button class="btn" data-inbdis="'+esc(x.id)+'">استبعاد</button>':''):x.takenBy===S.me.id&&!admin?'<span class="pill p-ok">مُسندة لك</span> <button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>':'<span class="pill p-wait">مع '+esc(x.takenByName||'—')+'</span>'+(admin&&x.takenBy===S.me.id?' <button class="btn primary" data-take="'+esc(x.id)+'">ابدأ التقييم</button>':'')+(admin?' <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':''))+'</td></tr>').join('')+'</tbody></table></div></details>';
 }
-async function inboxAssign(){
-  if(S.busy) return; const all=S.inbox||[]; const sel=S.inboxSel||new Set(); const f=S.inboxCat||'';
-  let L=all.filter(x=>x.status==='new'&&sel.has(x.id)); if(!L.length) L=all.filter(x=>x.status==='new'&&(!f||(x.cats||[]).includes(f)));
-  const rv=(S.users||[]).filter(u=>u.role==='reviewer'&&u.active).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ar'));
-  if(!L.length) return toast('لا توجد حالات جديدة للتوزيع.',true); if(!rv.length) return toast('لا يوجد مقيّمون نشطون. أضفهم من «المستخدمون والإعدادات».',true);
-  // متوازن: كل حالة للمقيّم الأقل حملًا (يُحسب ما معه حاليًا)، والحالات مرتبة بالمجموعة ثم الوقت حتى يأخذ كل مقيّم خليطًا من المجموعات
-  const load={}; rv.forEach(u=>{ load[u.id]=all.filter(x=>x.status==='taken'&&x.takenBy===u.id).length; }); const add={};
-  const order=L.slice().sort((a,b)=>(a.group||'').localeCompare(b.group||'')||(a.date+a.time).localeCompare(b.date+b.time));
-  const items=order.map(x=>{ const u=rv.slice().sort((a,b)=>load[a.id]-load[b.id])[0]; load[u.id]++; add[u.id]=(add[u.id]||0)+1; return {id:x.id,to:u.id}; });
-  if(!confirm('توزيع '+items.length+' حالة على '+rv.length+' مقيّم:\n'+rv.map(u=>'• '+u.name+': '+(add[u.id]||0)+' حالة (معه بعدها '+load[u.id]+')').join('\n')+'\n\nتظهر الحالة في صندوق المقيّم بعلامة «مُسندة لك». تقدر ترجعها بـ «إرجاع المحدد للصندوق».')) return;
-  S.busy=true; let n=0;
-  try{ for(let k=0;k<items.length;k+=100){ const r=await call('inboxAssign',{items:items.slice(k,k+100)}); n+=r.n||0; } S.inboxSel=new Set(); await load(); S.inboxOpen=true; onData(); toast('وُزّعت '+n+' حالة على المقيّمين.'+(n<items.length?' ('+(items.length-n)+' لم تعد جديدة)':'')); }
+// إسناد يدوي: المدير يحدد الحالات ويختار المقيّم
+function inbAssignUi_(L,sel){ const all=S.inbox||[]; const rv=(S.users||[]).filter(u=>u.role==='reviewer'&&u.active).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ar'));
+  const nSel=[...sel].filter(id=>(L.find(x=>x.id===id)||{}).status==='new').length; if(S.inbAssignTo&&!rv.some(u=>u.id===S.inbAssignTo)) S.inbAssignTo='';
+  return '<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="inbAssignTo" aria-label="المقيّم"><option value="">اختر المقيّم…</option>'+rv.map(u=>'<option value="'+esc(u.id)+'"'+(S.inbAssignTo===u.id?' selected':'')+'>'+esc(u.name)+' (معه '+all.filter(x=>x.status==='taken'&&x.takenBy===u.id).length+')</option>').join('')+'</select>'+
+    '<button class="btn primary" id="btnInbAssign"'+(nSel&&S.inbAssignTo?'':' disabled')+'>👥 إسناد المحدد للمقيّم ('+nSel+')</button></span>'; }
+async function inboxAssignTo(){
+  if(S.busy) return; const all=S.inbox||[]; const sel=S.inboxSel||new Set(); const to=S.inbAssignTo; const u=(S.users||[]).find(x=>x.id===to);
+  const L=all.filter(x=>x.status==='new'&&sel.has(x.id)); if(!u) return toast('اختر المقيّم أولًا.',true); if(!L.length) return toast('حدّد الحالات الجديدة التي تريد إسنادها.',true);
+  if(!confirm('إسناد '+L.length+' حالة إلى '+u.name+'؟\nتظهر في صندوقه بعلامة «مُسندة لك»، وتقدر ترجعها بـ «إرجاع المحدد للصندوق».')) return;
+  S.busy=true;
+  try{ const r=await call('inboxAssign',{items:L.map(x=>({id:x.id,to}))}); S.inboxSel=new Set(); await load(); S.inboxOpen=true; onData(); toast('أُسندت '+(r.n||0)+' حالة إلى '+u.name+'.'+((r.n||0)<L.length?' ('+(L.length-(r.n||0))+' لم تعد جديدة)':'')); }
   catch(e){ toast(e.message,true); }
   S.busy=false;
 }
@@ -3360,7 +3359,7 @@ document.addEventListener('click',e=>{
   if(t.id==='btnImpExclude') return impExclude();
   if(t.id==='btnInbBulkDis'||t.id==='btnInbBulkBack'){ const ids=[...(S.inboxSel||[])]; if(!ids.length||S.busy) return; const dis=t.id==='btnInbBulkDis'; if(dis&&!confirm('استبعاد '+ids.length+' حالة من صندوق الوارد؟')) return;
     S.busy=true; return call('inboxSetMany',{ids,status:dis?'dismissed':'new'}).then(r=>{ toast((dis?'استُبعدت ':'أُرجعت للصندوق ')+r.n+' حالة.'); S.inboxSel=new Set(); return load(); }).then(()=>{ S.inboxOpen=true; onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
-  if(t.id==='btnInbAssign') return inboxAssign();
+  if(t.id==='btnInbAssign') return inboxAssignTo();
   if(t.dataset&&t.dataset.pscale) return postScaleStep(t.dataset.pscale);
   if(t.id==='btnBestZip') return bestZip();
   if(t.dataset&&t.dataset.take) return inboxTake(t.dataset.take);
@@ -3444,6 +3443,7 @@ document.addEventListener('change',e=>{
   if(el.id==='inboxSt'){ S.inboxSt=el.value; S.inboxSel=new Set(); S.inboxOpen=true; return updateCases(); }
   if(el.dataset&&el.dataset.inbsel){ const s_=S.inboxSel||(S.inboxSel=new Set()); el.checked?s_.add(el.dataset.inbsel):s_.delete(el.dataset.inbsel); S.inboxOpen=true; return updateCases(); }
   if(el.id==='inboxAll'){ const s_=S.inboxSel||(S.inboxSel=new Set()); el.closest('table').querySelectorAll('[data-inbsel]').forEach(b=>{ el.checked?s_.add(b.dataset.inbsel):s_.delete(b.dataset.inbsel); }); S.inboxOpen=true; return updateCases(); }
+  if(el.id==='inbAssignTo'){ S.inbAssignTo=el.value; S.inboxOpen=true; return updateCases(); }
   if(el.id==='inboxCat'){ S.inboxCat=el.value; S.inboxOpen=true; return updateCases(); }
   if(el.id==='invFile'&&el.files&&el.files[0]&&S.draft){ const f=el.files[0]; el.value=''; prepInvoice(f).then(x=>{ x.draft=S.draft; S.invoice=x; invUi(); toast('أُرفقت الفاتورة. اضغط «اقترح» لقراءتها مع النص.'); }).catch(e=>toast(e.message,true)); return; }
   if(el.id==='stageSel'){ call('setPostStage',{id:S.draft.id,stage:el.value}).then(load).then(onData).catch(e=>{toast(e.message,true);}); return; }
