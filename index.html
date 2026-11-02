@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -35,7 +35,7 @@ textarea{resize:vertical;min-height:84px;line-height:1.7}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
 .tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:14px}
-th{font-size:12px;color:var(--muted);font-weight:600;text-align:right;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--muted);font-weight:600;text-align:start;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
 tr:last-child td{border-bottom:0}
 tbody tr.row{cursor:pointer}
@@ -72,7 +72,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mu
 .q.gate{background:var(--brand-soft)}
 .code{font-size:12px;font-weight:700;color:var(--muted);direction:ltr;padding-top:3px}
 .qt{font-size:14.5px}
-.tagt{display:block;width:fit-content;font-size:11px;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--chip);color:var(--muted);margin-top:4px;direction:rtl}
+.tagt{display:block;width:fit-content;font-size:11px;font-weight:600;padding:1px 8px;border-radius:99px;background:var(--chip);color:var(--muted);margin-top:4px}
 .qb-head .tagt{display:inline-block;margin:0}
 .qtext{display:block;font-size:14.5px;line-height:1.8}
 .q.disq .tagt{background:var(--surface);color:var(--bad)}
@@ -111,7 +111,7 @@ details p{margin-top:3px}
 .cy{padding:12px 14px;border-inline-start:1px solid var(--line)}
 .cy:first-child{border-inline-start:0}
 .cy.now{background:var(--brand-soft)}
-.cy .d{font-size:12px;font-weight:700;color:var(--brand);direction:ltr;text-align:right}
+.cy .d{font-size:12px;font-weight:700;color:var(--brand);direction:ltr;text-align:start}
 .cy .n{font-weight:600}.cy .o{font-size:12.5px;color:var(--muted)}
 h2.sh{font-size:16px;margin:22px 0 10px}
 .note{font-size:13px;color:var(--muted);margin-top:8px;max-width:75ch}
@@ -157,7 +157,7 @@ body{margin:0}
 #logoBox.has-img{background:#fff;border:0;padding:4px}
 #logoBox img{width:100%;height:100%;object-fit:contain}
 .topbar h1{font-size:21px;margin:0;font-weight:800;line-height:1.3}
-.dept-label{display:block;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.55);direction:ltr;text-align:right}
+.dept-label{display:block;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.55);direction:ltr;text-align:start}
 .topbar p{margin:0;font-size:12px;color:var(--blue)}
 .role-indicator{display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap}
 .role-indicator .rbadge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:5px 12px;border-radius:20px;font-weight:600;font-size:12px}
@@ -202,7 +202,7 @@ button.kpi[aria-pressed="true"] span,button.kpi[aria-pressed="true"] b{color:#ff
 .seg button[aria-pressed="true"][data-v="Y"]{background:var(--navy);color:#fff}
 @media (max-width:820px){#pList section{grid-template-columns:1fr!important}}
 @media (max-width:640px){.topbar{padding:12px 16px}.topbar h1{font-size:18px}.tab{padding:8px 12px}}
-.rs{width:1000px;background:#fff;color:#1c2633;padding:28px 30px;border:1px solid var(--line);border-radius:10px;font-size:13px;margin:0 auto}.rs h2{margin:4px 0;font-size:20px;color:#0a2f5c}.rs h3{margin:18px 0 8px;font-size:14.5px;color:#0a2f5c}.rs-h{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0a2f5c;padding-bottom:12px}.rs-k0{font-size:11px;font-weight:700;color:#6b7686}.rs-sub,.rs-meta{color:#6b7686;font-size:12px}.rs-meta{text-align:left}.rs-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:14px}.rs-k{border:1px solid #dfe5ee;border-radius:8px;padding:8px 10px}.rs-k span{display:block;font-size:11px;color:#6b7686;font-weight:700}.rs-k b{display:block;font-size:20px;color:#0a2f5c;margin:2px 0}.rs-k i{font-style:normal;font-size:11px;color:#6b7686}.rs-t{width:100%;border-collapse:collapse;font-size:12px}.rs-t th{background:#0a2f5c;color:#fff;padding:6px;text-align:right;font-weight:600;letter-spacing:normal;text-transform:none}.rs *{letter-spacing:normal!important}.rs-t td{padding:5px 6px;border-bottom:1px solid #e6ebf2}.rs-p{display:inline-block;padding:1px 8px;border-radius:999px;font-weight:700;font-size:11px}.rs-p.ok{background:#e6f5ec;color:#1f8a4c}.rs-p.w{background:#fdf3e1;color:#b7791f}.rs-p.no{background:#fbe9e7;color:#c0392b}.rs-2{display:grid;grid-template-columns:1.2fr 1fr;gap:20px}.rs-b{display:flex;align-items:center;gap:8px;margin:5px 0}.rs-b span{width:150px}.rs-b i{flex:1;height:12px;background:#e6ebf2;border-radius:3px;overflow:hidden}.rs-b u{display:block;height:100%;background:#0b4f8a}.rs-b b{width:36px;text-align:left;color:#6b7686}.rs-n{color:#6b7686;font-size:11px;margin-top:14px}
+.rs{width:1000px;background:#fff;color:#1c2633;padding:28px 30px;border:1px solid var(--line);border-radius:10px;font-size:13px;margin:0 auto}.rs h2{margin:4px 0;font-size:20px;color:#0a2f5c}.rs h3{margin:18px 0 8px;font-size:14.5px;color:#0a2f5c}.rs-h{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0a2f5c;padding-bottom:12px}.rs-k0{font-size:11px;font-weight:700;color:#6b7686}.rs-sub,.rs-meta{color:#6b7686;font-size:12px}.rs-meta{text-align:end}.rs-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:14px}.rs-k{border:1px solid #dfe5ee;border-radius:8px;padding:8px 10px}.rs-k span{display:block;font-size:11px;color:#6b7686;font-weight:700}.rs-k b{display:block;font-size:20px;color:#0a2f5c;margin:2px 0}.rs-k i{font-style:normal;font-size:11px;color:#6b7686}.rs-t{width:100%;border-collapse:collapse;font-size:12px}.rs-t th{background:#0a2f5c;color:#fff;padding:6px;text-align:start;font-weight:600;letter-spacing:normal;text-transform:none}.rs *{letter-spacing:normal!important}.rs-t td{padding:5px 6px;border-bottom:1px solid #e6ebf2}.rs-p{display:inline-block;padding:1px 8px;border-radius:999px;font-weight:700;font-size:11px}.rs-p.ok{background:#e6f5ec;color:#1f8a4c}.rs-p.w{background:#fdf3e1;color:#b7791f}.rs-p.no{background:#fbe9e7;color:#c0392b}.rs-2{display:grid;grid-template-columns:1.2fr 1fr;gap:20px}.rs-b{display:flex;align-items:center;gap:8px;margin:5px 0}.rs-b span{width:150px}.rs-b i{flex:1;height:12px;background:#e6ebf2;border-radius:3px;overflow:hidden}.rs-b u{display:block;height:100%;background:#0b4f8a}.rs-b b{width:36px;text-align:end;color:#6b7686}.rs-n{color:#6b7686;font-size:11px;margin-top:14px}
 .hb{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px;width:100%;background:none;border:0;padding:2px 4px;border-radius:6px;cursor:pointer;font:inherit;color:inherit;text-align:start}.hb.static{cursor:default}.hb:not(.static):hover,.hb.on{background:var(--brand-soft)}.hb .l{width:150px;flex:none}.hb .t{flex:1;background:var(--line);border-radius:4px;height:14px;overflow:hidden}.hb .t i{display:block;height:100%;background:var(--brand)}.hb .v{width:40px;text-align:end;color:var(--muted);font-variant-numeric:tabular-nums}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px}.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-inline-end:5px}
 tr.clickable{cursor:pointer}tr.clickable:hover td,tr.sel td{background:var(--brand-soft)}
@@ -212,11 +212,11 @@ th.sortable{cursor:pointer;user-select:none;white-space:nowrap}th.sortable:hover
 </style>
 </head>
 <body>
-<header class="topbar" dir="rtl">
+<header class="topbar" dir="ltr">
   <div class="brand"><div id="logoBox">LOGO</div><div><span class="dept-label">Talent Management</span><h1>USE Badges Center</h1><p id="sub"></p></div></div>
   <div class="role-indicator" id="roleBox"></div>
 </header>
-<div class="app" id="app" dir="rtl">
+<div class="app" id="app" dir="ltr">
   <nav class="tabs" id="tabs" aria-label="الأقسام"></nav>
   <div id="banner"></div>
   <main id="main"></main>
@@ -238,31 +238,1160 @@ const IMPORT_CATS_DEFAULT=[
  {n:'الوزن والرياضة',k:'تخسيس, تنحيف, وزن, رجيم, دايت, كيتو, رياضه, جيم, بروتين, تمرين, عضلات, whey, protein, mounjaro, مونجارو, ozempic, اوزمبيك, صيام متقطع'},
  {n:'البرد والمناعة',k:'برد, انفلونزا, كحه, سعال, زكام, مناعه, احتقان, حلق, زور, التهاب الحلق, strepsils, ستربسلس, redoxon'}
 ];
-document.documentElement.dir='rtl';
-document.documentElement.lang='ar';
+/* ---------- Language & i18n (EN default, AR toggle) ---------- */
+const TR_EXACT = {
+  // Topbar & Shell
+  "الأقسام": "Sections",
+  "الشعار": "Logo",
+  "تقييم حالات USE Community واعتماد الشارات وبوست الشهر": "USE Community Case Evaluation, Badge Approval & Monthly Posts",
+  "معاينة بوابة الإدخال كما يراها المقيّم": "Reviewer Portal Preview",
+  "بوابة الإدخال: أدخل حالاتك وتابع اعتمادها": "Reviewer Portal: Submit and track your cases",
+  "وضع تجربة: البيانات محفوظة في هذا المتصفح فقط ولا يراها غيرك. عند الاستضافة يربطها القسم التقني بقاعدة بيانات مشتركة.": "Demo Mode: Data is saved in this browser only. In production, IT connects it to a shared database.",
+  "مدير": "Admin",
+  "مقيّم": "Reviewer",
+  "← العودة للوحة التحكم": "← Back to Admin View",
+  "عرض بوابة الإدخال": "Preview Reviewer View",
+  "خروج": "Logout",
 
-const RES_AR={'Met':'متحققة','Not Met':'غير متحققة','N/A':'لا تنطبق','Incomplete':'غير مكتملة'};
+  // Tabs
+  "الاعتماد والحالات": "Approvals & Cases",
+  "حالاتي": "My Cases",
+  "بوستات الشهر": "Monthly Posts",
+  "الشارات": "Badges",
+  "لوحة المتابعة": "Dashboard",
+  "استيراد الواتساب": "WhatsApp Import",
+  "المستخدمون والإعدادات": "Users & Settings",
+
+  // Connection, Login & Setup
+  "جارٍ الاتصال بالخادم…": "Connecting to server…",
+  "قد يستغرق أول فتح بضع ثوانٍ.": "First load may take a few seconds.",
+  "إعادة تحميل الصفحة": "Reload Page",
+  "تعذر الاتصال بالخادم": "Unable to Connect to Server",
+  "تعذر الاتصال بالخادم. تحقق من الإنترنت.": "Unable to connect to server. Please check your internet connection.",
+  "انتهت مهلة انتظار رد الخادم.": "Server response timed out.",
+  "تعذر الاتصال بقاعدة بيانات المنصة": "Unable to Connect to Platform Database",
+  "لم تتصل هذه الصفحة بقاعدة البيانات في هذا العرض، فلم نعرض أي بيانات حتى لا تظهر فارغة بالخطأ. أعد تحميل الصفحة، أو افتحها من رابطها مباشرة في المتصفح. بياناتك محفوظة ولم تتأثر.": "Could not connect to the database in this view. Please reload the page or open the direct link in your browser. Your data is safe.",
+  "تسجيل الدخول": "Sign In",
+  "أدخل اسم الدخول والرقم السري اللذين سلّمهما لك المدير. لا تشاركهما مع أحد، فكل إجراء يُسجَّل باسمك.": "Enter the username and PIN provided by your administrator. Do not share them; all actions are logged under your name.",
+  "اسم الدخول": "Username",
+  "الرقم السري": "PIN",
+  "دخول": "Sign In",
+  "اكتب اسم الدخول والرقم السري.": "Please enter your username and PIN.",
+  "جارٍ التحقق…": "Verifying…",
+  "اسم الدخول أو الرقم السري غير صحيح، أو الحساب معطّل.": "Invalid username or PIN, or account is disabled.",
+  "محاولات خاطئة كثيرة لهذا المستخدم. انتظر 15 دقيقة ثم أعد المحاولة.": "Too many failed attempts. Please wait 15 minutes and try again.",
+  "انتهت الجلسة أو عُطّل الحساب. أدخل الكود من جديد.": "Session expired or account disabled. Please sign in again.",
+  "عملية غير معروفة.": "Unknown operation.",
+  "حدث خطأ.": "An error occurred.",
+  "الإعداد الأول": "Initial Setup",
+  "إعداد المنصة لأول مرة": "First-Time Platform Setup",
+  "أنشئ حساب المدير. بعدها تضيف المقيّمين من تبويب «المستخدمون». الشارات الخمسة وأسئلتها تُضاف تلقائيًا.": "Create the administrator account. You can then add reviewers from the Users tab. The 5 default badges and their questions will be added automatically.",
+  "اسم المدير الظاهر": "Admin Display Name",
+  "المدير": "Administrator",
+  "رقم سري من 6 أرقام (احفظه جيدًا)": "6-Digit PIN (keep it safe)",
+  "إنشاء المدير وبدء المنصة": "Create Admin & Launch Platform",
+
+  // Statuses & Results & Stages
+  "متحققة": "Met",
+  "غير متحققة": "Not Met",
+  "لا تنطبق": "N/A",
+  "غير مكتملة": "Incomplete",
+  "معادة للتصحيح": "Returned",
+  "بانتظار الاعتماد": "Pending Approval",
+  "جاهزة للاعتماد": "Ready for Approval",
+  "معتمدة": "Approved",
+  "أفضل المشاركات": "Best of Month",
+  "مرفوضة": "Rejected",
+  "مختارة": "Selected",
+  "قيد التصميم": "In Design",
+  "مراجعة نهائية": "Final Review",
+  "أُرسلت للنشر": "Sent to Publish",
+  "نُشرت": "Published",
+  "سؤال أولي": "Gate Question",
+  "شرط": "Requirement",
+  "استبعاد": "Disqualifier",
+
+  // Cases Tab
+  "كل الأشهر": "All Months",
+  "كل الحالات": "All Cases",
+  "كل حالاتي": "All My Cases",
+  "بحث باسم الصيدلي أو المشرف أو الفرع أو رقم الحالة": "Search by pharmacist, supervisor, branch, or case ID",
+  "بحث": "Search",
+  "تصدير التقرير (Excel)": "Export Report (Excel)",
+  "+ حالة جديدة": "+ New Case",
+  "رقم الحالة": "Case ID",
+  "الشهر": "Month",
+  "الصيدلي": "Pharmacist",
+  "الفرع": "Branch",
+  "المشرف": "Supervisor",
+  "القطع": "Units",
+  "الفاتورة (ر.س)": "Invoice (SAR)",
+  "الشارات": "Badges",
+  "الحالة": "Status",
+  "الجاهزية / أفضل مشاركة": "Readiness / Best of Month",
+  "ملاحظة": "Note",
+  "لا نتائج مطابقة": "No Matching Results",
+  "لا توجد حالات بعد": "No Cases Yet",
+  "غيّر الفلاتر أو البحث.": "Try changing the filters or search query.",
+  "تظهر هنا الحالات التي يدخلها المقيّمون.": "Cases submitted by reviewers will appear here.",
+  "ابدأ بإدخال حالتك الأولى.": "Start by entering your first case.",
+  "مسودة": "Draft",
+  "لم تُرسل": "Not Submitted",
+  "محفوظة على هذا الجهاز فقط. افتحها لإكمالها وإرسالها.": "Saved on this device only. Open to complete and submit.",
+  "★ أفضل مشاركة": "★ Best of Month",
+  "بانتظار تصحيح المقيّم": "Waiting for Reviewer Revision",
+  "أعادها المعتمد للتصحيح:": "Returned by approver for revision:",
+  "ينقصها إكمال": "Incomplete",
+  "مكتملة وبانتظار الاعتماد": "Complete & Pending Approval",
+  "مثال": "Example",
+
+  // Inbox (Cases Tab)
+  "الجديدة ومع المقيّمين": "New & Assigned to Reviewers",
+  "التصنيف": "Category",
+  "كل التصنيفات": "All Categories",
+  "خذ الحالة لتقييمها؛ تتحول لمسودة باسمك وفيها اقتراحات الذكاء الاصطناعي، ثم راجعها وأرسلها للاعتماد.": "Take a case to evaluate; it becomes a draft under your name with AI suggestions for you to review and submit.",
+  "↩ إرجاع المحدد للصندوق": "↩ Return Selected to Inbox",
+  "إرجاع للصندوق": "Return to Inbox",
+  "ابدأ التقييم": "Start Evaluation",
+  "مُسندة لك": "Assigned to You",
+  "اختر المقيّم…": "Select Reviewer…",
+  "اختر المقيّم أولًا.": "Please select a reviewer first.",
+  "حدّد الحالات الجديدة التي تريد إسنادها.": "Please select the new cases you want to assign.",
+  "لا توجد حالات جديدة للتوزيع.": "No new cases available to assign.",
+  "لا يوجد مقيّمون نشطون. أضفهم من «المستخدمون والإعدادات».": "No active reviewers found. Add them in Users & Settings.",
+  "أصبحت الحالة مسودة باسمك. راجع الاقتراحات ثم أرسلها للاعتماد.": "Case saved as a draft under your name. Review the suggestions and submit for approval.",
+  "بدون تحليل AI": "No AI Analysis",
+  "بدون نص": "No Text",
+  "تحديد الكل": "Select All",
+  "المجموعة": "Group",
+  "التاريخ": "Date",
+  "التصنيفات": "Categories",
+  "النص": "Text",
+  "الفاتورة": "Invoice",
+  "مستبعدة": "Dismissed",
+
+  // Case Editor
+  "← الحالات": "← Cases",
+  "رقم جديد (يُعطى عند أول حفظ)": "New ID (assigned on submit)",
+  "بيانات الحالة": "Case Details",
+  "اسم الصيدلي": "Pharmacist Name",
+  "اسم المشرف": "Supervisor Name",
+  "صافي الفاتورة (ر.س)": "Invoice Net Total (SAR)",
+  "مثال: 245.50": "e.g. 245.50",
+  "عدد المنتجات (القطع)": "Items Count (Units)",
+  "مثال: 4": "e.g. 4",
+  "ملخص الحالة (كما كتبه الصيدلي)": "Case Summary (as written by the pharmacist)",
+  "✨ اقترح الإجابات من النص أعلاه": "✨ Suggest Answers from Text Above",
+  "📎 إرفاق الفاتورة (اختياري)": "📎 Attach Invoice (Optional)",
+  "الفاتورة صورة أو PDF، تُقرأ مع النص عند الضغط على «اقترح» ولا تُحفظ في المنصة. يُرجى قصّ اسم العميل ورقم جواله قبل الرفع.": "Attach an invoice image or PDF to be read with the text when clicking Suggest (not stored on the server). Please crop out customer name and phone before uploading.",
+  "يقترح الذكاء الاصطناعي إجابات الأسئلة، ونقطة البداية والنتيجة ووصف الموقف في محتوى البوست أدناه — كل ذلك من نص ملخص الحالة، ويملأ فقط ما هو فارغ. راجع كل شيء قبل الحفظ.": "AI suggests question answers, start point, outcome, and situation bullets below based on the case summary—filling only empty fields. Please review everything before submitting.",
+  "اقتراح الإجابات بالذكاء الاصطناعي غير متاح حاليًا. راجع تبويب «السجل والإعدادات».": "AI suggestions are currently unavailable. Check Users & Settings.",
+  "⚠️ نص الحالة غير موجود في ملف التصدير (واتساب الآيفون لا يصدّر النص المكتوب مع ملف PDF). انسخه من المجموعة إلى «ملخص الحالة».": "⚠️ Case text was not included in the export (iOS WhatsApp omits captions on PDF files). Copy it from the group into Case Summary.",
+  "المقيّم:": "Reviewer:",
+  "محتوى البوست": "Post Content",
+  "يُستخدم لتوليد بوست الشهر بعد الاعتماد. اكتب ما حدث فعلًا كما في نص الحالة.": "Used to generate the monthly recognition post after approval. Describe what actually happened in the case.",
+  "نقطة البداية": "Start Point",
+  "النتيجة": "Outcome",
+  "وصف الموقف (نقاط محددة من الحالة، حتى 6)": "Situation Description (specific bullet points from the case, up to 6)",
+  "المنتجات المذكورة (حتى 8)": "Mentioned Products (up to 8)",
+  "نقطة قصيرة من الموقف": "Short bullet point from the situation",
+  "اسم المنتج": "Product name",
+  "+ إضافة نقطة": "+ Add Bullet",
+  "+ إضافة منتج": "+ Add Product",
+  "متى تكون الإجابة نعم أو لا؟": "When is the answer Yes or No?",
+  "نعم:": "Yes:",
+  "لا:": "No:",
+  "نعم": "Yes",
+  "لا": "No",
+  "مقترح من الذكاء الاصطناعي، راجعه": "Suggested by AI — please review",
+  "الدليل من نص الحالة": "Evidence from Case Text",
+  "(اختياري، يفضَّل عند تحقق الشارة)": "(optional, recommended when badge is Met)",
+  "اقتباس قصير أو إشارة من النص يثبت الإجابات بنعم": "Short quote or reference from the text supporting Yes answers",
+  "لا توجد شارات مفعّلة": "No Active Badges",
+  "يضيف مدير النظام الشارات من لوحة التحكم.": "The administrator can add badges from the Badges tab.",
+  "الشارة غير متحققة لأن السؤال الأولي = لا، ولا حاجة لبقية الأسئلة.": "Badge is Not Met because Gate Question = No; remaining questions are skipped.",
+  "لا تنطبق هذه الشارة على الحالة، فلا حاجة لبقية الأسئلة.": "This badge is N/A for this case; remaining questions are skipped.",
+  "نتيجة التقييم": "Evaluation Result",
+  "عدد الشارات": "Badges Earned",
+  "النتيجة تُحسب من إجاباتك تلقائيًا ولا تُعدَّل يدويًا.": "Results are calculated automatically from your answers.",
+  "الاعتماد": "Approval",
+  "حالة الاعتماد": "Approval Status",
+  "حفظ التعديلات": "Save Changes",
+  "جارٍ الحفظ…": "Saving…",
+  "إلغاء التعديل": "Cancel Edit",
+  "الحالة مكتملة وجاهزة للإرسال.": "Case is complete and ready to submit.",
+  "جارٍ الإرسال…": "Submitting…",
+  "إعادة الإرسال للاعتماد": "Resubmit for Approval",
+  "إرسال للاعتماد": "Submit for Approval",
+  "قبل الإرسال تبقى الحالة مسودة على هذا الجهاز فقط ولا يراها المعتمد. بعد الإرسال لا يمكن تعديلها إلا إذا أعادها المعتمد للتصحيح.": "Before submitting, the case remains a local draft on this device. Once submitted, it cannot be edited unless returned for revision.",
+  "حذف المسودة": "Delete Draft",
+  "حُذفت المسودة.": "Draft deleted.",
+  "أُرسلت للاعتماد، ولا يمكن تعديلها الآن.": "Submitted for approval and locked from editing.",
+  "مستوفية شروط الاعتماد.": "Meets all approval requirements.",
+  "سبب الرفض (الرفض نهائي)": "Rejection Reason (rejection is final)",
+  "تأكيد الرفض": "Confirm Rejection",
+  "إلغاء": "Cancel",
+  "ما الذي يحتاج تصحيحًا؟ (يظهر للمقيّم)": "What needs revision? (shown to reviewer)",
+  "إعادة للمقيّم": "Return to Reviewer",
+  "اعتماد": "Approve",
+  "إعادة للتصحيح": "Return for Revision",
+  "رفض": "Reject",
+  "الرفض نهائي.": "Rejection is final.",
+  "إن كانت ضمن أفضل المشاركات فسيُلغى اختيارها.": "If selected as Best of Month, it will be deselected.",
+  "تأكيد التغيير": "Confirm Change",
+  "تغيير القرار إلى مرفوض": "Change Decision to Rejected",
+  "تغيير القرار إلى معتمد": "Change Decision to Approved",
+  "إعادة للمقيّم للتصحيح": "Return to Reviewer for Revision",
+  "سبب الحذف (مثال: حالة مكررة من 2026-09-004)": "Deletion Reason (e.g. duplicate of 2026-09-004)",
+  "تختفي الحالة من القوائم ولوحة المتابعة والتقرير والبوستات، ويمكن استرجاعها من «المستخدمون والإعدادات».": "The case will be hidden from lists, dashboard, reports, and posts, and can be restored from Users & Settings.",
+  "تأكيد الحذف": "Confirm Delete",
+  "✏️ تعديل الحالة": "✏️ Edit Case",
+  "🗑 حذف الحالة (مكررة أو مُدخلة بالخطأ)": "🗑 Delete Case (duplicate or entered by mistake)",
+  "بوست الشهر": "Monthly Post",
+  "يُولَّد البوست وتُضاف صور المنتجات بعد اعتماد الحالة.": "Post generation and product images become available after the case is approved.",
+  "★ اختيرت ضمن أفضل المشاركات": "★ Selected as Best of Month",
+  "معتمدة وبانتظار اختيار أفضل المشاركات": "Approved — pending Best of Month selection",
+  "مرحلة البوست": "Post Stage",
+  "توليد البوست وإضافة صور المنتجات": "Generate Post & Add Product Images",
+  "محفوظة كمسودة على هذا الجهاز فقط (لم تُرسل بعد)": "Saved as draft on this device only (not submitted yet)",
+  "تعذر حفظ المسودة على هذا الجهاز": "Could not save draft on this device",
+  "✏️ وضع تعديل المعتمد: عدّل ما تحتاجه ثم اضغط «حفظ التعديلات» في لوحة الاعتماد. سيُسجَّل اسمك والحقول التي غيّرتها.": "✏️ Approver Edit Mode: Make your changes and click Save Changes in the approval panel. Your name and modified fields will be logged.",
+  "ما قرأه الذكاء الاصطناعي من الفاتورة": "Extracted from Invoice by AI",
+  "أُرفقت الفاتورة. اضغط «اقترح» لقراءتها مع النص.": "Invoice attached. Click Suggest to analyze it with the text.",
+  "اكتب ملخص الحالة أولًا قبل طلب الاقتراح.": "Please enter the case summary first before requesting suggestions.",
+  "لم يجد الذكاء الاصطناعي إجابات واضحة في النص.": "AI did not find clear answers in the text.",
+  "كل الأسئلة التي فهمها الذكاء الاصطناعي من النص مُجابة مسبقًا.": "All questions identified by AI are already answered.",
+  "تعذر الاتصال بالذكاء الاصطناعي.": "Could not connect to AI service.",
+
+  // Governance Issues
+  "أكمل بيانات الحالة: الصيدلي وملخص الحالة.": "Complete case details: Pharmacist and Case Summary.",
+  "لا توجد شارات مفعّلة لتقييم الحالة.": "No active badges to evaluate the case.",
+  "أكمل نقطة البداية والنتيجة في محتوى البوست.": "Complete Start Point and Outcome in Post Content.",
+  "لا توجد شارة متحققة، والإعداد الحالي لا يسمح باعتماد حالة بلا شارات.": "No badges are Met, and current settings require at least one badge for approval.",
+  "لا يمكنك اعتماد حالة قيّمتها بنفسك. يعتمدها معتمد آخر.": "You cannot approve a case you evaluated yourself. Another approver must approve it.",
+  "تعذر تحديد هويتك، فلا يمكن التحقق من فصل المقيّم عن المعتمد.": "Could not verify your identity for reviewer/approver separation.",
+
+  // Monthly Posts & Best of Month & Post Studio
+  "عدد أفضل المشاركات": "Best of Month Count",
+  "حفظ العدد": "Save Count",
+  "⬇ تحميل أفضل المشاركات (ZIP)": "⬇ Download Best Posts (ZIP)",
+  "لا توجد حالات معتمدة": "No Approved Cases",
+  "المشاركات المعتمدة": "Approved Cases",
+  "★ أفضل المشاركات": "★ Best of Month",
+  "لم يختر المعتمد أفضل المشاركات لهذا الشهر بعد.": "The approver has not selected Best of Month cases for this month yet.",
+  "أفضل المشاركات المختارة": "Selected Best of Month",
+  "اكتمل العدد المحدد. لإضافة حالة أخرى ألغِ اختيار واحدة أو ارفع العدد.": "Target count reached. To add another case, deselect one or increase the count.",
+  "لا توجد حالات معتمدة بعد": "No Approved Cases Yet",
+  "تظهر هنا كل الحالات المعتمدة، وأفضل المشاركات أولًا.": "All approved cases appear here, with Best of Month shown first.",
+  "لا توجد بوستات بعد": "No Posts Yet",
+  "تظهر هنا كل الحالات المعتمدة مع البوست المولَّد لكل منها، ومنها تختار أفضل المشاركات.": "All approved cases appear here with their generated posts, where you can select Best of Month.",
+  "الشارات المتحققة": "Earned Badges",
+  "من حالاتك": "Your Case",
+  "★ ضمن أفضل المشاركات": "★ Selected as Best of Month",
+  "إلغاء الاختيار": "Deselect",
+  "★ اختيار كأفضل مشاركة": "★ Select as Best of Month",
+  "تحميل PNG": "Download PNG",
+  "فتح الحالة": "Open Case",
+  "لم تُختر أفضل المشاركات لهذا الشهر بعد.": "No Best of Month cases have been selected for this month yet.",
+  "جارٍ التجهيز…": "Preparing…",
+  "تعذر تجهيز الملف.": "Could not prepare file.",
+  "← الحالة": "← Back to Case",
+  "تحميل الصورة PNG": "Download PNG Image",
+  "معاينة البوست": "Post Preview",
+  "صور المنتجات": "Product Images",
+  "تُحفظ مع الحالة، وتظهر للمعتمد في صفحة بوستات الشهر.": "Saved with the case and visible to the approver in Monthly Posts.",
+  "الصور محفوظة من المقيّم ولا يمكن تعديلها بعد الاعتماد.": "Product images are locked after approval.",
+  "لم تُذكر منتجات في الحالة.": "No products listed in this case.",
+  "الشارات ونقاط القوة تُؤخذ من نتيجة الاعتماد تلقائيًا. هذه صورة أولية لفريق التصميم أو للنشر المباشر. إن لم يبدأ التنزيل، اضغط مطولًا على الصورة واحفظها.": "Badges and strengths are taken automatically from the approval result. This poster can be used by the design team or shared directly.",
+  "تصغير": "Decrease",
+  "تكبير": "Increase",
+  "مقاسات البوست": "Poster Scaling",
+  "حجم الخط": "Font Size",
+  "حجم صور المنتجات والشارات": "Product & Badge Image Size",
+  "إعادة الضبط (100%)": "Reset (100%)",
+  "للنص الطويل صغّر الخط، وللقصير كبّره. يُحفظ لهذه الحالة ويظهر في «بوستات الشهر» وتحميل ZIP.": "Decrease font size for long text or increase for short text. Saved per case and applied in Monthly Posts and ZIP export.",
+  "حُفظت صورة المنتج.": "Product image saved.",
+  "الترتيب": "Rank",
+  "المشرف / الفرع": "Supervisor / Branch",
+  "العدد": "Count",
+  "اكتمال البوست": "Post Completeness",
+  "سبق اختياره": "Previously Selected",
+  "القرار": "Decision",
+  "★ مختارة": "★ Selected",
+  "اختيار": "Select",
+  "لا توجد حالات معتمدة في هذا الشهر": "No Approved Cases in This Month",
+  "اعتمد الحالات أولًا ثم ارجع لهذه الشاشة.": "Approve cases first, then return to this screen.",
+  "سبب الاختيار (يُسجَّل في السجل)": "Selection Reason (logged in audit trail)",
+  "تأكيد الاختيار": "Confirm Selection",
+
+  // Badges Tab & Badge Editor & Rules
+  "+ شارة جديدة": "+ New Badge",
+  "الحالات المعتمدة والمرفوضة تحتفظ بنتائجها كما اعتُمدت، فلا يغيّرها أي تعديل هنا. التعديل يؤثر فقط على الحالات قيد المراجعة والحالات الجديدة. إضافة سؤال لشارة قائمة تجعلها «غير مكتملة» في الحالات قيد المراجعة إلى أن تُجاب.": "Approved and rejected cases retain their original results. Edits here only affect pending and new cases.",
+  "لا توجد شارات": "No Badges",
+  "أضف أول شارة لتبدأ.": "Add your first badge to get started.",
+  "معطّلة": "Disabled",
+  "مفعّلة": "Active",
+  "تقديم": "Move Up",
+  "تأخير": "Move Down",
+  "تعديل": "Edit",
+  "تفعيل": "Enable",
+  "تعطيل": "Disable",
+  "حذف السؤال": "Delete Question",
+  "حذف": "Delete",
+  "نص السؤال (اجعل الإجابة نعم = تسقط الشارة)": "Question Text (Yes = disqualifies badge)",
+  "نص السؤال": "Question Text",
+  "متى تكون الإجابة نعم": "When is the answer Yes?",
+  "متى تكون الإجابة لا": "When is the answer No?",
+  "← الشارات": "← Badges",
+  "شارة جديدة": "New Badge",
+  "بيانات الشارة": "Badge Details",
+  "اسم الشارة": "Badge Name",
+  "رمز من حرف أو حرفين (إنجليزي)": "1–2 Letter Code (English)",
+  "رمز من حرف أو حرفين (إنجليزي) — لا يتغير": "1–2 Letter Code (English) — locked",
+  "تعريف الشارة": "Badge Definition",
+  "عبارة القوة (تظهر في البوست عند تحقق الشارة)": "Strength Phrase (shown on poster when Met)",
+  "صورة الشارة (اختيارية، تظهر في البوست)": "Badge Icon (optional, shown on poster)",
+  "إزالة": "Remove",
+  "سؤال أولي (اختياري)": "Gate Question (Optional)",
+  "يحدد هل تنطبق الشارة أصلًا، مثل: هل استُخدم عرض؟ إذا كانت إجابته لا تتوقف الشارة عند نتيجة محددة.": "Determines whether the badge applies to the case (e.g. Was an offer used?). If No, the badge stops with the selected result.",
+  "تفعيل السؤال الأولي": "Enable Gate Question",
+  "إذا كانت الإجابة لا، فالنتيجة": "If the answer is No, result is",
+  "الشروط (كلها يجب أن تكون نعم)": "Requirements (all must be Yes)",
+  "+ شرط": "+ Requirement",
+  "حالات الاستبعاد (يجب أن تكون لا)": "Disqualifiers (all must be No)",
+  "+ استبعاد": "+ Disqualifier",
+  "حفظ الشارة": "Save Badge",
+  "اكتب اسم الشارة.": "Please enter the badge name.",
+  "الرمز حرف أو حرفان إنجليزيان.": "Code must be 1 or 2 English letters.",
+  "الرمز مستخدم لشارة أخرى.": "This code is already used by another badge.",
+  "اكتب نص السؤال الأولي أو أوقفه.": "Enter the gate question text or disable it.",
+  "أضف شرطًا واحدًا على الأقل.": "Add at least one requirement question.",
+  "تعذر الحفظ.": "Could not save.",
+
+  // Default Badge Definitions & Questions (U1..W3)
+  "تطبيق منهجية USE بوضوح أثناء فهم احتياج العميل والوصول للتوصية.": "Clearly applying the USE methodology while understanding customer needs and reaching a recommendation.",
+  "الحالة تحدد احتياج العميل أو مشكلته الأساسية بوضوح": "The case clearly identifies the customer's primary need or problem",
+  "النص يذكر الشكوى أو الهدف صراحة (مثال: تصبغات وبقع داكنة).": "The text explicitly states the complaint or goal (e.g., hyperpigmentation and dark spots).",
+  "الحالة تبدأ بأسماء المنتجات مباشرة.": "The case starts directly with product names.",
+  "ذُكر ما جمعه الصيدلي من العميل (أسئلة أو معلومات) قبل التوصية": "The case mentions what the pharmacist gathered from the customer (questions or information) before recommending",
+  "مذكور سؤال أو معلومة فعلية (نوع البشرة، مدة المشكلة، الروتين الحالي، الحساسية).": "Mentions an actual question or detail gathered (skin type, duration, current routine, sensitivity).",
+  "لا أثر لحوار مع العميل في النص.": "No evidence of dialogue with the customer in the text.",
+  "التوصية مرتبطة صراحةً بما اكتُشف في U1 وU2": "The recommendation is explicitly linked to what was discovered in U1 and U2",
+  "يظهر سبب اختيار كل توصية بناءً على ما اكتُشف.": "Shows why each recommendation was chosen based on findings.",
+  "التوصية عامة ولا تُنسب لمعلومة اكتُشفت.": "Generic recommendation not linked to discovered information.",
+  "هل المشاركة مجرد قائمة منتجات أو نتيجة نهائية دون منطق للتعامل؟": "Is the post merely a list of products or a final outcome without an engagement logic?",
+  "قائمة أسماء منتجات بلا سياق، فتسقط الشارة.": "A list of product names without context disqualifies the badge.",
+  "يظهر التسلسل: احتياج ← أسئلة ← توصية.": "Shows clear progression: Need → Questions → Recommendation.",
+  "استخدام عرض متاح بطريقة تضيف قيمة للعميل وتدعم الحل المقترح.": "Utilizing an available offer in a way that adds value for the customer and supports the proposed solution.",
+  "هل استُخدم عرض متاح ضمن الحالة؟": "Was an available promotional offer utilized in this case?",
+  "ذُكر عرض أو خصم فعلي على منتج في الحالة.": "Mentions an actual offer or discount on a product in the case.",
+  "لا عرض في الحالة، فتكون النتيجة «لا تنطبق».": "No offer in the case, making the result N/A.",
+  "العرض محدد بوضوح (نوعه والمنتجات المشمولة)": "The offer is clearly specified (type and included products)",
+  "مثال: «خصم التطبيق 15% على الغسول» أو «1+1 على واقي الشمس».": "Example: '15% app discount on cleanser' or '1+1 on sunscreen'.",
+  "عبارة عامة مثل «استفدنا من العروض».": "Vague phrase like 'we used the offers'.",
+  "المنتج المرتبط بالعرض مناسب للحالة حتى لو لم يوجد العرض": "The offer product is appropriate for the case even without the offer",
+  "المنتج ضمن التوصية المهنية أصلًا (اختبار «بدون العرض»).": "The product fits the professional recommendation regardless ('without-offer' test).",
+  "لولا العرض لما أُوصي بالمنتج.": "The product would not have been recommended without the offer.",
+  "العرض أضاف قيمة للعميل (توفير أو حل أكمل)": "The offer added value to the customer (savings or a more complete solution)",
+  "ذُكر أثر العرض على العميل.": "Mentions the benefit of the offer to the customer.",
+  "لا أثر مذكور للعرض.": "No mentioned benefit of the offer.",
+  "هل أُضيف منتج غير ضروري للاستفادة من العرض، أو ذُكر الخصم دون ارتباط بالحاجة؟": "Was an unnecessary product added just for the offer, or was the discount mentioned without relation to the need?",
+  "تسقط الشارة.": "Disqualifies the badge.",
+  "العرض تابع للحاجة وليس العكس.": "The offer serves the need, not the other way around.",
+  "تقديم حل متكامل يغطي الاحتياج الأساسي بدل الاكتفاء بمنتج منفرد.": "Providing a complete solution covering the primary need rather than a single standalone product.",
+  "التوصية تتضمن عنصرين أو أكثر (منتجات أو إجراءات)": "The recommendation includes two or more elements (products or actions)",
+  "مذكور عنصران على الأقل مرتبطان بالمشكلة الأساسية.": "Mentions at least two elements addressing the primary problem.",
+  "منتج منفرد.": "A single standalone product.",
+  "دور كل عنصر في معالجة الحالة مذكور": "The role of each element in addressing the case is explained",
+  "مثال: «غسول لطيف للتنظيف، واقي شمس للحماية».": "Example: 'gentle cleanser for cleansing, sunscreen for protection'.",
+  "أسماء منتجات دون بيان دورها.": "Product names without stating their role.",
+  "العناصر معًا تغطي الاحتياج الأساسي في تسلسل منطقي (Regimen)": "Elements together cover the primary need in a logical sequence (Regimen)",
+  "مثال: تنظيف + علاج + ترطيب + حماية.": "Example: cleanse + treat + moisturize + protect.",
+  "عناصر متفرقة لا تُكمل بعضها.": "Scattered items that do not complement one another.",
+  "هل تعددت المنتجات دون أن تشكل Regimen أو Solution منطقيًا؟": "Are multiple products listed without forming a logical Regimen or Solution?",
+  "المنتجات تشكل حلًا مترابطًا.": "Products form a cohesive solution.",
+  "اكتشاف احتياج إضافي غير الاحتياج الأساسي وتقديم حل مناسب له.": "Discovering an additional need beyond the primary need and providing a suitable solution.",
+  "هل ظهر أثناء الحالة احتياج إضافي مختلف عن الاحتياج الأساسي؟": "Did an additional need (distinct from the primary need) emerge during the case?",
+  "احتياج ثانٍ مستقل (مثال: جفاف الشفاه أو حساسية العين أثناء علاج التصبغات).": "A distinct secondary need (e.g., dry lips or eye sensitivity while treating pigmentation).",
+  "لا يوجد احتياج ثانٍ، فتكون النتيجة «غير متحققة» مباشرة.": "No secondary need, making the result Not Met directly.",
+  "الاحتياج الإضافي اكتُشف أثناء الحوار (بسؤال أو ملاحظة أو ذكر العميل)": "The additional need was discovered during dialogue (via question, observation, or customer mention)",
+  "النص يبين كيف ظهر الاحتياج.": "The text shows how the secondary need was identified.",
+  "إضافة منتج دون بيان كيف اكتُشف احتياجه.": "Adding a product without explaining how the need was discovered.",
+  "قُدّم منتج أو حل إضافي مرتبط مباشرة بالاحتياج الثاني": "An additional product or solution directly linked to the secondary need was provided",
+  "الإضافة تعالج الاحتياج الثاني تحديدًا.": "The addition specifically addresses the secondary need.",
+  "الإضافة عامة أو لا تخص الاحتياج الثاني.": "Generic addition not addressing the secondary need.",
+  "هل المنتجات الإضافية مجرد جزء طبيعي من الحل الأساسي؟": "Are the additional products merely a natural part of the primary solution?",
+  "تسقط الشارة (مثل إضافة واقي الشمس لروتين علاج التصبغات).": "Disqualifies the badge (e.g., adding sunscreen to a pigmentation routine).",
+  "الإضافة خارج نطاق الحل الأساسي.": "The addition is distinct from the primary solution.",
+  "الاستخدام الصحيح لخدمة أو مسار وصفتي ضمن رحلة العميل.": "Proper utilization of the Wasfaty service or pathway within the customer journey.",
+  "هل تتضمن الحالة وصفة أو مسار وصفتي؟": "Does the case involve a Wasfaty prescription or pathway?",
+  "توجد وصفة أو مسار وصفتي في رحلة العميل.": "A Wasfaty prescription or pathway is part of the customer journey.",
+  "لا علاقة لوصفتي بالحالة، فتكون النتيجة «لا تنطبق».": "Unrelated to Wasfaty, making the result N/A.",
+  "دور وصفتي محدد في الحالة (صرف، تسهيل حصول على العلاج، متابعة)": "Wasfaty's role is clearly specified (dispensing, facilitating treatment access, follow-up)",
+  "مذكور ما فعلته وصفتي تحديدًا.": "Specifically states how Wasfaty was used.",
+  "ذكر عام لوصفتي.": "Vague mention of Wasfaty.",
+  "أثر وصفتي على العميل أو على إدارة الحالة مذكور": "The impact of Wasfaty on the customer or case management is mentioned",
+  "مذكور الأثر (سرعة، تكلفة، استمرارية علاج).": "Mentions the impact (speed, cost savings, treatment continuity).",
+  "لا أثر مذكور.": "No impact mentioned.",
+  "هل هو مجرد وجود وصفة أو ذكر وصفتي دون دور واضح؟": "Is it merely the presence of a prescription or mention of Wasfaty without a clear role?",
+  "لوصفتي دور فعلي.": "Wasfaty played an active role.",
+
+  // Dashboard
+  "المقدَّمة": "Submitted",
+  "المعتمدة": "Approved",
+  "قيد المراجعة": "Pending Review",
+  "المرفوضة": "Rejected",
+  "متوسط الشارات للمعتمدة": "Avg Badges (Approved)",
+  "أدلة غير مكتملة": "Incomplete Evaluations",
+  "ملاحظات حوكمة": "Governance Flags",
+  "مراحل بوست الشهر (للمختارة)": "Monthly Post Stages (Selected)",
+  "الشارة": "Badge",
+  "المنطبقة": "Applicable",
+  "الانتشار على المنطبقة": "Prevalence (Applicable)",
+  "على المعتمدة فقط": "On Approved Only",
+  "المنطبقة تستبعد النتائج «لا تنطبق» و«غير مكتملة». الانتشار على المنطبقة يقيس السلوك دون أن تظلمه الحالات التي لا يخصها العرض أو وصفتي، أما «على المعتمدة فقط» فيقيس جودة الحالات المختارة للنشر.": "'Applicable' excludes N/A and Incomplete results to measure prevalence fairly without penalizing cases where Offers or Wasfaty do not apply. 'On Approved Only' measures badge prevalence among approved cases.",
+  "الصيادلة": "Top Pharmacists",
+  "الحالات": "Cases",
+  "لا بيانات بعد": "No Data Yet",
+  "اليوم": "Day",
+  "المرحلة": "Stage",
+  "المسؤول": "Owner",
+  "الآن": "Now",
+  "الاختيار": "Selection",
+  "المراجعة الأولية": "Initial Review",
+  "التصميم": "Design",
+  "المراجعة النهائية": "Final Review",
+  "الإرسال للنشر": "Publish",
+  "نحن بين دورتين حاليًا. تبدأ مرحلة الاختيار يوم 25. الأرقام أيام من الشهر. الاختيار يمتد من 25 إلى 1 من الشهر التالي.": "Currently between cycles (Selection starts on day 25). Numbers indicate days of the month; Selection runs from the 25th to the 1st of the following month.",
+  "الأرقام أيام من الشهر. الاختيار يمتد من 25 إلى 1 من الشهر التالي.": "Numbers indicate days of the month. Selection runs from the 25th to the 1st of the following month.",
+
+  // WhatsApp Categories
+  "العناية بالبشرة": "Skin Care",
+  "الشعر": "Hair Care",
+  "الفيتامينات والمكملات": "Vitamins & Supplements",
+  "النوم": "Sleep",
+  "صحة الرجل": "Men's Health",
+  "الأم والطفل": "Mom & Baby",
+  "الفم والأسنان": "Oral Care",
+  "الألم والأدوية بدون وصفة": "Pain & OTC",
+  "وصفتي": "Wasfaty",
+  "الجهاز الهضمي": "Digestive Health",
+  "الوزن والرياضة": "Weight & Fitness",
+  "البرد والمناعة": "Cold & Immunity",
+  "غير مصنّف": "Uncategorized",
+
+  // WhatsApp Import Tab
+  "استيراد الحالات": "Import Cases",
+  "📊 تحليل المجموعات": "📊 Groups Analysis",
+  "📁 ملخصات الشهور": "📁 Monthly Summaries",
+  "1) ملفات تصدير المجموعات": "1) Group Export Files",
+  "لكل مجموعة: تصدير الجوال مع الوسائط (ZIP، فيه الفواتير) + تصدير الويب (ZIP نصي، فيه الكلام المكتوب مع الفواتير). اختر الملفات كلها معًا؛ تتعرف المنصة على مجموعة كل ملف وتدمج الاثنين بالوقت. تتم القراءة على جهازك ولا يُرفع أي ملف للخادم.": "For each group: upload the mobile export with media (ZIP with invoices) + web export (text ZIP with PDF captions). Select all files together; the platform detects each group and merges them by timestamp locally on your device.",
+  "📁 اختيار ملفات ZIP": "📁 Select ZIP Files",
+  "2) الفلترة والاختيار": "2) Filter & Select",
+  "الترشيح": "Score",
+  "نص الحالة": "Case Text",
+  "المرفقات": "Attachments",
+  "3) التحليل والإضافة لصندوق الوارد": "3) Analyze & Add to Inbox",
+  "لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.": "For each selected case: AI reads the text and invoice, suggests badge answers and post content, and adds the case to the Inbox for reviewers.",
+  "إيقاف": "Stop",
+  "«استبعاد المحدد» يحفظ الحالات كمستبعدة وتظهر بحالة «مستبعدة» في الاستيراد القادم، وتقدر ترجعها من صندوق الوارد ← المستبعدة.": "'Exclude Selected' marks cases as dismissed for future imports. You can restore them anytime from Inbox → Dismissed.",
+  "✖ مرفق ناقص": "✖ Missing Attachment",
+  "✔ فاتورة مقروءة": "✔ Parsed Invoice",
+  "🖼 صورة / PDF ممسوح": "🖼 Image / Scanned PDF",
+  "بدون مرفق": "No Attachment",
+  "⚠️ فاتورة مكررة": "⚠️ Duplicate Invoice",
+  "✔ فاتورة": "✔ Invoice",
+  "🖼 PDF ممسوح": "🖼 Scanned PDF",
+  "🖼 صورة": "🖼 Image",
+  "أُضيفت": "Added",
+  "مستوردة سابقًا": "Previously Imported",
+  "جديدة": "New",
+  "اضغط لتفاصيل الحالة والترشيح": "Click for case & score details",
+  "اضغط لعرض الحالة كاملة": "Click to view full case",
+  "بدون نص (الفاتورة فقط)": "No text (invoice only)",
+  "(بدون نص — الفاتورة فقط)": "(No text — invoice only)",
+  "(بدون نص)": "(No text)",
+  "تُقرأ بالتحليل": "Read on AI analysis",
+  "لا توجد حالات مطابقة للفلاتر.": "No cases match the current filters.",
+  "مسح الجلسة المحفوظة": "Clear Saved Session",
+  "استرجاع الجلسة": "Restore Session",
+  "مسح الجلسة / رفع ملفات جديدة": "Clear Session / Upload New Files",
+  "الملف": "File",
+  "النوع": "Type",
+  "الرسائل": "Messages",
+  "الفترة في الملف": "Date Range in File",
+  "مع الوسائط": "With Media",
+  "نص فقط (ويب)": "Text Only (Web)",
+  "أخرى": "Other",
+  "من تاريخ": "From Date",
+  "إلى تاريخ": "To Date",
+  "استخراج الحالات": "Extract Cases",
+  "المرسل": "Sender",
+  "السبب": "Reason",
+  "بحث:": "Search:",
+  "اسم، صيدلي، مشرف، فرع، رقم فاتورة، كلمة من النص أو صنف…": "Name, pharmacist, supervisor, branch, invoice no., keyword, or item…",
+  "مسح البحث": "Clear Search",
+  "التصنيف:": "Category:",
+  "(بدون اختيار = الكل)": "(none selected = all)",
+  "المجموعة:": "Group:",
+  "الترشيح:": "Tier:",
+  "حدد أفضل": "Select Top",
+  "تحديد": "Select",
+  "المرفقات:": "Attachments:",
+  "بفاتورة فقط": "With Invoice Only",
+  "جارٍ التحليل…": "Analyzing…",
+  "جارٍ قراءة الملفات…": "Reading files…",
+  "تعذرت قراءة الملف.": "Could not read file.",
+  "جارٍ استخراج الحالات وقراءة الفواتير…": "Extracting cases and parsing invoices…",
+  "تاريخ البداية بعد تاريخ النهاية. صحّح الفترة.": "Start date is after end date. Please fix the date range.",
+  "لا تبدو حالة": "Not a case",
+  "مدير منطقة": "Area Manager",
+  "مشرف": "Supervisor",
+  "صيدلي": "Pharmacist",
+  "تعذر الاستخراج.": "Extraction failed.",
+  "الذكاء الاصطناعي غير مفعّل من الإعدادات": "AI is disabled in settings",
+  "تعذر التحليل": "Analysis failed",
+  "لا يوجد نص أو فاتورة": "No text or invoice",
+  "تعذر حفظ الجلسة على هذا الجهاز (المساحة أو إعدادات المتصفح). الاستخراج نفسه سليم.": "Could not save session locally (storage full or browser settings). Extraction itself is intact.",
+  "(جلسة محفوظة)": "(Saved Session)",
+  "الصنف": "Item",
+  "الكمية": "Qty",
+  "الخصم": "Discount",
+  "الصافي": "Net",
+  "الإجمالي": "Total",
+  "الفاتورة صورة أو PDF ممسوح: تُقرأ أصنافها عند التحليل بالذكاء الاصطناعي.": "Invoice is an image or scanned PDF: items will be extracted during AI analysis.",
+  "لا توجد فاتورة مقروءة.": "No parsed text invoice.",
+  "إغلاق": "Close",
+  "دُمجت": "Merged",
+  "ما رفع درجة الحالة:": "Score Breakdown:",
+  "لا توجد تفاصيل نقاط لهذه الحالة.": "No score breakdown available for this case.",
+  "الملف غير موجود في ملف التصدير.": "File not found in the ZIP archive.",
+  "تعذر فتح الملف.": "Could not open file.",
+  "نص مفصّل": "Detailed text",
+  "نص متوسط": "Medium text",
+  "نص قصير": "Short text",
+  "فاتورة صورة/ممسوحة": "Image/scanned invoice",
+  "فاتورة ناقصة": "Missing invoice file",
+  "بدون فاتورة": "No invoice",
+  "تفاعل/مدح من المشرف": "Supervisor praise/reply",
+  "⭐⭐⭐ قوية": "⭐⭐⭐ Strong",
+  "⭐⭐ متوسطة": "⭐⭐ Medium",
+  "⭐ ضعيفة": "⭐ Weak",
+  "مسح الاختيار": "Clear Selection",
+  "تعذر استرجاع الجلسة.": "Could not restore session.",
+
+  // Groups Analysis & Monthly Summaries
+  "ارفع ملفات المجموعات واضغط «استخراج الحالات» في تبويب «استيراد الحالات» أولًا. التحليل يعمل على نفس الملفات والفترة.": "Upload group ZIP files and click 'Extract Cases' in the Import Cases tab first. Analysis runs on the same files and date range.",
+  "جارٍ تحميل قائمة الموظفين…": "Loading headcount…",
+  "الفترة:": "Period:",
+  "المجموعات:": "Groups:",
+  "⬇ تصدير Excel": "⬇ Export Excel",
+  "⚠️ لم تُرفع قائمة الموظفين بعد (المستخدمون والإعدادات). بدونها تظهر الأسماء كما في الواتساب، ويُعرف المشرف من المنشن فقط، ولا تُحسب ردود Talent ولا نسبة المشاركة.": "⚠️ Headcount not uploaded yet (Users & Settings). Without it, WhatsApp display names are used, supervisors are detected from mentions only, and Talent replies / participation % cannot be calculated.",
+  "مفلتر على التصنيف:": "Filtered by category:",
+  "إلغاء الفلتر": "Clear Filter",
+  "إجمالي الحالات": "Total Cases",
+  "صيادلة مشاركون": "Participating Pharmacists",
+  "حالات بفاتورة": "Cases with Invoice",
+  "متوسط الفاتورة": "Avg Invoice",
+  "نسبة الرد": "Reply Rate",
+  "وسيط وقت الرد": "Median Reply Time",
+  "ردود المشرفين": "Supervisor Replies",
+  "الحالات يوميًا لكل مجموعة": "Daily Cases per Group",
+  "توزيع الحالات على التصنيفات": "Cases by Category",
+  "الحالة قد تأخذ أكثر من تصنيف. اضغط التصنيف لفلترة كل الجداول.": "A case may match multiple categories. Click any category to filter all tables.",
+  "جديد": "New",
+  "مقارنة المجموعات (Districts)": "Districts Comparison",
+  "المشاركة": "Participation",
+  "ردود لكل حالة": "Replies / Case",
+  "حالات انرد عليها": "Cases Replied",
+  "التغطية": "Coverage",
+  "ردود Talent": "Talent Replies",
+  "بفاتورة": "With Invoice",
+  "صافي الفواتير": "Invoices Net (SAR)",
+  "وسيط الرد": "Median Reply",
+  "الملخصات المحفوظة:": "Saved Summaries:",
+  "أداء المشرفين في الرد": "Supervisor Reply Performance",
+  "الفريق": "Team Size",
+  "الردود": "Replies",
+  "مكتوبة": "Written",
+  "ستيكر": "Sticker",
+  "(ستيكر)": "(Sticker)",
+  "حالات ردّ عليها": "Cases Replied",
+  "«الردود» = كل رسالة كتبها المشرف في مجموعته (مكتوبة أو ستيكر)، عدا المحذوفة والرسائل التي فيها روابط. «حالات ردّ عليها» = حالات فريقه التي رُبط بها رده. اضغط السطر لعرض حالاته التي بلا رد.": "'Replies' = all messages sent by the supervisor in their group (written or sticker), excluding deleted messages and links. 'Cases Replied' = team cases linked to their reply. Click a row to filter unreplied cases.",
+  "غير محدد (لم يُطابَق الصيدلي ولا يوجد منشن)": "Unassigned (pharmacist not matched & no mention)",
+  "بدون مشرف": "No Supervisor",
+  "توزيع الحالات على التصنيفات حسب المجموعة": "Category Distribution by Group",
+  "النسبة": "Share",
+  "لكل حالة تصنيف رئيسي واحد: التصنيف الأكثر ظهورًا لكلماته في النص وأصناف الفاتورة.": "Each case is assigned one primary topic based on the highest keyword match across text and invoice items.",
+  "ردود فريق Talent": "Talent Team Replies",
+  "العضو": "Member",
+  "الردود (رسائل)": "Replies (Messages)",
+  "وسيط الوقت": "Median Time",
+  "«الردود» = كل رسالة مكتوبة من العضو في الفترة (ولو حرف أو إيموجي)، عدا الستيكر والمحذوفة والرسائل التي فيها روابط.": "'Replies' = every written message from the member during the period (excluding stickers, deleted messages, and links).",
+  "لا توجد ردود من فريق Talent في الفترة.": "No Talent team replies in this period.",
+  "تحتاج قائمة الموظفين لتمييز فريق Talent.": "Headcount is required to identify Talent team members.",
+  "أكثر الصيادلة مشاركة": "Most Active Pharmacists",
+  "حالات بلا رد": "Unreplied Cases",
+  "عرض الكل": "Show All",
+  "محددة للاستيراد": "Selected for Import",
+  "تحديد للاستيراد": "Select for Import",
+  "كل الحالات تم الرد عليها 👏": "All cases have been replied to! 👏",
+  "أشخاص يردّون على الحالات وغير موجودين في القائمة": "Unlisted People Replying to Cases",
+  "ردودهم لا تُحسب حتى تضيفهم. إذا كان الشخص من فريق Talent أو مشرفًا، أضفه بضغطة، وتُعاد الحسبة فورًا.": "Their replies are not counted until added. Click to add them as Talent or Supervisor and recalculate immediately.",
+  "الاسم في الواتساب": "WhatsApp Name",
+  "رسائل مدح/رد": "Praise/Reply Msgs",
+  "الجوال": "Mobile",
+  "➕ مشرف": "➕ Supervisor",
+  "أضف أرقامهم أو أسماءهم للقائمة حتى تُنسب حالاتهم للمشرف الصحيح. رفع تصدير الويب مع تصدير الجوال يظهر أرقام الجوالات ويحسّن الربط.": "Add their phone numbers or names to Headcount so their cases map to the right supervisor. Uploading the web export alongside the mobile export reveals phone numbers and improves matching.",
+  "طريقة احتساب الرد: تُحسب أي رسالة من مشرف أو Talent أو مدير منطقة بعد الحالة مهما تأخرت. تُنسب أولًا لحالة ذُكر اسم صيدليها في الرد، ثم لحالة من فريق المشرف أو ذكرته بالمنشن، ثم لأقرب حالة خلال 3 ساعات لم يُرد عليها. التصدير لا يحفظ الرسالة المقتبسة، فالنسبة تقديرية ودقيقة في الغالب.": "Reply Attribution Method: Any message from a Supervisor, Talent member, or Area Manager after a case is counted. Attribution prioritizes pharmacist name match, then supervisor team/mention match, then nearest unreplied case within 3 hours.",
+  "عرض الرسائل التي احتُسبت": "View counted messages",
+  "عرض الحالة": "View case",
+  "بحث في الرسائل…": "Search messages…",
+  "📋 نسخ": "📋 Copy",
+  "التاريخ والوقت": "Date & Time",
+  "نص الرسالة": "Message Text",
+  "الحالة المرتبطة": "Linked Case",
+  "لا توجد رسائل.": "No messages found.",
+  "تعذر النسخ.": "Could not copy.",
+  "ملخصات الشهور المحفوظة": "Saved Monthly Summaries",
+  "كل ملخص تحفظه من «تحليل المجموعات» يبقى هنا على المنصة، وتقدر تفتحه وتنزّله PDF أو صورة في أي وقت دون رفع ملفات الواتساب.": "Every summary saved from Groups Analysis stays here on the platform and can be viewed or downloaded as PDF/PNG anytime without re-uploading WhatsApp files.",
+  "الملخص": "Summary",
+  "الفترة": "Period",
+  "حُفظ": "Saved",
+  "عرض": "View",
+  "حذف الملخص": "Delete Summary",
+  "لا توجد ملخصات محفوظة بعد. افتح «تحليل المجموعات» واضغط «💾 حفظ ملخص الشهر».": "No saved summaries yet. Open Groups Analysis and click '💾 Save Monthly Summary'.",
+  "جارٍ فتح الملخص…": "Opening summary…",
+  "⬇ تنزيل PDF": "⬇ Download PDF",
+  "⬇ تنزيل صورة PNG": "⬇ Download PNG",
+  "افتح الملخص أولًا.": "Open a summary first.",
+  "حُذف الملخص.": "Summary deleted.",
+  "المجموعات": "Groups",
+  "صيادلة": "Pharmacists",
+  "بلا رد": "Unreplied",
+  "المنطقة": "Region",
+  "حالات فريقه": "Team Cases",
+  "ردّ عليها": "Replied",
+  "مشاركة الفريق": "Team Participation",
+  "لا توجد ردود من Talent.": "No Talent replies.",
+  "نسبة الرد ووقته تقديريان: يُحسب أي رد من مشرف أو Talent أو مدير منطقة بعد الحالة، ويُنسب للحالة بذكر اسم الصيدلي أو المشرف المسؤول أو الأقرب زمنيًا. «وسيط وقت الرد» = نصف الحالات المجاب عليها حصلت على أول رد خلال هذه المدة.": "Reply rate and time are estimated based on messages from Supervisors, Talent, or Area Managers following each case. Median Reply Time = 50% of replied cases received their first reply within this duration.",
+
+  // Users & Settings Tab
+  "إضافة مستخدم": "Add User",
+  "الاسم الظاهر": "Display Name",
+  "اسم الدخول (حروف أو أرقام بلا مسافات)": "Username (letters/numbers, no spaces)",
+  "الدور": "Role",
+  "مقيّم (رقم سري 4 أرقام)": "Reviewer (4-digit PIN)",
+  "مدير (رقم سري 6 أرقام)": "Admin (6-digit PIN)",
+  "الرقم السري (اتركه فارغًا ليُولَّد)": "PIN (leave blank to auto-generate)",
+  "إضافة": "Add",
+  "المستخدمون": "Users",
+  "الاسم": "Name",
+  "إجراءات": "Actions",
+  "الرقم السري يظهر مرة واحدة عند إنشائه أو إعادة توليده، ولا يمكن استرجاعه لاحقًا. عند نسيانه اضغط «رقم جديد». بعد 5 محاولات خاطئة يُقفل المستخدم 15 دقيقة. تعطيل المستخدم يمنعه من الدخول فورًا دون حذف سجلاته.": "The PIN is shown only once upon creation or reset. If forgotten, click 'New PIN'. After 5 failed attempts, the user is locked out for 15 minutes. Disabling a user immediately revokes access without deleting their records.",
+  "نسخ": "Copy",
+  "تم النسخ": "Copied",
+  "تم الحفظ": "Saved",
+  "أنت": "You",
+  "مفعّل": "Active",
+  "معطّل": "Disabled",
+  "رقم جديد": "New PIN",
+  "اجعله مقيّمًا": "Make Reviewer",
+  "اجعله مديرًا": "Make Admin",
+  "لا مستخدمين": "No Users",
+  "الذكاء الاصطناعي": "Artificial Intelligence (AI)",
+  "الهوية والألوان": "Branding & Colors",
+  "إعدادات الضبط": "Governance Settings",
+  "قائمة الموظفين (مرجع تحليل الواتساب)": "Employee Headcount (WhatsApp Analysis Reference)",
+  "تصنيفات استيراد الواتساب": "WhatsApp Import Categories",
+  "إشارات ترشيح الحالات": "Case Scoring Signals",
+  "الحالات المحذوفة": "Deleted Cases",
+  "سجل التدقيق": "Audit Log",
+  "الإجراء": "Action",
+  "المنفّذ": "By",
+  "الملاحظة": "Note",
+  "لا توجد حالات محذوفة": "No Deleted Cases",
+  "الصيدلي / الفرع": "Pharmacist / Branch",
+  "حذفها": "Deleted By",
+  "استرجاع": "Restore",
+  "متصل بـ Claude عبر الخادم": "Connected to Claude via Server",
+  "متصل بـ Claude (داخل Claude)": "Connected to Claude (Built-in)",
+  "متصل عبر خادم القسم التقني": "Connected via IT Endpoint",
+  "غير متصل في هذه النسخة": "Not Connected",
+  "يقترح إجابات أسئلة الشارات ومحتوى البوست من ملخص الحالة، ويبقى دور المقيّم المراجعة والتأكيد. نص الحالة يُرسل لمزوّد الذكاء الاصطناعي لتحليله، فتأكد أن ذلك يوافق سياسة الشركة.": "Suggests badge question answers and post content from the case summary for reviewer confirmation.",
+  "مصدر الذكاء الاصطناعي": "AI Source",
+  "مُفعَّل للمقيّمين": "Enabled for Reviewers",
+  "غير مُفعَّل": "Disabled",
+  "تفعيل الاقتراح للمقيّمين": "Enable AI Suggestions for Reviewers",
+  "إيقافه يخفي زر الاقتراح عن الجميع فورًا.": "Disabling this immediately hides the AI Suggest button for all users.",
+  "اختبار الاتصال": "Test Connection",
+  "...جارٍ الاختبار": "Testing…",
+  "فصل المقيّم عن المعتمد": "Separate Reviewer and Approver",
+  "يمنع اعتماد حالة يكون معتمدها هو مقيّمها.": "Prevents an approver from approving a case they evaluated themselves.",
+  "اشتراط شارة واحدة على الأقل للاعتماد": "Require at Least One Badge for Approval",
+  "لا تُعتمد حالة بلا أي شارة متحققة.": "Prevents approving a case with zero Met badges.",
+  "تعديل الإعدادات متاح لمن يملك صلاحية التحرير فقط.": "Settings can only be modified by administrators.",
+  "أي تغيير في الإعدادات يُسجَّل في سجل التدقيق.": "All setting changes are recorded in the Audit Log.",
+  "لون خلفية البوست": "Poster Background Color",
+  "لون التمييز (للبوست)": "Poster Accent Color",
+  "شعار الشركة (يظهر أعلى المنصة وفي البوست، الأنسب صورة PNG بخلفية شفافة)": "Company Logo (shown in header and poster; transparent PNG recommended)",
+  "لا يوجد شعار": "No logo uploaded",
+  "إرجاع الألوان الافتراضية": "Reset Default Colors",
+  "السجل فارغ": "Audit Log is Empty",
+  "تظهر هنا عمليات الإنشاء والاعتماد والرفض وإعادة الفتح وتعديل الشارات.": "Case creation, approvals, rejections, reopenings, and badge edits appear here.",
+
+  // Headcount & Categories & Signals Editors in Settings
+  "جارٍ التحميل…": "Loading…",
+  "قائمة الموظفين هي مرجع تحليل مجموعات الواتساب: تربط رقم الجوال واسم الواتساب والرقم الوظيفي في الفاتورة بالاسم الرسمي والفرع والمشرف. تُعرض للمدير فقط.": "Headcount is the reference for WhatsApp group analysis: it links phone numbers, WhatsApp names, and invoice employee IDs to official names, branches, and supervisors. Visible to admins only.",
+  "صيدلي على رأس العمل": "Active Pharmacists",
+  "لم تُرفع قائمة الموظفين بعد.": "Headcount file has not been uploaded yet.",
+  "⬆ رفع ملف Excel": "⬆ Upload Excel File",
+  "⬇ تنزيل القائمة الحالية": "⬇ Download Current Headcount",
+  "لا توجد ملاحظات على الملف.": "No issues found in the file.",
+  "حفظ القائمة": "Save Headcount",
+  "أعضاء مضافون يدويًا": "Manually Added Members",
+  "فريق Talent، والمشرفون أو مديرو المناطق غير الموجودين في ملف الـ Headcount. لا يُمسحون عند رفع ملف جديد. رقم الجوال هو الأهم للربط؛ واكتب «الاسم في الواتساب» إذا كان يظهر باسم مختلف.": "Talent team, supervisors, or area managers not listed in the Headcount Excel file. They are preserved when uploading a new file. Phone number is key for matching; add 'WhatsApp Name' if different.",
+  "رقم الجوال": "Mobile Number",
+  "المجموعة/الـ District (اختياري)": "Group / District (optional)",
+  "الاسم في الواتساب (اختياري)": "WhatsApp Name (optional)",
+  "مثال: عمرو وفيق": "e.g. Amr Wafik",
+  "الكل": "All",
+  "لا يوجد أعضاء مضافون يدويًا.": "No manually added members.",
+  "+ إضافة عضو": "+ Add Member",
+  "حفظ الأعضاء": "Save Members",
+  "اكتب الاسم لكل عضو.": "Please enter a name for each member.",
+  "تُصنَّف حالات الواتساب تلقائيًا عند الاستيراد إذا ظهرت أي كلمة من كلمات التصنيف في نص الحالة أو أصناف الفاتورة. اكتب الكلمات مفصولة بفواصل (عربي أو إنجليزي، أسماء منتجات أو أعراض). الحالة قد تأخذ أكثر من تصنيف.": "WhatsApp cases are automatically categorized on import when any keyword appears in the case text or invoice items. Enter comma-separated keywords (Arabic or English, products or symptoms).",
+  "اسم التصنيف": "Category Name",
+  "كلمات مفتاحية مفصولة بفواصل": "Comma-separated keywords",
+  "حذف التصنيف": "Delete Category",
+  "+ تصنيف": "+ Category",
+  "حفظ التصنيفات": "Save Categories",
+  "استعادة الافتراضي": "Restore Defaults",
+  "كلمات تدل على كل شارة في نص الحالة. كل شارة تظهر إشارتها تضيف 7 نقاط لدرجة ترشيح الحالة (من 35). الدرجة الكاملة: النص 20، الفاتورة 20، عدد الأصناف 15، إشارات الشارات 35، تفاعل المشرف 10.": "Keywords signaling each badge in the case text. Each matched badge adds 7 points to the case readiness score (out of 35). Full score (100): Text 20, Invoice 20, Items count 15, Badge signals 35, Supervisor reply 10.",
+  "كلمات مفصولة بفواصل": "Comma-separated keywords",
+  "+ شارة": "+ Signal",
+  "حفظ الإشارات": "Save Signals",
+  "حُفظت الإشارات. تُطبّق على الاستخراج القادم.": "Signals saved. Will apply to the next extraction."  ,
+  "الخادم يتأخر في الرد أكثر من المعتاد. إذا استمر ذلك فافتح رابط الخادم (/exec) في المتصفح وتأكد أنه يعرض:": "Server is taking longer than usual to respond. If this persists, open the backend URL (/exec) in your browser and verify it displays:",
+  "افتح رابط الخادم (/exec) في المتصفح وتأكد أنه يعرض:": "Open the backend URL (/exec) in your browser and verify it displays:",
+  "إذا ظهرت صفحة خطأ فالمشكلة في Code.gs أو في النشر.": "If an error page appears, check Code.gs or the deployment.",
+  "وصل الطلب إلى الخادم بلا محتوى (غالبًا لأنه كبير). أعد المحاولة، وإن تكرر فاستخدم صورة أصغر للفاتورة.": "Request reached the server empty (likely too large). Try again or use a smaller invoice image.",
+  "خطأ في الخادم.": "Server error.",
+  "لم تُمنح الصفحة صلاحية استخدام Claude. وافق على طلب الصلاحية ثم أعد المحاولة.": "Permission to use Claude was not granted. Approve the permission prompt and try again.",
+  "تم تجاوز الحد المسموح مؤقتًا. حاول بعد دقائق.": "Rate limit temporarily exceeded. Please try again in a few minutes.",
+  "لم يرجع الذكاء الاصطناعي النتيجة بالشكل المطلوب. حاول مرة أخرى.": "AI did not return the expected format. Please try again.",
+  "النص طويل جدًا. اختصره ثم أعد المحاولة.": "Text is too long. Please shorten it and try again.",
+  "أُلغي الطلب.": "Request cancelled.",
+  "تعذر الاتصال بالذكاء الاصطناعي. حاول لاحقًا.": "Could not connect to AI. Please try again later.",
+  "تعذر الاتصال بخادم الذكاء الاصطناعي.": "Could not connect to AI server.",
+  "قراءة ملفات PDF غير متاحة في هذه النسخة. ارفع صورة الفاتورة بدلًا منه.": "PDF reading is not available in this mode. Please upload an image of the invoice instead.",
+  "الذكاء الاصطناعي غير متصل في هذه النسخة.": "AI is not connected in this version.",
+  "ملف الفاتورة كبير جدًا.": "Invoice file is too large.",
+  "تعذر حفظ الملف.": "Could not save file.",
+  "الرقم السري سهل التخمين (مثل 1234 أو 1111). اختر غيره.": "PIN is too easy to guess (e.g. 1234 or 1111). Please choose another.",
+  "تعذر توليد رقم سري، أعد المحاولة.": "Could not generate PIN. Please try again.",
+  "اسم الدخول حرفان على الأقل (بدون مسافات).": "Username must be at least 2 characters (no spaces).",
+  "اسم الدخول مستخدم. اختر اسمًا آخر.": "Username is already taken. Please choose another.",
+  "تعذّر فهم ردّ الذكاء الاصطناعي.": "Could not parse AI response.",
+  "هذه العملية للمدير فقط.": "This action is restricted to administrators.",
+  "المنصة مُعدّة مسبقًا.": "Platform is already initialized.",
+  "الحالة غير موجودة.": "Case not found.",
+  "ليس لك صلاحية تعديل هذه الحالة.": "You do not have permission to edit this case.",
+  "الحالة مُرسلة للاعتماد، ولا يمكن تعديلها إلا إذا أعادها المعتمد للتصحيح.": "Case has been submitted and can only be edited if returned for revision.",
+  "الحالة معادة للمقيّم للتصحيح ولم تُرسل من جديد بعد.": "Case was returned for revision and has not been resubmitted yet.",
+  "تم اتخاذ قرار في هذه الحالة مسبقًا.": "A decision has already been made on this case.",
+  "اكتب سبب الرفض.": "Please enter the rejection reason.",
+  "القائمة فارغة.": "The list is empty.",
+  "القائمة أكبر من الحد (6000 شخص).": "List exceeds maximum limit (6,000 people).",
+  "شهر غير صالح.": "Invalid month.",
+  "الملخص أكبر من المسموح.": "Summary exceeds maximum allowed size.",
+  "الملخص غير موجود.": "Summary not found.",
+  "لا توجد حالات.": "No cases found.",
+  "الحالة غير موجودة في صندوق الوارد.": "Case not found in Inbox.",
+  "هذه الحالة لم تعد في صندوق الوارد.": "This case is no longer in the Inbox.",
+  "لم يتغير شيء في الحالة.": "No changes were made to the case.",
+  "لا توجد شارة متحققة بعد التعديل، والإعداد لا يسمح بحالة معتمدة بلا شارات.": "No badges are Met after editing, and settings require at least one badge for approved cases.",
+  "اكتب سبب تغيير القرار.": "Please enter the reason for changing the decision.",
+  "تغيير القرار متاح فقط للحالات المعتمدة أو المرفوضة.": "Changing decision is only available for Approved or Rejected cases.",
+  "اكتب سبب الحذف.": "Please enter the deletion reason.",
+  "الحالة غير موجودة في المحذوفات.": "Case not found in deleted items.",
+  "اكتب سبب الإعادة للتصحيح.": "Please enter the reason for returning the case.",
+  "رمز الشارة لا يتغير بعد إنشائها.": "Badge code cannot be changed after creation.",
+  "صورة الشارة كبيرة. استخدم صورة أصغر.": "Badge icon is too large. Please use a smaller image.",
+  "صورة الشارة غير صالحة.": "Invalid badge icon image.",
+  "الاختيار للحالات المعتمدة فقط.": "Only approved cases can be selected.",
+  "البوست يخص الحالات المعتمدة فقط.": "Posts are only available for approved cases.",
+  "غير مسموح.": "Not permitted.",
+  "مرحلة غير معروفة.": "Unknown stage.",
+  "المراحل تخص الحالات المختارة لبوست الشهر فقط.": "Stages apply only to cases selected as Best of Month.",
+  "لون غير صالح.": "Invalid color.",
+  "قائمة الإشارات غير صالحة.": "Invalid signals list.",
+  "قائمة التصنيفات غير صالحة.": "Invalid categories list.",
+  "عدد أفضل المشاركات بين 1 و20.": "Best of Month count must be between 1 and 20.",
+  "صورة الشعار غير صالحة أو كبيرة جدًا.": "Logo image is invalid or too large.",
+  "اكتب اسم المستخدم.": "Please enter the user's name.",
+  "الرقم السري مستخدم لمستخدم آخر. اختر غيره.": "This PIN is already in use by another user. Please choose another.",
+  "المستخدم غير موجود.": "User not found.",
+  "يجب أن يبقى مدير واحد مفعّل على الأقل.": "At least one active administrator must remain.",
+  "ليس لك صلاحية على هذه الحالة.": "You do not have permission for this case.",
+  "تُضاف صور المنتجات بعد اعتماد الحالة.": "Product images can be added after the case is approved.",
+  "صورة منتج غير صالحة أو كبيرة.": "Product image is invalid or too large.",
+  "الذكاء الاصطناعي غير مفعّل.": "AI is not enabled.",
+  "لا يوجد نص لتحليله.": "No text to analyze.",
+  "النص طويل جدًا (الحد 8000 حرف). اختصره ثم أعد المحاولة.": "Text is too long (max 8,000 characters). Please shorten it and try again.",
+  "لا توجد شارات مفعّلة لتحليلها.": "No active badges to analyze.",
+  "نوع ملف الفاتورة غير مدعوم. ارفع صورة أو PDF.": "Unsupported invoice file type. Please upload an image or PDF.",
+  "ملف الفاتورة كبير جدًا (الحد 5 ميغابايت).": "Invoice file is too large (max 5 MB).",
+  "تعذر تحميل مكتبة لازمة للاستيراد. تحقق من الإنترنت.": "Could not load required import library. Please check your internet connection.",
+  "تعذر تحميل مكتبة Excel. تحقق من الاتصال بالإنترنت.": "Could not load Excel library. Please check your internet connection.",
+  "تعذر تحميل مكتبة التصدير. تحقق من الاتصال بالإنترنت.": "Could not load export library. Please check your internet connection.",
+  "لم أجد ورقة فيها أعمدة الاسم ورقم الجوال. استخدم ملف الـ Headcount أو قالب قائمة الموظفين.": "Could not find a sheet with Name and Phone columns. Please use the Headcount file or employee template.",
+  "الملف لا يحتوي على أسماء.": "The file contains no names.",
+  "حُددت الحالة. حلّلها من «استيراد الحالات» لتُضاف لصندوق الوارد.": "Case selected. Analyze it from the Import Cases tab to add to Inbox.",
+  "صورة المنتج كبيرة جدًا.": "Product image is too large.",
+  "تعذر قراءة الصورة.": "Could not read image.",
+  "تعذر قراءة الملف.": "Could not read file.",
+  "تعذّرت قراءة الملف.": "Could not read file.",
+  "الصورة معقدة جدًا، جرّب صورة أبسط أو أصغر.": "Image is too complex; try a simpler or smaller image.",
+  "الصورة معقدة جدًا، جرّب صورة أبسط.": "Image is too complex; try a simpler image.",
+  "ملف PDF أكبر من 3 ميغابايت. صوّر الفاتورة بدلًا منه.": "PDF exceeds 3 MB. Please upload a photo of the invoice instead.",
+  "ارفع صورة أو ملف PDF فقط.": "Please upload an image or PDF file only.",
+  "تعذّرت قراءة الصورة. جرّب صيغة JPG أو PNG.": "Could not read image. Try JPG or PNG format.",
+  "شارة متحققة": "Earned Badge",
+  "وصف الموقف": "Situation Description",
+  "المنتجات": "Products",
+  "صافي الفاتورة": "Invoice Net Total",
+  "عدد المنتجات": "Items Count",
+  "أنت في وضع التعديل. حالة الاعتماد لا تتغير بالحفظ.": "You are in edit mode. Saving will not change the approval status.",
+  "أنت في وضع التعديل. حالة الاعتماد لا تتغير بالحفظ، وتتحدث نتيجة الشارات المعتمدة حسب إجاباتك.": "You are in edit mode. Approval status remains unchanged, and approved badge results will update based on your answers.",
+  "كيف تُحسب الشارة": "How Badges Are Calculated",
+  "متحققة:": "Met:",
+  "كل أسئلة «شرط» = نعم، وأسئلة «استبعاد» = لا.": "All Requirement questions = Yes, and all Disqualifier questions = No.",
+  "غير متحققة:": "Not Met:",
+  "أي شرط = لا، أو استبعاد = نعم، أو سؤال أولي محدد لنتيجة «غير متحققة» وإجابته لا.": "Any Requirement = No, any Disqualifier = Yes, or a Gate Question set to Not Met answered No.",
+  "لا تنطبق:": "N/A:",
+  "عندما تكون إجابة السؤال الأولي = لا في شارة نتيجتها عندئذ «لا تنطبق».": "When the Gate Question is answered No on a badge configured for N/A.",
+  "لا يُفترض شيء غير مكتوب:": "Nothing Unwritten Is Assumed:",
+  "ما لم يرد في نص الحالة فإجابته لا.": "Anything not explicitly stated in the case text is answered No.",
+  "بصفتك مديرًا يمكنك تعديل أسئلة أي شارة من هذه الشاشة مباشرةً بزر «تعديل الشارة».": "As an administrator, you can edit any badge's questions directly using the 'Edit Badge' button.",
+  "تعديل الشارة": "Edit Badge",
+  "الرمز": "Code",
+  "السؤال": "Question",
+  "نعم عندما": "Yes When",
+  "لا عندما": "No When",
+  "الترتيب مبني على عدد الشارات المتحققة أولًا، ثم اكتمال محتوى البوست، ثم أقدم اعتماد. عند التعادل يظهر الترتيب نفسه لأكثر من حالة، والقرار النهائي للمدير ويُسجَّل سببه في سجل التدقيق. يمكن اختيار أكثر من حالة في الشهر.": "Ranking is based on earned badges count first, then post completeness, then earliest approval date. Ties share the same rank; final selection is made by the admin and logged in the audit trail.",
+  "كشف الاحتياج الحقيقي": "Uncovering True Customer Need",
+  "الاستفادة من العروض": "Utilizing Promotional Offers",
+  "تقديم حل متكامل": "Providing a Complete Solution",
+  "البيع المتقاطع المناسب": "Relevant Cross-Selling",
+  "توظيف وصفتي": "Utilizing Wasfaty Service"
+
+};
+const TR_RX = [
+  // Inbox & Cases
+  [/^📥 صندوق الوارد من الواتساب: (\d+) حالة جديدة$/, "📥 WhatsApp Inbox: $1 new cases"],
+  [/^· مُسندة لك: (\d+)$/, "· Assigned to you: $1"],
+  [/^مُسندة لك: (\d+)$/, "Assigned to you: $1"],
+  [/^المستبعدة \((\d+)\)$/, "Dismissed ($1)"],
+  [/^↩ إرجاع المحدد للصندوق \((\d+)\)$/, "↩ Return Selected to Inbox ($1)"],
+  [/^🚫 استبعاد المحدد \((\d+)\)$/, "🚫 Exclude Selected ($1)"],
+  [/^👥 إسناد المحدد للمقيّم \((\d+)\)$/, "👥 Assign Selected to Reviewer ($1)"],
+  [/^👥 توزيع (المحدد|الجديدة) على المقيّمين$/, (_, m) => "👥 Distribute " + (m === "المحدد" ? "Selected" : "New") + " to Reviewers"],
+  [/^(.+?) \(معه (\d+)\)$/, "$1 ($2 assigned)"],
+  [/^مع (.+)$/, "With $1"],
+  [/^فرع (.+)$/, "Branch $1"],
+  [/^ناقصة \((\d+)\)$/, "Incomplete ($1)"],
+  [/^اعتُمدت في\s*$/, "Approved on "],
+  [/^· اختيرت ضمن أفضل المشاركات \((.+)\)$/, "· Selected as Best of Month ($1)"],
+  [/^عدّلها (.+?)(?: — غيّر القرار (.+))?$/, (_, a, b) => "Edited by " + a + (b ? " — Decision changed by " + b : "")],
+  [/^— غيّر القرار (.+)$/, "— Decision changed by $1"],
+  [/^(\d+) من (\d+)$/, "$1 of $2"],
+  [/^📥 مستوردة من (.+)$/, "📥 Imported from $1"],
+  [/^واتساب (.+)$/, "WhatsApp $1"],
+  [/^أعادها المعتمد للتصحيح: (.+)$/, "Returned by approver for revision: $1"],
+  [/^أُعيدت للمقيّم للتصحيح(?: من (.+?))?\. السبب: (.+)$/, (_, by, r) => "Returned to reviewer for revision" + (by ? " by " + by : "") + ". Reason: " + r],
+  [/^اعتمدها\s*$/, "Approved by "],
+  [/^\s*بتاريخ\s*$/, " on "],
+  [/^رُفضت\. السبب: (.+)$/, "Rejected. Reason: $1"],
+  [/^سبب تغيير القرار إلى «(.+?)» \(يُسجَّل ويظهر في الحالة\)$/, "Reason for changing decision to '$1' (logged and shown on case)"],
+  [/^أسئلة غير مجابة في: (.+)\.$/, "Unanswered questions in: $1."],
+  [/^ملاحظة المطابقة: (.+)$/, "Matching note: $1"],
+  [/^تعذر الإرسال: (.*)$/, "Submission failed: $1"],
+  [/^تم إرسال الحالة (.+) للاعتماد\.$/, "Case $1 submitted for approval."],
+  [/^حُفظت التعديلات \((.+)\)\.$/, "Changes saved ($1)."],
+  [/^تم تغيير القرار إلى «(.+)»\.$/, "Decision changed to '$1'."],
+  [/^حُذفت الحالة (.+)\.$/, "Case $1 deleted."],
+  [/^استُرجعت الحالة (.+)\.$/, "Case $1 restored."],
+  [/^✏️ عُدّلت بواسطة (.+)$/, "✏️ Edited by $1"],
+  [/^كل التعديلات \((\d+)\)$/, "All Edits ($1)"],
+  [/^🔁 غيّر (.+) القرار$/, "🔁 $1 changed the decision"],
+  [/^\s*من «(.+?)» إلى «(.+?)»\s*$/, " from '$1' to '$2' "],
+  [/^\. السبب: (.+)$/, ". Reason: $1"],
+
+  // AI Suggest status messages
+  [/^تم اقتراح (\d+) إجابة جديدة، راجعها أدناه\.(?: \(تجاهل (\d+) سؤالًا مُجابًا مسبقًا\.\))?(.*)$/, (_, a, s, rest) => "Suggested " + a + " new answer(s); review below." + (s ? " (Skipped " + s + " already-answered question(s).)" : "") + (rest ? " " + trStr(rest.trim()) : "")],
+  [/^كما اقترح محتوى: (.+?)\.(.*)$/, (_, f, rest) => "Also suggested content for: " + f + "." + (rest ? " " + trStr(rest.trim()) : "")],
+  [/^وقُرئ من الفاتورة (\d+) صنف\.$/, "Read $1 item(s) from invoice."],
+  [/^ولم تُقرأ أصناف واضحة من الفاتورة\.$/, "No clear items could be read from the invoice."],
+  [/^واستُخدمت أصناف الفاتورة المحفوظة \((\d+) صنف\)\.$/, "Used saved invoice items ($1 item(s))."],
+  [/^الاتصال يعمل\. ردّ تجريبي: (.+)$/, "Connection successful. Test response: $1"],
+
+  // Posts & Best of Month
+  [/^المشرف: (.+?) · الفرع: (.+?) · المقيّم: (.+)$/, "Supervisor: $1 · Branch: $2 · Reviewer: $3"],
+  [/^سبق اختيار الصيدلي: (.+)$/, "Previously selected pharmacist: $1"],
+  [/^★ ضمن أفضل المشاركات · (.+)$/, "★ Best of Month · $1"],
+  [/^اختيرت الحالة (.+) ضمن أفضل المشاركات\.$/, "Case $1 selected as Best of Month."],
+  [/^تم حفظ عدد أفضل المشاركات: (\d+)$/, "Best of Month count saved: $1"],
+  [/^جُهّز ملف ZIP فيه (\d+) بوست\.$/, "Prepared ZIP file with $1 post(s)."],
+  [/^ناقص في البوست: (.+?)\. عدّل الحالة \(زر إعادة الفتح للمدير\) أو اترك هذه الأجزاء\.$/, "Missing in post: $1. Edit the case or leave these sections blank."],
+  [/^اختيار الحالة (.+) لبوست الشهر$/, "Select Case $1 for Monthly Post"],
+
+  // Badges
+  [/^(\d+) أسئلة، مستخدمة في (\d+) حالة$/, "$1 questions, used in $2 cases"],
+  [/^تعديل: (.+)$/, "Edit: $1"],
+  [/^(Gate Question|Requirement|Disqualifier|سؤال أولي|شرط|استبعاد) (\d+)$/, (_, k, n) => (TR_EXACT[k] || k) + " " + n],
+
+  // WhatsApp Import & Session & Details
+  [/^✖ (?:(\d+) )?ناقص$/, (_, n) => "✖ " + (n ? n + " " : "") + "Missing"],
+  [/^✖ ناقص: (.+)$/, "✖ Missing: $1"],
+  [/^اضغط لعرض الملف: (.+)$/, "Click to view file: $1"],
+  [/^(✔ فاتورة|🖼 PDF ممسوح|🖼 صورة|✔ Invoice|🖼 Scanned PDF|🖼 Image) (\d+)$/, (_, k, n) => (TR_EXACT[k] || k) + " " + n],
+  [/^نُشرت (\d+) مرات، دُمجت$/, "Posted $1 times (merged)"],
+  [/^نُشرت (\d+) مرات$/, "Posted $1 times"],
+  [/^(\d+) نتيجة$/, "$1 result(s)"],
+  [/^المحدد (\d+) حالة: (.+)$/, "Selected $1 cases: $2"],
+  [/^من التصنيفات:\s*$/, "From Categories: "],
+  [/^\s*مختار ▾$/, " selected ▾"],
+  [/^من التصنيفات: الكل ▾$/, "From Categories: All ▾"],
+  [/^حلّل المختار وأضفه لصندوق الوارد \((\d+)\)$/, "Analyze Selected & Add to Inbox ($1)"],
+  [/^عرض الرسائل المستبعدة \((\d+)\): ردود ومدح وتعليقات بدون مرفق$/, "Show excluded messages ($1): replies, praise & comments without attachments"],
+  [/^جارٍ قراءة (.+)…$/, "Reading $1…"],
+  [/^تمت قراءة (\d+) ملف\. حدّد الفترة ثم اضغط «استخراج الحالات»\.$/, "Read $1 file(s). Select the date range and click 'Extract Cases'."],
+  [/^(.+?): قراءة الحالة (\d+) من (\d+)…$/, "$1: Reading case $2 of $3…"],
+  [/^استُخرجت (\d+) حالة([\s\S]*)$/, (_, n, rest) => "Extracted " + n + " cases" + rest
+    .replace(/\(مرشحة بقوة: (\d+)\)/g, "(Strong: $1)")
+    .replace(/، منها (\d+) بفاتورة مقروءة/g, ", including $1 with parsed invoice")
+    .replace(/، وأُكمل نص (\d+) رسالة من تصدير الويب/g, ", completed text for $1 messages from web export")
+    .replace(/\. (\d+) حالة بدون نص/g, ". $1 without text")
+    .replace(/\. استُبعدت (\d+) رسالة رد أو تعليق/g, ". Excluded $1 reply/comment messages")
+    .replace(/\. ⚠️ (\d+) حالة رقم فاتورتها مكرر/g, ". ⚠️ $1 with duplicate invoice no.")
+    .replace(/\. اختر التصنيفات ثم حدّد الحالات\./g, ". Filter by category and select cases.")
+    .replace(/\(الفترة /g, "(Period ")
+    .replace(/· رسائل الفترة: /g, "· Period messages: ")],
+  [/^لم تُستخرج أي حالة في الفترة (.+)$/, "No cases extracted in period $1"],
+  [/^الحالة (\d+) من (\d+)…$/, "Case $1 of $2…"],
+  [/^أُوقف التحليل\. أُضيفت (\d+) حالة\.$/, "Analysis stopped. Added $1 case(s)."],
+  [/^انتهى: أُضيفت (\d+) حالة لصندوق الوارد\.$/, "Done: Added $1 case(s) to Inbox."],
+  [/^✔ (.+?) — أُضيفت بدون تحليل: (.+)$/, (_, l, r) => "✔ " + l + " — Added without AI: " + trStr(r)],
+  [/^ \(مرفق ناقص\)$/, " (missing attachment)"],
+  [/^فاتورة (\d+)$/, "Invoice $1"],
+  [/^رقم (\d+)/g, "No. $1"],
+  [/^المرفق (\d+) من (\d+): (.+)$/, "Attachment $1 of $2: $3"],
+  [/^رقم الفاتورة مكرر مع:\n([\s\S]+)$/, (_, list) => "Duplicate invoice number with:\n" + list.replace(/\(فاتورة (\d+)\)/g, "(Invoice $1)")],
+  [/^(\d+) (أصناف|صنفان|صنف)$/, "$1 item(s)"],
+  [/^إشارات: (.+)$/, "Signals: $1"],
+  [/^المتاح (\d+) حالة فقط بهذه الاختيارات\.(.*)$/, (_, n, rest) => "Only " + n + " case(s) available with these filters." + (rest ? " " + trStr(rest.trim()) : "")],
+  [/^\(?تُخطّيت (\d+) حالة رقم فاتورتها مكرر(?:، واختيرت الأعلى ترشيحًا منها\.)?\)?$/, "Skipped $1 duplicate-invoice case(s) (kept highest-scored)."],
+  [/^استُرجعت الجلسة: (\d+) حالة\.$/, "Session restored: $1 cases."],
+  [/^مسح الجلسة المحفوظة على هذا الجهاز؟(.*)$/, "Clear saved session on this device?"],
+  [/^استبعاد (\d+) حالة من صندوق الوارد؟$/, "Dismiss $1 case(s) from Inbox?"],
+  [/^استبعاد (\d+) حالة؟ لن تظهر في الاستيراد القادم، وتقدر ترجعها من صندوق الوارد\.$/, "Exclude $1 case(s)? They won't appear in future imports and can be restored from the Inbox."],
+  [/^(استُبعدت|أُرجعت للصندوق) (\d+) حالة\.$/, (_, a, n) => (a === "استُبعدت" ? "Dismissed " : "Returned to Inbox ") + n + " case(s)."],
+  [/^إسناد (\d+) حالة إلى (.+?)؟[\s\S]*$/, "Assign $1 case(s) to $2?\nThey will appear in their inbox as 'Assigned to you'."],
+  [/^أُسندت (\d+) حالة إلى (.+?)\.(.*)$/, "Assigned $1 case(s) to $2.$3"],
+  [/^🗂 في جلسة استخراج محفوظة على هذا الجهاز من (.+?) — (\d+) حالة \(الفترة (.+?)\)\.\s*$/, "🗂 Saved extraction session on this device from $1 — $2 cases (Period $3). "],
+  [/^🗂 جلسة مسترجعة \(محفوظة (.+?)\) — الفترة (.+?) · (\d+) حالة\.\s*$/, "🗂 Restored session (saved $1) — Period $2 · $3 cases."],
+  [/^لعرض المرفقات أو إرسال صور الفواتير للذكاء الاصطناعي ارفع ملفات ZIP الجوال للمجموعات: (.+)$/, "To view attachments or send invoice images to AI, re-upload mobile ZIP files for groups: $1"],
+  [/^رُبطت مرفقات (.+?) بـ (\d+) حالة محفوظة بدون إعادة استخراج\.$/, "Linked $1 attachments to $2 saved cases without re-extracting."],
+  [/^جلسة مسترجعة: ارفع ZIP الجوال لمجموعة (.+) لعرض المرفقات\.$/, "Restored session: upload mobile ZIP for group $1 to view attachments."],
+  [/^هذه جلسة مسترجعة: ارفع ملف ZIP الجوال لمجموعة (.+) لعرض المرفقات \(بدون إعادة استخراج\)\.$/, "Restored session: upload mobile ZIP for group $1 to view attachments (without re-extracting)."],
+
+  // Groups Analysis & Summaries & Headcount
+  [/^💾 حفظ ملخص الشهر (.+)$/, "💾 Save Monthly Summary ($1)"],
+  [/^([▲▼] \d+%) عن (.+)$/, "$1 vs $2"],
+  [/^(\d+) صيدلي$/, "$1 pharmacists"],
+  [/^(\d+) صيدلي · (\d+) فرع$/, "$1 pharmacists · $2 branches"],
+  [/^في (\d+) فرعًا$/, "across $1 branches"],
+  [/^صافي المقروء (?:منها )?(.+) ر\.س$/, "Parsed net: $1 SAR"],
+  [/^(.+) ر\.س$/, "$1 SAR"],
+  [/^ر\.س · (.+) قطعة$/, "SAR · $1 units"],
+  [/^(.+) قطعة$/, "$1 units"],
+  [/^(\d+) حالة بلا رد$/, "$1 unreplied cases"],
+  [/^ردود Talent: (\d+)$/, "Talent replies: $1"],
+  [/^(.+) لكل حالة$/, "$1 per case"],
+  [/^([▲▼■] [+\-]?\d+) نقطة$/, "$1 pts"],
+  [/^(.+?): حالات \/ رد$/, "$1: Cases / Reply %"],
+  [/^▲▼ الفرق عن ملخص (.+) المحفوظ: الحالات بالنسبة المئوية، والتغطية بالنقاط \(مثلًا من 70% إلى 75% = \+5 نقطة\)\.$/, "▲▼ Delta vs saved $1 summary: Cases in %, Coverage in percentage points (e.g. 70% → 75% = +5 pts)."],
+  [/^لعرض الفرق عن الشهر السابق لكل مجموعة: احفظ ملخص (.+) \(بدون فلتر تصنيف\) من «حفظ ملخص الشهر»\.$/, "To display Month-over-Month delta per group: save the $1 summary (without category filter) using 'Save Monthly Summary'."],
+  [/^عرض الكل \((\d+)\)$/, "Show All ($1)"],
+  [/^صيادلة لم يشاركوا في الفترة: (\d+) \(حسب قائمة الموظفين للمجموعات المحمّلة\)$/, "Non-Participating Pharmacists in Period: $1 (based on Headcount for loaded groups)"],
+  [/^مرسلون غير موجودين في قائمة الموظفين: (\d+)$/, "Senders Not Found in Headcount: $1"],
+  [/^(.+?) — (\d+) رسالة$/, (_, a, n) => a.replace("كل المجموعات", "All Groups") + " — " + n + " messages"],
+  [/^مكتوبة (\d+)(?: · ستيكر (\d+))? · مرتبطة بحالة (\d+)$/, (_, w, s, l) => "Written: " + w + (s ? " · Sticker: " + s : "") + " · Linked to case: " + l],
+  [/^نُسخ (\d+) سطر(.*)$/, "Copied $1 row(s)$2"],
+  [/^حُفظ ملخص (.+?)\. تقدر تنزّله PDF أو صورة من هنا، ويبقى محفوظًا في «ملخصات الشهور»\.$/, "Saved $1 summary. You can download it as PDF or PNG anytime from Monthly Summaries."],
+  [/^حذف ملخص (.+)؟ لا يمكن التراجع\.$/, "Delete summary $1? This cannot be undone."],
+  [/^ملخص تحليل مجموعات الواتساب — (.+)$/, "WhatsApp Groups Analysis Summary — $1"],
+  [/^(المجموعات|المجموعة) (.+?)(?: · تصنيف: (.+?))?( · الفترة .+)?$/, (_, g1, gs, cat, per) => (g1 === "المجموعات" ? "Groups " : "Group ") + gs + (cat ? " · Category: " + (TR_EXACT[cat] || cat) : "") + (per ? per.replace(" · الفترة ", " · Period ") : "")],
+  [/^حُفظ (.+)$/, "Saved $1"],
+  [/^بواسطة (.+)$/, "by $1"],
+  [/^(\d+) من (\d+) \((\d+)%\)$/, "$1 of $2 ($3%)"],
+
+  // Users & Settings dynamic
+  [/^بيانات دخول\s*$/, "Login credentials for "],
+  [/^\s*\(تظهر الآن فقط، سلّمها له بشكل خاص\):$/, " (shown once — share privately):"],
+  [/^الصيادلة حسب المجموعة:\s*$/, "Pharmacists by Group: "],
+  [/^\s*— آخر تحديث (.+) بواسطة (.+)$/, " — Last updated $1 by $2"],
+  [/^مراجعة الملف قبل الحفظ: (.+)$/, "Review File Before Saving: $1"],
+  [/^إجمالي الأسطر:\s*$/, "Total Rows: "],
+  [/^مضافون:\s*$/, "Added: "],
+  [/^غير موجودين في الملف الجديد:\s*$/, "Removed in New File: "],
+  [/^تغيّر مشرفهم:\s*$/, "Supervisor Changed: "],
+  [/^أصبحوا «مستقيل»:\s*$/, "Marked as Left: "],
+  [/^ملاحظات \((\d+)\):$/, "Issues ($1):"],
+  [/^حُفظت قائمة الموظفين \((\d+) شخص\)\.$/, "Headcount saved ($1 people)."],
+  [/^حُفظ الأعضاء المضافون يدويًا \((\d+)\)\.$/, "Manually added members saved ($1)."],
+  [/^حُفظت التصنيفات \((\d+)\)\. تُطبّق على الاستخراج القادم\.$/, "Categories saved ($1). Will apply to the next extraction."],
+  [/^تم تجهيز ملف التقرير \((\d+) حالة\)\.$/, "Report file ready ($1 cases)."]  ,
+  [/^الخادم أعاد خطأ \((\d+)\)\.$/, "Server returned an error ($1)."],
+  [/^ردّ غير صالح من الخادم(.*)$/, "Invalid response from server$1"],
+  [/^خادم الذكاء الاصطناعي أعاد خطأ \((\d+)\)\.$/, "AI server returned an error ($1)."],
+  [/^الرقم السري (\d+) أرقام فقط للمدير\.$/, "PIN must be $1 digits for Admin."],
+  [/^الرقم السري (\d+) أرقام فقط للمقيّم\.$/, "PIN must be $1 digits for Reviewer."],
+  [/^تجاوزت الحد المسموح \((\d+) تحليلًا كل ساعة\)\. حاول لاحقًا\.$/, "Hourly limit exceeded ($1 analyses/hour). Please try again later."],
+  [/^أخذ هذه الحالة (.+)\.$/, "This case was already taken by $1."],
+  [/^الحالة معتمدة، والتعديل يجعلها غير مستوفية: (.+?) غيّر القرار أولًا أو عدّل الإجابات\.$/, (_, r) => "Case is approved, and this edit makes it non-compliant: " + trStr(r) + " Change the decision first or fix the answers."],
+  [/^الحالة (معتمدة|مرفوضة) أصلًا\.$/, (_, s) => "Case is already " + (s === "معتمدة" ? "Approved" : "Rejected") + "."],
+  [/^وصلت للعدد المحدد لأفضل المشاركات هذا الشهر \((\d+)\)\. ألغِ اختيار حالة أو غيّر العدد\.$/, "Reached the Best of Month limit for this month ($1). Deselect a case or increase the limit."],
+  [/^الملف (.+) لا يحتوي على نص المحادثة \(_chat\.txt\)\. صدّر الدردشة من واتساب كما هي\.$/, "File $1 does not contain _chat.txt. Please export the chat directly from WhatsApp."],
+  [/^رقم الجوال غير صحيح: (.+)$/, "Invalid mobile number: $1"],
+  [/^(\d+) من المشرفين\/مديري المناطق\/Talent بدون رقم جوال\. أضف ورقة باسم «المشرفون و Talent» فيها \(الاسم، رقم الجوال، الدور\) حتى تُحسب ردودهم بدقة\.$/, "$1 Supervisors/Area Managers/Talent have no mobile number. Add a 'Supervisors & Talent' sheet (Name, Mobile, Role) for accurate reply tracking."],
+  [/^(.+?) السطر (\d+): بدون اسم، تم تجاهله\.$/, "$1 Row $2: Missing name (skipped)."],
+  [/^السطر (\d+) \((.+?)\): رقم الجوال ناقص أو غير صحيح\.$/, "Row $1 ($2): Missing or invalid mobile number."],
+  [/^السطر (\d+) \((.+?)\): رقم الجوال بصيغة غير سعودية \((.+?)\)، راجعه\.$/, "Row $1 ($2): Non-Saudi phone format ($3) — please review."],
+  [/^رقم جوال مكرر: (.+)$/, "Duplicate mobile number: $1"],
+  [/^رقم وظيفي مكرر: (.+)$/, "Duplicate employee ID: $1"],
+  [/^المشرف «(.+?)» غير موجود كسطر بدور «مشرف» \((\d+) صيدلي\)\.$/, "Supervisor '$1' is not listed with a Supervisor role ($2 pharmacists)."],
+  [/^(\d+) من الحالات المختارة فواتيرها صور أو PDF ممسوح، وملفات ZIP للمجموعات (.+?) غير مرفوعة بعد الاسترجاع\.[\s\S]*$/, "$1 selected case(s) have image/scanned PDF invoices, and mobile ZIP files for groups ($2) are not loaded after session restore.\n\nClick OK to analyze text & parsed invoices only (without images), or Cancel to upload the mobile ZIP files first."],
+  [/^مسح الجلسة المحفوظة على هذا الجهاز؟ ستُفرغ الحالات المعروضة أيضًا\.$/, "Clear saved session on this device? Currently displayed cases will also be cleared."],
+  [/^تُحسب كل رسالة في الفترة عدا المحذوفة والرسائل التي فيها روابط \((.+?)\)\. «الحالة المرتبطة» = الحالة التي نُسب لها الرد في حساب التغطية؛ اضغطها لعرض الحالة\.$/, (_, m) => "Counts every message in the period except deleted messages and links (" + (m.includes("للمشرف") ? "Supervisor: written & stickers" : "Talent: written only, no stickers") + "). 'Linked Case' = the case attributed in coverage calculation (click to view)."],
+  [/^\(تصنيفات الاستيراد: (\d+)\)$/, "(Import categories: $1)"],
+  [/^\(إشارات الترشيح: (\d+)\)$/, "(Scoring signals: $1)"],
+  [/^إضافة شارة: (.+)$/, "Added badge: $1"],
+  [/^تعديل شارة: (.+)$/, "Updated badge: $1"],
+  [/^إضافة مستخدم: (.+)$/, "Added user: $1"],
+  [/^تعديل مستخدم: (.+)$/, (_, r) => "Updated user: " + r.replace("مفعّل", "Active").replace("معطّل", "Disabled")],
+  [/^رقم سري جديد لـ (.+)$/, "New PIN generated for $1"],
+  [/^إعداد المنصة وإنشاء المدير: (.+)$/, "Platform initialized & admin created: $1"],
+  [/^استيراد من الواتساب: (\d+) حالة إلى صندوق الوارد$/, "WhatsApp Import: $1 case(s) added to Inbox"],
+  [/^استبعاد من الاستيراد: (\d+) حالة$/, "Excluded from import: $1 case(s)"],
+  [/^استبعاد جماعي: (\d+) حالة$/, "Bulk exclude: $1 case(s)"],
+  [/^إرجاع جماعي للصندوق: (\d+) حالة$/, "Bulk return to Inbox: $1 case(s)"],
+  [/^توزيع على المقيّمين: (.+)$/, "Assigned to reviewers: $1"],
+  [/^الأعضاء المضافون يدويًا: (\d+)$/, "Manually added members: $1"],
+  [/^قائمة الموظفين: (\d+) شخص$/, "Headcount updated: $1 people"],
+  [/^ملخص تحليل الواتساب (.+)$/, "WhatsApp analysis summary $1"],
+  [/^حذف ملخص (.+)$/, "Deleted summary $1"],
+  [/^اقتراحات AI: (\d+) إجابة(.*)$/, (_, n, rest) => "AI suggestions: " + n + " answer(s)" + (rest ? " (with invoice)" : "")],
+  [/^(.+?) \(كانت: (.+?)\)$/, "$1 (was: $2)"]
+
+];
+function trStr(s){
+  if(!s||typeof s!=='string'||!isEn()) return s;
+  const trimmed=s.trim();
+  if(!trimmed||!/[\u0600-\u06FF]/.test(trimmed)) return s;
+  if(TR_EXACT[trimmed]){
+    const lead=s.match(/^\s*/)[0], trail=s.match(/\s*$/)[0];
+    return lead+TR_EXACT[trimmed]+trail;
+  }
+  for(const [rx,rep] of TR_RX){
+    if(rx.test(trimmed)){
+      const lead=s.match(/^\s*/)[0], trail=s.match(/\s*$/)[0];
+      return lead+trimmed.replace(rx,rep)+trail;
+    }
+  }
+  return s;
+}
+function trDom(root){
+  if(!root||!isEn()) return;
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
+  const nodes=[]; let n;
+  while((n=w.nextNode())) nodes.push(n);
+  for(const tx of nodes){
+    const p=tx.parentElement;
+    if(!p||p.tagName==='SCRIPT'||p.tagName==='STYLE'||p.tagName==='TEXTAREA') continue;
+    if(p.tagName==='OPTION'&&!p.hasAttribute('value')) p.setAttribute('value',p.textContent);
+    const v=tx.nodeValue;
+    if(v&&/[\u0600-\u06FF]/.test(v)){
+      const nv=trStr(v);
+      if(nv!==v) tx.nodeValue=nv;
+    }
+  }
+  if(root.querySelectorAll){
+    root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(el=>{
+      ['placeholder','title','aria-label'].forEach(attr=>{
+        const v=el.getAttribute(attr);
+        if(v&&/[\u0600-\u06FF]/.test(v)){
+          const nv=trStr(v);
+          if(nv!==v) el.setAttribute(attr,nv);
+        }
+      });
+    });
+    root.querySelectorAll('textarea,input[type="text"],input[type="search"]').forEach(el=>{
+      if(!el.hasAttribute('dir')&&!el.style.direction) el.setAttribute('dir','auto');
+    });
+  }
+}
+const _origConfirm=window.confirm.bind(window);
+function confirm(msg){ return _origConfirm(isEn()?trStr(String(msg||'')):msg); }
+function isEn(){ return S.lang!=='ar'; }
+function langBtnHtml(){ return '<button class="btn" id="btnLang" type="button" title="'+(isEn()?'التبديل إلى العربية':'Switch to English')+'">🌐 '+(isEn()?'العربية':'EN')+'</button>'; }
+function applyLang(){
+  const d=isEn()?'ltr':'rtl', l=isEn()?'en':'ar';
+  document.documentElement.dir=d; document.documentElement.lang=l;
+  const tb=document.querySelector('header.topbar'), ap=document.getElementById('app');
+  if(tb) tb.dir=d; if(ap) ap.dir=d;
+}
+const RES_AR_MAP={'Met':'متحققة','Not Met':'غير متحققة','N/A':'لا تنطبق','Incomplete':'غير مكتملة'};
+const RES_EN_MAP={'Met':'Met','Not Met':'Not Met','N/A':'N/A','Incomplete':'Incomplete'};
+const RES_AR=new Proxy(RES_AR_MAP,{get:(t,k)=>isEn()?(RES_EN_MAP[k]||t[k]):t[k]});
 const RES_CLS={'Met':'Met','Not Met':'NotMet','N/A':'NA','Incomplete':'Incomplete'};
-const STATUS={Returned:['معادة للتصحيح','p-no'],Pending:['بانتظار الاعتماد','p-wait'],Approved:['معتمدة','p-ok'],Rejected:['مرفوضة','p-no']};
-const CYCLE=[['25 → 1','الاختيار','EGY Team'],['2','المراجعة الأولية','KSA Team'],['4','الاعتماد','KSA Team'],['4 → 8','التصميم','EGY Team'],['8','المراجعة النهائية','KSA Team'],['10','الإرسال للنشر','KSA Team']];
-const ACT_AR={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار',import:'استيراد من الواتساب',headcount:'تحديث قائمة الموظفين',wa_stats:'حفظ ملخص تحليل الواتساب',inbox_take:'أخذ حالة من صندوق الوارد',inbox_dismiss:'استبعاد من صندوق الوارد',inbox_back:'إرجاع لصندوق الوارد',deleted:'حذف حالة',restored:'استرجاع حالة محذوفة',edited:'تعديل من المعتمد',decision_changed:'تغيير القرار'};
-const FIELD_AR={month:'الشهر',pharmacist:'اسم الصيدلي',branch:'الفرع',supervisor:'المشرف',summary:'ملخص الحالة',startPoint:'نقطة البداية',outcome:'النتيجة',situation:'وصف الموقف',products:'المنتجات',answers:'إجابات الأسئلة',reasons:'أدلة الشارات',invoiceTotal:'صافي الفاتورة',invoiceCount:'عدد القطع',invoiceItems:'أصناف الفاتورة',invoiceNote:'ملاحظة الفاتورة'};
+const STATUS_AR={Returned:['معادة للتصحيح','p-no'],Pending:['بانتظار الاعتماد','p-wait'],Approved:['معتمدة','p-ok'],Rejected:['مرفوضة','p-no']};
+const STATUS_EN={Returned:['Returned','p-no'],Pending:['Pending Approval','p-wait'],Approved:['Approved','p-ok'],Rejected:['Rejected','p-no']};
+const STATUS=new Proxy(STATUS_AR,{get:(t,k)=>isEn()?(STATUS_EN[k]||t[k]):t[k]});
+const CYCLE_AR=[['25 → 1','الاختيار','EGY Team'],['2','المراجعة الأولية','KSA Team'],['4','الاعتماد','KSA Team'],['4 → 8','التصميم','EGY Team'],['8','المراجعة النهائية','KSA Team'],['10','الإرسال للنشر','KSA Team']];
+const CYCLE_EN=[['25 → 1','Selection','EGY Team'],['2','Initial Review','KSA Team'],['4','Approval','KSA Team'],['4 → 8','Design','EGY Team'],['8','Final Review','KSA Team'],['10','Publish','KSA Team']];
+const CYCLE=new Proxy(CYCLE_AR,{get:(t,k)=>{const src=isEn()?CYCLE_EN:CYCLE_AR; const v=src[k]; return typeof v==='function'?v.bind(src):v;}});
+const ACT_AR_MAP={submitted:'إرسال للاعتماد',resubmitted:'إعادة إرسال بعد التصحيح',returned:'إعادة للمقيّم للتصحيح',nominated:'ترشيح لبوست الشهر',unnominated:'إلغاء الترشيح',created:'إنشاء حالة',approved:'اعتماد',rejected:'رفض',reopened:'إعادة فتح',settings:'تعديل الإعدادات',badge:'تعديل الشارات',user:'إدارة المستخدمين',stage:'مرحلة البوست',featured:'اختيار لبوست الشهر',unfeatured:'إلغاء اختيار',import:'استيراد من الواتساب',headcount:'تحديث قائمة الموظفين',wa_stats:'حفظ ملخص تحليل الواتساب',inbox_take:'أخذ حالة من صندوق الوارد',inbox_dismiss:'استبعاد من صندوق الوارد',inbox_back:'إرجاع لصندوق الوارد',inbox_assign:'توزيع على المقيّمين',ai_suggest:'اقتراح بالذكاء الاصطناعي',deleted:'حذف حالة',restored:'استرجاع حالة محذوفة',edited:'تعديل من المعتمد',decision_changed:'تغيير القرار'};
+const ACT_EN_MAP={submitted:'Submitted for Approval',resubmitted:'Resubmitted After Revision',returned:'Returned for Revision',nominated:'Nominated for Monthly Post',unnominated:'Unnominated',created:'Case Created',approved:'Approved',rejected:'Rejected',reopened:'Reopened',settings:'Settings Updated',badge:'Badge Updated',user:'User Management',stage:'Post Stage Updated',featured:'Selected as Best of Month',unfeatured:'Deselected from Best of Month',import:'WhatsApp Import',headcount:'Headcount Updated',wa_stats:'WhatsApp Summary Saved',inbox_take:'Taken from Inbox',inbox_dismiss:'Dismissed from Inbox',inbox_back:'Returned to Inbox',inbox_assign:'Assigned to Reviewers',ai_suggest:'AI Suggestion',deleted:'Case Deleted',restored:'Case Restored',edited:'Edited by Approver',decision_changed:'Decision Changed'};
+const ACT_AR=new Proxy(ACT_AR_MAP,{get:(t,k)=>isEn()?(ACT_EN_MAP[k]||t[k]):t[k]});
+const FIELD_AR_MAP={month:'الشهر',pharmacist:'اسم الصيدلي',branch:'الفرع',supervisor:'المشرف',summary:'ملخص الحالة',startPoint:'نقطة البداية',outcome:'النتيجة',situation:'وصف الموقف',products:'المنتجات',answers:'إجابات الأسئلة',reasons:'أدلة الشارات',invoiceTotal:'صافي الفاتورة',invoiceCount:'عدد القطع',invoiceItems:'أصناف الفاتورة',invoiceNote:'ملاحظة الفاتورة'};
+const FIELD_EN_MAP={month:'Month',pharmacist:'Pharmacist Name',branch:'Branch',supervisor:'Supervisor',summary:'Case Summary',startPoint:'Start Point',outcome:'Outcome',situation:'Situation',products:'Products',answers:'Question Answers',reasons:'Badge Evidence',invoiceTotal:'Invoice Net Total',invoiceCount:'Items Count',invoiceItems:'Invoice Items',invoiceNote:'Invoice Note'};
+const FIELD_AR=new Proxy(FIELD_AR_MAP,{get:(t,k)=>isEn()?(FIELD_EN_MAP[k]||t[k]):t[k]});
 const STAGE_KEYS=['selected','design','final','sent','published'];
-const STAGE_AR={selected:'مختارة',design:'قيد التصميم',final:'مراجعة نهائية',sent:'أُرسلت للنشر',published:'نُشرت'};
-const QT={gate:'سؤال أولي',must:'شرط',disq:'استبعاد'};
+const STAGE_AR_MAP={selected:'مختارة',design:'قيد التصميم',final:'مراجعة نهائية',sent:'أُرسلت للنشر',published:'نُشرت'};
+const STAGE_EN_MAP={selected:'Selected',design:'In Design',final:'Final Review',sent:'Sent to Publish',published:'Published'};
+const STAGE_AR=new Proxy(STAGE_AR_MAP,{get:(t,k)=>isEn()?(STAGE_EN_MAP[k]||t[k]):t[k]});
+const QT_AR={gate:'سؤال أولي',must:'شرط',disq:'استبعاد'};
+const QT_EN={gate:'Gate Question',must:'Requirement',disq:'Disqualifier'};
+const QT=new Proxy(QT_AR,{get:(t,k)=>isEn()?(QT_EN[k]||t[k]):t[k]});
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 const $=s=>document.querySelector(s);
 const isoDay=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-function monthLabel(m){if(!m) return '—';const [y,mo]=m.split('-').map(Number);try{return new Date(y,mo-1,1).toLocaleDateString('ar-EG-u-nu-latn-ca-gregory',{month:'long',year:'numeric'});}catch(e){return m;}}
+function monthLabelAr(m){if(!m) return '—';const [y,mo]=m.split('-').map(Number);try{return new Date(y,mo-1,1).toLocaleDateString('ar-EG-u-nu-latn-ca-gregory',{month:'long',year:'numeric'});}catch(e){return m;}}
+function monthLabel(m){if(!m) return '—';const [y,mo]=m.split('-').map(Number);try{return new Date(y,mo-1,1).toLocaleDateString(isEn()?'en-US-u-ca-gregory':'ar-EG-u-nu-latn-ca-gregory',{month:'long',year:'numeric'});}catch(e){return m;}}
 
 /* ---------- State ---------- */
-const S={token:'',me:{id:null,name:'',role:'',canEdit:false,canWrite:true},preview:false,
+const S={lang:'en',token:'',me:{id:null,name:'',role:'',canEdit:false,canWrite:true},preview:false,
  badges:[],cases:new Map(),dec:new Map(),audit:[],users:[],settings:{sep:true,reqQuote:true,reqBadge:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'},code:null,busy:false,
  view:'cases',openId:null,filters:{month:'all',status:'all',q:''},dashMonth:'all',draft:null,isNew:false,rail:{reason:'',mode:''},railErr:'',saveState:'',saveErr:'',bd:null,aiCodes:new Set(),aiBusy:false,aiErr:'',aiKeyMsg:''};
 const adminMode=()=>S.me.canEdit&&!S.preview;
 function lsGet(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
 function lsSet(k,v){try{if(v) localStorage.setItem(k,v); else localStorage.removeItem(k);}catch(e){}}
+S.lang=lsGet('use_lang')||'en';
+applyLang();
+try{new MutationObserver(ms=>{if(!isEn()) return; ms.forEach(m=>{if(m.type==='characterData'&&m.target.parentElement) trDom(m.target.parentElement); else m.addedNodes.forEach(n=>{if(n.nodeType===1) trDom(n); else if(n.nodeType===3&&n.parentElement) trDom(n.parentElement);});});}).observe(document.body,{childList:true,subtree:true,characterData:true});}catch(e){}
 
 /* ---------- Badges & results ---------- */
 const allBadges=()=>S.badges.slice().sort((a,b)=>(a.order||0)-(b.order||0));
@@ -1229,10 +2358,11 @@ async function load(){
   S.settings=Object.assign({sep:true,reqQuote:true,reqBadge:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'},d.settings||{}); applyBrand(); S.audit=d.audit||[]; S.users=d.users||[];
 }
 async function reload(){ await load(); onData(); }
-function toast(t,bad){ const b=$('#banner'); b.innerHTML='<div class="banner"'+(bad?'':' style="background:var(--good-soft);color:var(--good)"')+'>'+esc(t)+'</div>'; clearTimeout(toast.t); toast.t=setTimeout(()=>{b.innerHTML='';},6000); }
+function toast(t,bad){ t=trStr(String(t||'')); const b=$('#banner'); b.innerHTML='<div class="banner"'+(bad?'':' style="background:var(--good-soft);color:var(--good)"')+'>'+esc(t)+'</div>'; clearTimeout(toast.t); toast.t=setTimeout(()=>{b.innerHTML='';},6000); }
 async function init(){
   let st={initialized:true,storage:'server'};
   // شاشة انتظار بدل صفحة فارغة، ورسالة واضحة إذا تأخر الخادم
+  $('#roleBox').innerHTML=langBtnHtml();
   $('#main').innerHTML='<div class="panel login" style="text-align:center"><h2>جارٍ الاتصال بالخادم…</h2><p class="note" style="margin:0 auto" id="waitNote">قد يستغرق أول فتح بضع ثوانٍ.</p></div>';
   const slow=setTimeout(()=>{ const n=$('#waitNote'); if(n) n.innerHTML='الخادم يتأخر في الرد أكثر من المعتاد. إذا استمر ذلك فافتح رابط الخادم (/exec) في المتصفح وتأكد أنه يعرض: <b dir="ltr">USE Badges backend is running.</b><div class="actions" style="margin-top:12px;justify-content:center"><button class="btn primary" id="btnReloadPage">إعادة تحميل الصفحة</button></div>'; },15000);
   try{ st=await call('status'); }catch(e){ clearTimeout(slow); $('#sub').textContent=''; $('#main').innerHTML='<div class="panel login"><h2>تعذر الاتصال بالخادم</h2><p class="note" style="margin:0 0 12px">'+esc(e.message||'')+'</p><p class="note" style="margin:0 0 12px">افتح رابط الخادم (/exec) في المتصفح وتأكد أنه يعرض: <b dir="ltr">USE Badges backend is running.</b> إذا ظهرت صفحة خطأ فالمشكلة في Code.gs أو في النشر.</p><div class="actions"><button class="btn primary" id="btnReloadPage" style="width:100%">إعادة تحميل الصفحة</button></div></div>'; return; }
@@ -1247,12 +2377,12 @@ async function init(){
 }
 function showLogin(msg){
   S.me={id:null,name:'',role:'',canEdit:false,canWrite:true};
-  $('#sub').textContent='تسجيل الدخول'; $('#tabs').innerHTML=''; $('#roleBox').innerHTML='';
+  $('#sub').textContent='تسجيل الدخول'; $('#tabs').innerHTML=''; $('#roleBox').innerHTML=langBtnHtml();
   $('#main').innerHTML='<div class="panel login"><h2>تسجيل الدخول</h2><p class="note" style="margin:0 0 12px">أدخل اسم الدخول والرقم السري اللذين سلّمهما لك المدير. لا تشاركهما مع أحد، فكل إجراء يُسجَّل باسمك.</p><label class="f">اسم الدخول<input type="text" id="loginUser" autocomplete="username" autocapitalize="none" spellcheck="false" style="direction:ltr"></label><label class="f" style="margin-top:10px">الرقم السري<input type="password" id="loginPin" inputmode="numeric" autocomplete="current-password" maxlength="6" class="mono" style="text-align:center;font-size:20px;letter-spacing:4px"></label><div id="loginErr">'+(msg?'<div class="banner" style="margin-top:10px">'+esc(msg)+'</div>':'')+'</div><div class="actions" style="margin-top:12px"><button class="btn primary" id="btnLogin" style="width:100%">دخول</button></div></div>';
   const i2=$('#loginUser'); if(i2) i2.focus();
 }
 function showSetup(msg){
-  $('#sub').textContent='الإعداد الأول'; $('#tabs').innerHTML=''; $('#roleBox').innerHTML='';
+  $('#sub').textContent='الإعداد الأول'; $('#tabs').innerHTML=''; $('#roleBox').innerHTML=langBtnHtml();
   $('#main').innerHTML='<div class="panel login"><h2>إعداد المنصة لأول مرة</h2><p class="note" style="margin:0 0 12px">أنشئ حساب المدير. بعدها تضيف المقيّمين من تبويب «المستخدمون». الشارات الخمسة وأسئلتها تُضاف تلقائيًا.</p>'+
    '<label class="f">اسم المدير الظاهر<input type="text" id="suName" value="المدير"></label>'+
    '<label class="f" style="margin-top:10px">اسم الدخول<input type="text" id="suUser" value="admin" autocapitalize="none" spellcheck="false" style="direction:ltr"></label>'+
@@ -1604,7 +2734,7 @@ const IMP_ATT=[['missing','✖ مرفق ناقص'],['parsed','✔ فاتورة �
 function impRenderRows(){
   const I=impState(); if(!$('#impRows')) return;
   const rows=impFiltered(); const oldKeys=new Set(S.inboxKeys||[]);
-  { const so=impSortState(); document.querySelectorAll('th[data-impsort]').forEach(th=>{ const k=th.dataset.impsort; th.dataset.lbl=th.dataset.lbl||th.textContent; th.textContent=th.dataset.lbl+(so.k===k?(so.dir<0?' ▼':' ▲'):''); th.setAttribute('aria-sort',so.k===k?(so.dir<0?'descending':'ascending'):'none'); }); }
+  { const so=impSortState(); document.querySelectorAll('th[data-impsort]').forEach(th=>{ const k=th.dataset.impsort; th.dataset.lbl=th.dataset.lbl||th.textContent; th.textContent=trStr(th.dataset.lbl)+(so.k===k?(so.dir<0?' ▼':' ▲'):''); th.setAttribute('aria-sort',so.k===k?(so.dir<0?'descending':'ascending'):'none'); }); }
   $('#impRows').innerHTML=rows.length?rows.map((c,ri)=>{ const nm=c.invoices[0]&&fixName_(c.invoices[0].pharmacist);
     const miss=c.atts.filter(a=>a.missing);
     const att=(miss.length?'<span class="pill p-no" title="'+esc(miss.map(a=>a.name).join('\n'))+'">✖ '+(miss.length>1?miss.length+' ':'')+'ناقص</span> ':'')+c.atts.map((a,ix)=>a.missing?'':'<button type="button" class="pill '+(a.parsed?'p-ok':'p-wait')+'" style="border:0;cursor:pointer;font:inherit;font-size:12px" data-impview="'+esc(c.key)+'|'+ix+'" title="اضغط لعرض الملف: '+esc(a.name)+'">'+(a.parsed?'✔ فاتورة':'🖼 '+(a.kind==='pdf'?'PDF ممسوح':'صورة'))+'</button>').join(' ')||'—';
@@ -1830,7 +2960,7 @@ function impScore(c,msgs){
   if(pr){ s+=10; why.push('تفاعل/مدح من المشرف'); }
   c.score=Math.min(100,s); c.sigs=sig; c.why=why; c.tier=c.score>=70?3:c.score>=45?2:1;
 }
-const TIER_AR={3:'⭐⭐⭐ قوية',2:'⭐⭐ متوسطة',1:'⭐ ضعيفة'};
+const TIER_AR=new Proxy({3:'⭐⭐⭐ قوية',2:'⭐⭐ متوسطة',1:'⭐ ضعيفة'},{get:(t,k)=>isEn()?({3:'⭐⭐⭐ Strong',2:'⭐⭐ Medium',1:'⭐ Weak'}[k]||t[k]):t[k]});
 // توزيع الحالات المحددة على المجموعات، يظهر بجانب زر «تحديد» ويتحدث مع أي تغيير في الاختيار
 function impSelDist(){ const I=impState(); const S_=I.cases.filter(c=>I.sel.has(c.key)); if(!S_.length) return '';
   const d={}; S_.forEach(c=>{ d[c.group||'—']=(d[c.group||'—']||0)+1; });
@@ -1925,7 +3055,7 @@ function updateIc(){
 /* ===== Headcount (قائمة الموظفين) + WhatsApp groups analysis ===== */
 const XLSX_URL='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 function xlsxLib(){ if(window.XLSX) return Promise.resolve(window.XLSX); return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=XLSX_URL; s.onload=()=>res(window.XLSX); s.onerror=()=>rej(new Error('تعذر تحميل مكتبة Excel. تحقق من الاتصال بالإنترنت.')); document.head.appendChild(s); }); }
-const ROLE_AR={pharm:'صيدلي',sup:'مشرف',talent:'Talent',am:'مدير منطقة'};
+const ROLE_AR=new Proxy({pharm:'صيدلي',sup:'مشرف',talent:'Talent',am:'مدير منطقة'},{get:(t,k)=>isEn()?({pharm:'Pharmacist',sup:'Supervisor',talent:'Talent',am:'Area Manager'}[k]||t[k]):t[k]});
 const latinD_=s=>String(s==null?'':s).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
 function phoneKey_(s){ let d=latinD_(s).replace(/\D/g,''); if(d.startsWith('00')) d=d.slice(2); if(d.length===10&&d.startsWith('05')) d='966'+d.slice(1); else if(d.length===9&&d.startsWith('5')) d='966'+d; return d.length>=8?d:''; }
 const isPhone_=s=>/^\+?[\d\s\-()‪‬]{8,}$/.test(String(s||'').trim());
@@ -2200,7 +3330,7 @@ function anCompute(){
   return {groups,cases:sel,allCases:cases,replies:replies.filter(r=>sel.includes(r.x)),unknown:Object.values(unknown).sort((a,b)=>b.n-a.n),unkRep:Object.values(unkRep).filter(u=>u.n>=2).sort((a,b)=>b.n-a.n),talMsg,talByGroup,supMsg,msgLog,linkOf};
 }
 const mins_=ms=>Math.round(ms/60000);
-const fmtDur_=m=>m==null||!isFinite(m)?'—':(m<60?m+'د':m<1440?Math.floor(m/60)+'س'+(m%60?' '+(m%60)+'د':''):Math.floor(m/1440)+' يوم'+(Math.floor(m%1440/60)?' '+Math.floor(m%1440/60)+'س':''));
+const fmtDur_=m=>m==null||!isFinite(m)?'—':isEn()?(m<60?m+'m':m<1440?Math.floor(m/60)+'h'+(m%60?' '+(m%60)+'m':''):Math.floor(m/1440)+'d'+(Math.floor(m%1440/60)?' '+Math.floor(m%1440/60)+'h':'')):(m<60?m+'د':m<1440?Math.floor(m/60)+'س'+(m%60?' '+(m%60)+'د':''):Math.floor(m/1440)+' يوم'+(Math.floor(m%1440/60)?' '+Math.floor(m%1440/60)+'س':''));
 const median_=a=>{ if(!a.length) return null; const s=a.slice().sort((x,y)=>x-y); const k=s.length>>1; return s.length%2?s[k]:Math.round((s[k-1]+s[k])/2); };
 const pct_=(a,b)=>b?Math.round(a*100/b):0;
 const money_=v=>Number(v||0).toLocaleString('en-US',{maximumFractionDigits:0});
@@ -2358,7 +3488,7 @@ async function anSave(){
 /* ----- ملخصات الشهور المحفوظة ----- */
 const H2C_URL='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', JSPDF_URL='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
 function libOnce_(url,test){ if(test()) return Promise.resolve(); return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=url; s.onload=()=>res(); s.onerror=()=>rej(new Error('تعذر تحميل مكتبة التصدير. تحقق من الاتصال بالإنترنت.')); document.head.appendChild(s); }); }
-const monthAr_=id=>{ try{ return new Date(id+'-01T00:00:00').toLocaleDateString('ar-EG-u-nu-latn',{month:'long',year:'numeric'}); }catch(e){ return id; } };
+const monthAr_=id=>{ try{ return new Date(id+'-01T00:00:00').toLocaleDateString(isEn()?'en-US':'ar-EG-u-nu-latn',{month:'long',year:'numeric'}); }catch(e){ return id; } };
 function repHtml(doc,sn){
   const K=sn.kpi||{}; const tbl=(head,rows)=>'<table class="rs-t"><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';
   const rc=r=>'<span class="rs-p '+(r>=80?'ok':r>=70?'w':'no')+'">'+r+'%</span>';
@@ -2524,7 +3654,7 @@ function renderShell(){
   applyBrand();
   $('#sub').textContent=admin?'تقييم حالات USE Community واعتماد الشارات وبوست الشهر':(S.me.canEdit?'معاينة بوابة الإدخال كما يراها المقيّم':'بوابة الإدخال: أدخل حالاتك وتابع اعتمادها');
   $('#tabs').innerHTML=tabsFor().map(([k,l])=>'<button class="tab" data-tab="'+k+'" aria-current="'+(S.view===k)+'">'+l+'</button>').join('');
-  $('#roleBox').innerHTML='<span class="rbadge">'+(S.me.role==='admin'?'مدير':'مقيّم')+'</span><span class="who">'+esc(S.me.name)+'</span>'+(S.me.canEdit?'<button class="btn" id="btnPreview">'+(S.preview?'← العودة للوحة التحكم':'عرض بوابة الإدخال')+'</button>':'')+'<button class="btn" id="btnLogout">خروج</button>';
+  $('#roleBox').innerHTML=langBtnHtml()+'<span class="rbadge">'+(S.me.role==='admin'?'مدير':'مقيّم')+'</span><span class="who">'+esc(S.me.name)+'</span>'+(S.me.canEdit?'<button class="btn" id="btnPreview">'+(S.preview?'← العودة للوحة التحكم':'عرض بوابة الإدخال')+'</button>':'')+'<button class="btn" id="btnLogout">خروج</button>';
 }
 function go(v){S.pick=v==='best'?S.pick:null;S.view=v;S.openId=null;S.draft=null;S.bd=null;renderShell();mount();window.scrollTo(0,0);}
 function mount(){
@@ -3096,7 +4226,7 @@ function postData(id){
   const c=S.cases.get(id); const r=resultsOf(id,c);
   const met=allBadges().filter(b=>r[b.key]==='Met');
   const sc=(S.postScaleTmp&&S.postScaleTmp[id])||(S.dec.get(id)||{}).postScale||{t:100,i:100};
-  return {ts:(sc.t||100)/100,is:(sc.i||100)/100,month:monthLabel(c.month),pharmacist:c.pharmacist||'',supervisor:c.supervisor||'',start:c.startPoint||'',outcome:c.outcome||'',situation:c.situation||[],products:c.products||[],badges:met,brand:S.settings.brandPrimary||'#1f4e78',accent:S.settings.brandAccent||'#c9a86a',logo:S.settings.brandLogo||''};
+  return {ts:(sc.t||100)/100,is:(sc.i||100)/100,month:monthLabelAr(c.month),pharmacist:c.pharmacist||'',supervisor:c.supervisor||'',start:c.startPoint||'',outcome:c.outcome||'',situation:c.situation||[],products:c.products||[],badges:met,brand:S.settings.brandPrimary||'#1f4e78',accent:S.settings.brandAccent||'#c9a86a',logo:S.settings.brandLogo||''};
 }
 function layoutPost(cv,d,dry,redraw){
   const W=1080, x=cv.getContext('2d'); const H0=dry?4000:cv.height;
@@ -3290,6 +4420,7 @@ function bqSet(el){
 }
 document.addEventListener('click',e=>{
   const t=e.target.closest('button,tr[data-open],tr[data-draft],a[data-openbest]'); if(!t) return;
+  if(t.id==='btnLang'){ S.lang=isEn()?'ar':'en'; lsSet('use_lang',S.lang); applyLang(); document.querySelectorAll('th[data-impsort]').forEach(th=>delete th.dataset.lbl); S.postsSig=''; if(!S.me.id){ if($('#suPin')) showSetup(''); else showLogin(''); } else { renderShell(); mount(); } return; }
   if(t.dataset.tab) return go(t.dataset.tab);
   if(t.id==='btnPreview'){S.preview=!S.preview;S.view='cases';S.openId=null;S.draft=null;S.filters.status='all';renderShell();mount();return;}
   if(t.dataset.st!==undefined){S.filters.status=t.dataset.st;return updateCases();}
