@@ -1095,6 +1095,9 @@ const TR_EXACT = {
   "☁️ بانتظار المزامنة": "☁️ Pending sync",
   "🔄 مزامنة مع المعتمد": "🔄 Sync to Admin",
   "🔄 تحديث من السحابة": "🔄 Refresh from Cloud",
+  "⚡ إضافة فورية بدون AI": "⚡ Quick Add without AI",
+  "جارٍ الإضافة الفورية لصندوق الوارد…": "Adding cases to Inbox immediately…",
+  "أُضيفت بدون تحليل AI": "Added without AI analysis",
   "لا توجد بيانات استخراج مرفوعة على السحابة بعد. افتح حساب المقيّم واضغط «مزامنة مع المعتمد» أو «استخراج الحالات».": "No extracted data uploaded to the cloud yet. Open the Reviewer account and click 'Sync to Admin' or 'Extract Cases'."
 
 };
@@ -1175,6 +1178,8 @@ const TR_RX = [
   [/^\s*مختار ▾$/, " selected ▾"],
   [/^من التصنيفات: الكل ▾$/, "From Categories: All ▾"],
   [/^حلّل المختار وأضفه لصندوق الوارد \((\d+)\)$/, "Analyze Selected & Add to Inbox ($1)"],
+  [/^⚡ إضافة فورية بدون AI \((\d+)\)$/, "⚡ Quick Add without AI ($1)"],
+  [/^⚡ أُضيفت (\d+) حالة مباشرة لصندوق الوارد بدون تحليل AI\.$/, "⚡ Added $1 case(s) directly to Inbox without AI analysis."],
   [/^عرض الرسائل المستبعدة \((\d+)\): ردود ومدح وتعليقات بدون مرفق$/, "Show excluded messages ($1): replies, praise & comments without attachments"],
   [/^جارٍ قراءة (.+)…$/, "Reading $1…"],
   [/^تمت قراءة (\d+) ملف\. حدّد الفترة ثم اضغط «استخراج الحالات»\.$/, "Read $1 file(s). Select the date range and click 'Extract Cases'."],
@@ -1567,7 +1572,7 @@ const AI=(()=>{
       return r.json();
     }
     if(src==='backend'){
-      if(file){ const up=await uploadChunks(file.data); if(up) return bk('ai',{prompt,schema,file:{kind:file.kind,mediaType:file.mediaType,upload:up}}); }
+      if(file&&file.data&&file.data.length>75000){ const up=await uploadChunks(file.data); if(up) return bk('ai',{prompt,schema,file:{kind:file.kind,mediaType:file.mediaType,upload:up}}); }
       return bk('ai',file?{prompt,schema,file}:{prompt,schema});
     }
     if(src==='claude'){
@@ -2331,7 +2336,7 @@ const ACTIONS={
     const safeText=text.replace(/"/g,'”').replace(/\\/g,'/');
     const hasInv=!!file||!!invText;
     const result=aiApply_(await AI.analyze(aiPrompt_(safeText,badges,file&&file.kind,invText),aiSchema_(hasInv),file),badges,text+'\n'+invText,hasInv);
-    await audit_(u,p.caseId||'','ai_suggest','اقتراحات AI: '+result.suggestions.length+' إجابة'+(file?' (مع قراءة الفاتورة)':''));
+    if(!p.bulk) await audit_(u,p.caseId||'','ai_suggest','اقتراحات AI: '+result.suggestions.length+' إجابة'+(file?' (مع قراءة الفاتورة)':''));
     return result;
   },
   aiTest: async(u)=>{ needAdmin_(u); return {ok:true,sample:(await AI.ping()).slice(0,60)}; },
@@ -2673,29 +2678,36 @@ const WA=(()=>{
     return w.some(x=>!/^حضرت(ك|كم|ه)|^حضراتكم/.test(x)&&CASE_STEMS.some(s=>x.startsWith(s))); }
   async function buildCases(src, from, to, cats, onProgress){
     const msgs=src.msgs.filter(m=>(!from||m.t>=from)&&(!to||m.t<=to));
-    const cs=segment(msgs); let i=0;
+    const cs=segment(msgs); let done=0, lastP=0;
     // رسالة بدون مرفق ولا تحتوي أي كلمة تدل على حالة (عميل، حضرت، شرفنا، طلب، رشحت…) = رد أو تعليق، وليست حالة
     cs.forEach(c=>{ c.reply=!c.atts.length&&!looksLikeCase(c.text); });
     // منشن بصيغة الويب (@~الاسم ثم النص مباشرة): نطابقه مع أسماء المشرفين الظاهرة في باقي الحالات
     const known=[...new Set(cs.map(c=>c.mention).filter(Boolean))].sort((a,b)=>b.length-a.length);
     cs.forEach(c=>{ if(c.mention||!c.text) return; const t=c.text.replace(INV,''); const k=known.find(n=>t.includes('@'+n)||t.includes('@~'+n)||t.includes('@ ~'+n)); if(k) c.mention=k; });
-    for(const c of cs){
-      c.group=src.group; c.invoices=[]; c.aiFiles=[];
-      for(const a of c.atts){
-        const entry=!a.omitted&&src.byBase[a.name]; a.entry=entry||''; if(a.omitted||!entry){ a.missing=true; continue; }
-        if(a.kind==='pdf'){
-          try{ const data=await src.zip.file(entry).async('uint8array'); const {lines}=await pdfLines(data.slice());
-            const inv=parseInvoice(lines); if(inv&&inv.items.length){ inv.file=a.name; c.invoices.push(inv); a.parsed=true; } else c.aiFiles.push(a);
-          }catch(e){ c.aiFiles.push(a); }
-        } else if(a.kind==='image') c.aiFiles.push(a);
+    let idx=0;
+    const work=async()=>{
+      while(idx<cs.length){
+        const c=cs[idx++]; c.group=src.group; c.invoices=[]; c.aiFiles=[];
+        if(!c.reply){
+          for(const a of c.atts){
+            const entry=!a.omitted&&src.byBase[a.name]; a.entry=entry||''; if(a.omitted||!entry){ a.missing=true; continue; }
+            if(a.kind==='pdf'){
+              try{ const data=await src.zip.file(entry).async('uint8array'); const {lines}=await pdfLines(data.slice());
+                const inv=parseInvoice(lines); if(inv&&inv.items.length){ inv.file=a.name; c.invoices.push(inv); a.parsed=true; } else c.aiFiles.push(a);
+              }catch(e){ c.aiFiles.push(a); }
+            } else if(a.kind==='image') c.aiFiles.push(a);
+          }
+          const items=[].concat(...c.invoices.map(v=>v.items));
+          c.cats=categorize(c.text, items, cats);
+          c.total=c.invoices.length?Math.round(c.invoices.reduce((s,v)=>s+v.total,0)*100)/100:null;
+          c.units=c.invoices.reduce((s,v)=>s+v.units,0)||null;
+        } else { c.cats=[]; c.total=null; c.units=null; }
+        c.key=[c.group,c.t.toISOString().slice(0,16),normA(c.sender)].join('|');
+        done++; const now=Date.now();
+        if(onProgress&&(done===cs.length||now-lastP>100)){ lastP=now; onProgress(done, cs.length); }
       }
-      const items=[].concat(...c.invoices.map(v=>v.items));
-      c.cats=categorize(c.text, items, cats);
-      c.total=c.invoices.length?Math.round(c.invoices.reduce((s,v)=>s+v.total,0)*100)/100:null;
-      c.units=c.invoices.reduce((s,v)=>s+v.units,0)||null;
-      c.key=[c.group,c.t.toISOString().slice(0,16),normA(c.sender)].join('|');
-      if(onProgress) onProgress(++i, cs.length);
-    }
+    };
+    await Promise.all([work(),work(),work(),work(),work(),work()]);
     return cs;
   }
   // one JPEG for the AI made of all non-text invoice images / scanned PDF pages
@@ -2703,14 +2715,14 @@ const WA=(()=>{
     const canv=[];
     for(const a of c.aiFiles.slice(0,4)){
       const data=await src.zip.file(a.entry).async('uint8array');
-      if(a.kind==='pdf'){ try{ const doc=await pdfjsLib.getDocument({data:data.slice(),isEvalSupported:false}).promise; (await renderPdfPages(doc,2,900)).forEach(x=>canv.push(x)); }catch(e){} }
-      else { const url=URL.createObjectURL(new Blob([data])); try{ const im=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; }); const k=Math.min(1,900/im.width); const cv=document.createElement('canvas'); cv.width=Math.round(im.width*k); cv.height=Math.round(im.height*k); const g=cv.getContext('2d'); g.drawImage(im,0,0,cv.width,cv.height); canv.push(cv); }catch(e){} finally{ URL.revokeObjectURL(url); } }
+      if(a.kind==='pdf'){ try{ const doc=await pdfjsLib.getDocument({data:data.slice(),isEvalSupported:false}).promise; (await renderPdfPages(doc,2,820)).forEach(x=>canv.push(x)); }catch(e){} }
+      else { const url=URL.createObjectURL(new Blob([data])); try{ const im=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; }); const k=Math.min(1,820/im.width); const cv=document.createElement('canvas'); cv.width=Math.round(im.width*k); cv.height=Math.round(im.height*k); const g=cv.getContext('2d'); g.drawImage(im,0,0,cv.width,cv.height); canv.push(cv); }catch(e){} finally{ URL.revokeObjectURL(url); } }
     }
     if(!canv.length) return null;
-    const W=900, H=Math.min(7000,canv.reduce((s,x)=>s+Math.round(x.height*W/x.width)+12,0));
+    const W=820, H=Math.min(7000,canv.reduce((s,x)=>s+Math.round(x.height*W/x.width)+12,0));
     const out=document.createElement('canvas'); out.width=W; out.height=H; const g=out.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,W,H);
     let y=0; for(const x of canv){ const h=Math.round(x.height*W/x.width); if(y>=H) break; g.drawImage(x,0,y,W,h); y+=h+12; g.fillStyle='#999'; g.fillRect(0,y-7,W,2); }
-    return {mediaType:'image/jpeg', data:out.toDataURL('image/jpeg',0.8).split(',')[1]};
+    return {mediaType:'image/jpeg', data:out.toDataURL('image/jpeg',0.74).split(',')[1]};
   }
   function invoiceText(c){
     return c.invoices.map((v,i)=>'فاتورة '+(i+1)+' (فرع '+(v.branch||'—')+'):\n'+v.items.map(x=>'- '+x.name+' × '+x.qty+' | الصافي '+x.net+(x.disc?' | خصم '+x.disc:'')).join('\n')+'\nصافي الفاتورة: '+v.total).join('\n\n');
@@ -2736,7 +2748,7 @@ function mountImport(){
   '<div class="actions"><label class="btn primary">📁 اختيار ملفات ZIP<input type="file" id="impFiles" accept=".zip,application/zip" multiple hidden></label><span class="note" id="impLoadMsg"></span></div>'+
   '<div id="impSrcs" style="margin-top:10px"></div></section>'+
   '<section class="panel sec" id="impStep2" hidden><h3>2) الفلترة والاختيار</h3><div id="impFilters"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="impSelAllBox" aria-label="تحديد الكل"></th><th style="width:36px">#</th><th class="sortable" data-impsort="score">الترشيح</th><th class="sortable" data-impsort="group">المجموعة</th><th class="sortable" data-impsort="t">التاريخ</th><th class="sortable" data-impsort="ph">الصيدلي</th><th class="sortable" data-impsort="sup">المشرف</th><th class="sortable" data-impsort="cat">التصنيفات</th><th>نص الحالة</th><th class="sortable" data-impsort="att">المرفقات</th><th class="sortable" data-impsort="total">الفاتورة</th><th class="sortable" data-impsort="st">الحالة</th></tr></thead><tbody id="impRows"></tbody></table></div></section>'+
-  '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><button class="btn primary" id="btnImpRun"></button><button class="btn" id="btnImpExclude"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><p class="note" style="margin:6px 0 0">«استبعاد المحدد» يحفظ الحالات كمستبعدة وتظهر بحالة «مستبعدة» في الاستيراد القادم، وتقدر ترجعها من صندوق الوارد ← المستبعدة.</p><div id="impLog" style="margin-top:10px"></div></section></div><div id="anBox"'+(S.impTab==='an'?'':' hidden')+'></div><div id="repBox"'+(S.impTab==='rep'?'':' hidden')+'></div>';
+  '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><button class="btn primary" id="btnImpRun"></button><button class="btn" id="btnImpFast"></button><button class="btn" id="btnImpExclude"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><p class="note" style="margin:6px 0 0">«استبعاد المحدد» يحفظ الحالات كمستبعدة وتظهر بحالة «مستبعدة» في الاستيراد القادم، وتقدر ترجعها من صندوق الوارد ← المستبعدة.</p><div id="impLog" style="margin-top:10px"></div></section></div><div id="anBox"'+(S.impTab==='an'?'':' hidden')+'></div><div id="repBox"'+(S.impTab==='rep'?'':' hidden')+'></div>';
   updateImport(); if(S.impTab==='an') updateAn(); if(S.impTab==='rep') updateRep();
 }
 // ترتيب الجدول بالضغط على رأس العمود
@@ -2803,6 +2815,7 @@ function updateImport(){
   impRenderRows();
   const n=[...I.sel].filter(k=>I.cases.some(c=>c.key===k)).length;
   const rb=$('#btnImpRun'); rb.textContent=I.busy?'جارٍ التحليل…':'حلّل المختار وأضفه لصندوق الوارد ('+n+')'; rb.disabled=I.busy||!n;
+  const fb=$('#btnImpFast'); if(fb){ fb.textContent='⚡ إضافة فورية بدون AI ('+n+')'; fb.disabled=I.busy||!n; }
   const xb=$('#btnImpExclude'); if(xb){ xb.textContent='🚫 استبعاد المحدد ('+n+')'; xb.disabled=I.busy||!n; }
   $('#btnImpStop').hidden=!I.busy;
   impSess.saveUi();
@@ -2811,12 +2824,21 @@ function updateImport(){
 async function impLoadFiles(files){
   const I=impState(); I.busy=true; I.msg='جارٍ قراءة الملفات…'; updateImport();
   try{
-    for(const f of files){
-      if(I.srcs.some(s=>s.file.name===f.name&&s.file.size===f.size)) continue;
-      I.msg='جارٍ قراءة '+f.name+'…'; updateImport();
-      const src=await WA.readZip(f); if(!src.group) src.group='أخرى'; I.srcs.push(src);
+    const todo=[...files].filter(f=>!I.srcs.some(s=>s.file.name===f.name&&s.file.size===f.size));
+    await WA.libs();
+    const out=new Array(todo.length); let ix=0;
+    const worker=async()=>{
+      while(ix<todo.length){
+        const k=ix++, f=todo[k];
+        I.msg='جارٍ قراءة '+f.name+'…'; updateImport();
+        const src=await WA.readZip(f); if(!src.group) src.group='أخرى'; out[k]=src;
+      }
+    };
+    await Promise.all([worker(),worker(),worker(),worker()]);
+    out.filter(Boolean).forEach(src=>{
+      I.srcs.push(src);
       if(I.restored&&src.media){ let n=0; I.cases.forEach(c=>{ if(c.group!==src.group||!(c.src&&c.src.stub)) return; c.src=src; c.atts.forEach(a=>{ a.entry=(!a.omitted&&src.byBase[a.name])||''; }); c.aiFiles=c.aiFiles.filter(a=>a.entry); n++; }); if(n){ I.restored.linked[src.group]=true; I.restored.note='رُبطت مرفقات '+src.group+' بـ '+n+' حالة محفوظة بدون إعادة استخراج.'; } }
-    }
+    });
     const all=[].concat(...I.srcs.map(s=>s.msgs)); if(all.length){ const last=all.reduce((a,m)=>m.t>a?m.t:a,all[0].t); let first=new Date(last.getFullYear(),last.getMonth(),1), end=last; if(last.getDate()<=5){ first=new Date(last.getFullYear(),last.getMonth()-1,1); end=new Date(last.getFullYear(),last.getMonth(),0); } if(!I.from) I.from=ymd_(first); if(!I.to) I.to=ymd_(end); I.span=[all.reduce((a,m)=>m.t<a?m.t:a,all[0].t),last]; }
     I.msg='تمت قراءة '+I.srcs.length+' ملف. حدّد الفترة ثم اضغط «استخراج الحالات».';
   }catch(e){ I.msg=''; toast(e.message||'تعذرت قراءة الملف.',true); }
@@ -2878,30 +2900,61 @@ async function impExclude(){
   catch(e){ toast(e.message,true); }
   I.busy=false; updateImport();
 }
-async function impRun(){
+async function impRun(skipAI){
   const I=impState(); if(I.busy) return; const todo=I.cases.filter(c=>I.sel.has(c.key)&&!(I.done&&I.done[c.key])); if(!todo.length) return;
-  // جلسة مسترجعة: صور الفواتير غير موجودة حتى يُرفع ZIP المجموعة — نخيّر المستخدم بدل الإيقاف
   let noImg=false;
-  if(S.settings.aiEnabled){ const nc=todo.filter(c=>c.aiFiles.length&&c.src&&c.src.stub); const need=[...new Set(nc.map(c=>c.group))].sort();
+  if(!skipAI&&S.settings.aiEnabled){ const nc=todo.filter(c=>c.aiFiles.length&&c.src&&c.src.stub); const need=[...new Set(nc.map(c=>c.group))].sort();
     if(need.length){ if(!confirm(nc.length+' من الحالات المختارة فواتيرها صور أو PDF ممسوح، وملفات ZIP للمجموعات '+need.join('، ')+' غير مرفوعة بعد الاسترجاع.\n\n«موافق»: أرسلها الآن، ويحلل الذكاء الاصطناعي النص والفواتير المقروءة فقط (بدون الصور).\n«إلغاء»: ارفع ملف ZIP الجوال لهذه المجموعات أولًا (من «اختيار ملفات ZIP»، بدون إعادة استخراج) ثم اضغط التحليل من جديد.')) return; noImg=true; } }
-  I.busy=true; I.stop=false; I.log=[]; I.done=I.done||{}; let ok=0;
-  for(let k=0;k<todo.length;k++){
-    if(I.stop){ I.log.push({t:'أُوقف التحليل. أُضيفت '+ok+' حالة.'}); break; }
-    const c=todo[k]; I.progress='الحالة '+(k+1)+' من '+todo.length+'…'; updateImport();
-    const label=cleanSender_(c.sender)+' · '+ymd_(c.t)+' '+hm_(c.t);
+  I.busy=true; I.stop=false; I.log=[]; I.done=I.done||{}; let ok=0, doneN=0;
+  if(skipAI){
+    I.progress='جارٍ الإضافة الفورية لصندوق الوارد…'; updateImport();
     try{
-      let ai=null, aiErr=S.settings.aiEnabled?'':'الذكاء الاصطناعي غير مفعّل من الإعدادات';
-      const invText=c.invoices.length?WA.invoiceText(c):'';
-      const canAI=S.settings.aiEnabled&&(c.text||invText||c.aiFiles.length);
-      if(canAI){
-        const file=c.aiFiles.length&&!(c.src&&c.src.stub)?await WA.aiImage(c.src,c):null;
-        try{ ai=await call('aiSuggest',{caseId:'',bulk:true,text:c.text||'',invoiceText:invText,file:file||undefined}); }catch(e){ if(e.code==='auth') return logout(true); aiErr=e.message||'تعذر التحليل'; }
+      for(let k=0;k<todo.length;k+=20){
+        const chunk=todo.slice(k,k+20);
+        const r=await call('inboxAdd',{items:chunk.map(c=>impPayload(c,null,'أُضيفت بدون تحليل AI'))});
+        chunk.forEach(c=>{ I.done[c.key]=1; }); ok+=r.added||chunk.length;
       }
-      const {light,detail}=impPayload(c,ai,aiErr);
-      await call('inboxAdd',{items:[{light,detail}]});
-      I.done[c.key]=1; ok++; I.log.push({t:'✔ '+label+(ai?'':' — أُضيفت بدون تحليل: '+(aiErr||'لا يوجد نص أو فاتورة'))+(c.atts.some(a=>a.missing)?' (مرفق ناقص)':''),bad:!ai});
-    }catch(e){ I.log.push({t:'✖ '+label+': '+(e.message||'خطأ'),bad:true}); }
+      I.log.push({t:'⚡ أُضيفت '+ok+' حالة مباشرة لصندوق الوارد بدون تحليل AI.'});
+    }catch(e){ I.log.push({t:'✖ '+(e.message||'خطأ'),bad:true}); }
+    I.busy=false; I.progress='انتهى: أُضيفت '+ok+' حالة لصندوق الوارد.'; try{ await load(); }catch(e){} updateImport(); toast(I.progress);
+    return;
   }
+  let nextIdx=0, pendingBatch=[], flushP=null;
+  const flushBatch=()=>{
+    if(flushP||!pendingBatch.length) return flushP||Promise.resolve();
+    flushP=(async()=>{
+      while(pendingBatch.length){
+        const batch=pendingBatch.splice(0,20);
+        await call('inboxAdd',{items:batch.map(x=>x.payload)});
+        batch.forEach(x=>{ I.done[x.c.key]=1; ok++; });
+        updateImport();
+      }
+    })().catch(e=>{ I.log.push({t:'✖ '+(e.message||'خطأ'),bad:true}); updateImport(); }).finally(()=>{ flushP=null; });
+    return flushP;
+  };
+  const worker=async()=>{
+    while(nextIdx<todo.length&&!I.stop){
+      const k=nextIdx++, c=todo[k];
+      I.progress='الحالة '+Math.min(todo.length,doneN+1)+' من '+todo.length+'…'; updateImport();
+      const label=cleanSender_(c.sender)+' · '+ymd_(c.t)+' '+hm_(c.t);
+      try{
+        let ai=null, aiErr=S.settings.aiEnabled?'':'الذكاء الاصطناعي غير مفعّل من الإعدادات';
+        const invText=c.invoices.length?WA.invoiceText(c):'';
+        const canAI=S.settings.aiEnabled&&(c.text||invText||c.aiFiles.length);
+        if(canAI){
+          const file=c.aiFiles.length&&!(c.src&&c.src.stub)?await WA.aiImage(c.src,c):null;
+          try{ ai=await call('aiSuggest',{caseId:'',bulk:true,text:c.text||'',invoiceText:invText,file:file||undefined}); }catch(e){ if(e.code==='auth') return logout(true); aiErr=e.message||'تعذر التحليل'; }
+        }
+        doneN++; I.progress='الحالة '+doneN+' من '+todo.length+'…';
+        I.log.push({t:'✔ '+label+(ai?'':' — أُضيفت بدون تحليل: '+(aiErr||'لا يوجد نص أو فاتورة'))+(c.atts.some(a=>a.missing)?' (مرفق ناقص)':''),bad:!ai});
+        pendingBatch.push({c,payload:impPayload(c,ai,aiErr)});
+        updateImport(); flushBatch();
+      }catch(e){ doneN++; I.log.push({t:'✖ '+label+': '+(e.message||'خطأ'),bad:true}); updateImport(); }
+    }
+  };
+  await Promise.all([worker(),worker(),worker()]);
+  while(flushP||pendingBatch.length){ await (flushP||flushBatch()); }
+  if(I.stop) I.log.push({t:'أُوقف التحليل. أُضيفت '+ok+' حالة.'});
   I.busy=false; I.progress='انتهى: أُضيفت '+ok+' حالة لصندوق الوارد.'; try{ await load(); }catch(e){} updateImport(); toast(I.progress);
 }
 
@@ -4606,7 +4659,8 @@ document.addEventListener('click',e=>{
   if(t.id==='btnHcCancel'){ S.hcPending=null; return updateHc(); }
   if(t.id==='btnHcSave'){ if(S.busy||!S.hcPending) return; S.busy=true; t.disabled=true; const L=S.hcPending.people; return call('hcSave',{people:L}).then(r=>{ S.hcPending=null; S.hc=null; S.hcIdx=null; S.hcAllC=null; toast('حُفظت قائمة الموظفين ('+r.count+' شخص).'); return hcLoad(true); }).then(updateHc).catch(e=>{ toast(e.message,true); t.disabled=false; }).then(()=>{S.busy=false;}); }
   if(t.id==='btnImpExtract') return impExtract();
-  if(t.id==='btnImpRun') return impRun();
+  if(t.id==='btnImpRun') return impRun(false);
+  if(t.id==='btnImpFast') return impRun(true);
   if(t.id==='btnImpStop'){ impState().stop=true; return; }
   if(t.dataset&&t.dataset.impdel!==undefined){ const I=impState(); I.srcs.splice(+t.dataset.impdel,1); I.cases=[]; I.sel=new Set(); return updateImport(); }
   if(t.id==='btnImpExclude') return impExclude();
