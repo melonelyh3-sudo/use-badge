@@ -1059,6 +1059,7 @@ const TR_EXACT = {
   "تعذّرت قراءة الصورة. جرّب صيغة JPG أو PNG.": "Could not read image. Try JPG or PNG format.",
   "شارة متحققة": "Earned Badge",
   "🌐 معروض تلقائيًا من آخر استخراج تم رفعه على المنصة": "🌐 Automatically loaded from the latest extraction uploaded to the platform",
+  "📁 توجد ملخصات شهور سابقة محفوظة في تبويب «ملخصات الشهور». لعرض الجداول التفصيلية التفاعلية هنا، سيظهر لك التحليل تلقائيًا بمجرد أن يقوم المقيّم (أو أنت) برفع ملفات المجموعات والضغط على «استخراج الحالات».": "📁 Previous monthly summaries are available in the 'Monthly Summaries' tab. To view the full interactive analysis here, it will appear automatically as soon as a reviewer (or you) uploads the group ZIP files and clicks 'Extract Cases'.",
   "تحديث من السحابة": "Refresh from Cloud",
   "وصف الموقف": "Situation Description",
   "المنتجات": "Products",
@@ -3477,9 +3478,9 @@ async function impLoadCloud_(force){
 function updateAn(){
   const box=$('#anBox'); if(!box) return; const I=impState(), A=anState();
   if(!I.cases.length||!I.groupMsgs){
-    if(adminMode()&&!I.cloudChecked){ box.innerHTML='<p class="note">جارٍ التحميل…</p>'; impLoadCloud_(false).then(()=>updateAn()); return; }
+    if(adminMode()&&!I.cloudChecked){ box.innerHTML='<p class="note">جارٍ التحميل…</p>'; Promise.all([impLoadCloud_(false),anHist()]).then(()=>updateAn()); return; }
     if(I.cloudLoading){ box.innerHTML='<p class="note">جارٍ التحميل…</p>'; return; }
-    box.innerHTML='<div class="empty">ارفع ملفات المجموعات واضغط «استخراج الحالات» في تبويب «استيراد الحالات» أولًا. التحليل يعمل على نفس الملفات والفترة.</div>'; return;
+    box.innerHTML=(S.anHist&&S.anHist.some(m=>(m.snaps||[]).length)?'<div class="banner" style="margin:0 0 10px;background:#eef6ff;border-color:#bcd6f5;color:inherit">📁 توجد ملخصات شهور سابقة محفوظة في تبويب «ملخصات الشهور». لعرض الجداول التفصيلية التفاعلية هنا، سيظهر لك التحليل تلقائيًا بمجرد أن يقوم المقيّم (أو أنت) برفع ملفات المجموعات والضغط على «استخراج الحالات».</div>':'')+'<div class="empty">ارفع ملفات المجموعات واضغط «استخراج الحالات» في تبويب «استيراد الحالات» أولًا. التحليل يعمل على نفس الملفات والفترة.</div>'; return;
   }
   if(!S.hc){ box.innerHTML='<p class="note">جارٍ تحميل قائمة الموظفين…</p>'; hcLoad().catch(()=>{ S.hc={meta:null,people:[]}; }).then(updateAn); return; }
   if(!S.anHist){ anHist().then(updateAn); }
@@ -3750,7 +3751,7 @@ function update(){
   else if(S.view==='posts') updatePosts();
   else if(S.view==='users') updateUsers();
   else if(S.view==='best') updateBest();
-  else if(S.view==='imp') updateImport();
+  else if(S.view==='imp'){ updateImport(); if(S.impTab==='an') updateAn(); if(S.impTab==='rep') updateRep(); }
 }
 
 /* ---------- Cases list ---------- */
