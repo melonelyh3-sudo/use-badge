@@ -1087,7 +1087,15 @@ const TR_EXACT = {
   "الاستفادة من العروض": "Utilizing Promotional Offers",
   "تقديم حل متكامل": "Providing a Complete Solution",
   "البيع المتقاطع المناسب": "Relevant Cross-Selling",
-  "توظيف وصفتي": "Utilizing Wasfaty Service"
+  "توظيف وصفتي": "Utilizing Wasfaty Service",
+  "جارٍ مزامنة التحليل مع حساب المعتمد…": "Syncing analysis with Admin account…",
+  "☁️ جارٍ المزامنة مع المعتمد…": "☁️ Syncing with Admin…",
+  "☁️ تمت المزامنة مع المعتمد ✔": "☁️ Synced with Admin ✔",
+  "⚠️ تعذرت المزامنة": "⚠️ Sync failed",
+  "☁️ بانتظار المزامنة": "☁️ Pending sync",
+  "🔄 مزامنة مع المعتمد": "🔄 Sync to Admin",
+  "🔄 تحديث من السحابة": "🔄 Refresh from Cloud",
+  "لا توجد بيانات استخراج مرفوعة على السحابة بعد. افتح حساب المقيّم واضغط «مزامنة مع المعتمد» أو «استخراج الحالات».": "No extracted data uploaded to the cloud yet. Open the Reviewer account and click 'Sync to Admin' or 'Extract Cases'."
 
 };
 const TR_RX = [
@@ -1298,7 +1306,10 @@ const TR_RX = [
   [/^اقتراحات AI: (\d+) إجابة(.*)$/, (_, n, rest) => "AI suggestions: " + n + " answer(s)" + (rest ? " (with invoice)" : "")],
   [/^(.+?) \(كانت: (.+?)\)$/, "$1 (was: $2)"],
   [/^بواسطة: (.+?) · الفترة (.+?) · (\d+) حالة$/, "By: $1 · Period $2 · $3 case(s)"],
-  [/^مزامنة تحليل الواتساب \((.+?)\)$/, "Synced WhatsApp analysis ($1)"]
+  [/^مزامنة تحليل الواتساب \((.+?)\)$/, "Synced WhatsApp analysis ($1)"],
+  [/^✔ تمت مزامنة التحليل مع حساب المعتمد \((\d+) حالة\)\.$/, "✔ Analysis synced with Admin account ($1 cases)."],
+  [/^✔ تم جلب أحدث تحليل من السحابة \((\d+) حالة\)\.$/, "✔ Loaded latest analysis from cloud ($1 cases)."],
+  [/^تعذرت مزامنة التحليل: (.+)$/, "Analysis sync failed: $1"]
 
 ];
 function trStr(s){
@@ -1490,8 +1501,9 @@ const Store=(()=>{
   async function wsSet(key,v){ const r=await window.storage.set(key,JSON.stringify(v),true); if(!r) throw new Error('storage save failed'); }
   return {
     init, kind:()=>kind,
-    // يجمع كل عمليات الحفظ داخل إجراء واحد ويرسلها للخادم في طلب واحد (وضع الخادم فقط)
-    async tx(fn){ if(kind!=='remote'||batch) return fn(); batch=[]; try{ const out=await fn(); const w=batch; batch=null; if(w.length) await bk('batch',{writes:w}); return out; } catch(e){ batch=null; snap=null; throw e; } },
+    clearHeavy(c,pfx){ if(!heavy[c]) return; if(!pfx){ delete heavy[c]; return; } Object.keys(heavy[c]).forEach(k=>{ if(k.indexOf(pfx)===0) delete heavy[c][k]; }); },
+    // يجمع كل عمليات الحفظ داخل إجراء واحد ويرسلها للخادم في طلب واحد أو دفعات آمنة الحجم (وضع الخادم فقط)
+    async tx(fn){ if(kind!=='remote'||batch) return fn(); batch=[]; try{ const out=await fn(); const w=batch; batch=null; if(w.length){ let cur=[],sz=0; for(const it of w){ const l=JSON.stringify(it).length; if(cur.length&&sz+l>75000){ await bk('batch',{writes:cur}); cur=[]; sz=0; } cur.push(it); sz+=l; } if(cur.length) await bk('batch',{writes:cur}); } return out; } catch(e){ batch=null; snap=null; throw e; } },
     async list(c){
       await init(); if(kind==='unavailable') throw Object.assign(new Error('storage_unavailable'),{code:'storage_unavailable'});
       if(kind==='remote') return Object.values((await remoteAll())[c]||{}).map(clone);
@@ -2068,15 +2080,15 @@ const ACTIONS={
       await Store.put('hc','meta',{parts,count:clean.length,at:now_(),by:u.name});
       await audit_(u,'','headcount','قائمة الموظفين: '+clean.length+' شخص'); return {count:clean.length}; }); },
   impShareSave:(u,p)=>withLock_(async()=>{
-    const raw=String(p.data||''); if(!raw||raw.length>900000) throw err('بيانات الجلسة كبيرة جدًا.');
-    const per=38000, parts=Math.ceil(raw.length/per);
+    const raw=String(p.data||''); if(!raw||raw.length>2500000) throw err('بيانات الجلسة كبيرة جدًا.');
+    const per=32000, parts=Math.ceil(raw.length/per);
     for(let i=0;i<parts;i++) await Store.put('hc','imp_'+i,{d:raw.slice(i*per,(i+1)*per)});
     const meta={parts,at:now_(),by:u.name,byRole:u.role,from:String(p.from||'').slice(0,10),to:String(p.to||'').slice(0,10),cases:+p.cases||0,groups:Array.isArray(p.groups)?p.groups.slice(0,12):[]};
     await Store.put('hc','imp_meta',meta);
     await audit_(u,'','wa_stats','مزامنة تحليل الواتساب ('+(meta.from||'—')+' → '+(meta.to||'—')+' · '+meta.cases+' حالة)');
-    return {ok:true};
+    return {ok:true,meta};
   }),
-  impShareGet: async(u)=>{ needAdmin_(u); const g0=await Store.getMany('hc',['imp_meta']); const meta=g0.imp_meta; if(!meta||!meta.parts) return {meta:null};
+  impShareGet: async(u)=>{ needAdmin_(u); Store.clearHeavy('hc','imp_'); const g0=await Store.getMany('hc',['imp_meta']); const meta=g0.imp_meta; if(!meta||!meta.parts) return {meta:null};
     const ids=[]; for(let i=0;i<meta.parts;i++) ids.push('imp_'+i); const got=await Store.getMany('hc',ids);
     let raw=''; for(const id of ids) raw+=(got[id]&&got[id].d)||'';
     return {meta,data:raw}; },
@@ -2424,12 +2436,13 @@ async function doLogin(){
 function enter(){
   S.view='cases'; S.openId=null; S.draft=null; S.bd=null; S.preview=false; $('#banner').innerHTML='';
   renderShell(); mount();
+  if(!adminMode()){ impSess.info().then(x=>{ if(x&&!impState().cases.length) impSess.load().then(ok=>{ if(ok){ updateImport(); impSyncCloud_(true); } }); }).catch(()=>{}); }
   clearInterval(enter.t); enter.t=setInterval(poll,25000);
 }
 async function poll(){
   if(document.hidden||!S.me.id||S.bd||S.busy) return;
   if(S.saveState==='sending') return;
-  try{ await load(); onData(); }catch(e){ if(e.code==='auth'){ logout(true); } }
+  try{ await load(); if(adminMode()&&S.view==='imp'&&S.impTab==='an'&&!impState().cases.length) impState().cloudChecked=false; onData(); }catch(e){ if(e.code==='auth'){ logout(true); } }
 }
 function logout(expired){ clearInterval(enter.t); try{ impSess.clear(); }catch(e){} S.imp=null; lsSet('use_code',''); S.token=''; showLogin(expired?'انتهت الجلسة أو عُطّل الحساب. أدخل الكود من جديد.':''); }
 function nameOf(id,fallback){ return fallback||'—'; }
@@ -2766,13 +2779,14 @@ function impRenderRows(){
 function updateImport(){
   const I=impState(); if(!$('#impSrcs')) return;
   const lm=$('#impLoadMsg'); if(lm) lm.textContent=I.msg||'';
-  if(!I.sessChecked&&!I.cases.length&&!I.srcs.length){ I.sessChecked=true; impSess.info().then(x=>{ I.sessInfo=x; if(x) updateImport(); }); }
-  const sessBar=I.restored?'<div class="banner" style="margin:0 0 10px;background:#eef6ff;border-color:#bcd6f5;color:inherit">🗂 جلسة مسترجعة (محفوظة '+esc(I.restored.when)+') — الفترة '+esc(I.from||'—')+' → '+esc(I.to||'—')+' · '+I.cases.length+' حالة.<br><span class="note" style="margin:0">لعرض المرفقات أو إرسال صور الفواتير للذكاء الاصطناعي ارفع ملفات ZIP الجوال للمجموعات: '+Object.keys(I.groupMsgs||{}).sort().map(g=>esc(g)+(I.restored.linked[g]?' ✔':' ✖')).join('، ')+(I.restored.note?' — '+esc(I.restored.note):'')+'</span> <button class="btn" id="btnSessClear" type="button" style="margin-inline-start:8px">مسح الجلسة المحفوظة</button></div>'
+  if(!I.sessChecked&&!I.cases.length&&!I.srcs.length){ I.sessChecked=true; impSess.info().then(x=>{ I.sessInfo=x; if(x&&!adminMode()&&!I.cases.length){ impSess.load().then(ok=>{ if(ok){ updateImport(); impSyncCloud_(true); } }); } else if(x) updateImport(); }); }
+  const syncBadge=I.cases.length?' <span class="pill '+(I.syncing?'p-wait':I.synced?'p-ok':I.syncErr?'p-no':'p-na')+'" style="margin-inline-start:6px">'+(I.syncing?'☁️ جارٍ المزامنة مع المعتمد…':I.synced?'☁️ تمت المزامنة مع المعتمد ✔':I.syncErr?'⚠️ تعذرت المزامنة':'☁️ بانتظار المزامنة')+'</span> <button class="btn" id="btnImpSyncNow" type="button"'+(I.syncing?' disabled':'')+'>🔄 مزامنة مع المعتمد</button>':'';
+  const sessBar=I.restored?'<div class="banner" style="margin:0 0 10px;background:#eef6ff;border-color:#bcd6f5;color:inherit">🗂 جلسة مسترجعة (محفوظة '+esc(I.restored.when)+') — الفترة '+esc(I.from||'—')+' → '+esc(I.to||'—')+' · '+I.cases.length+' حالة.'+syncBadge+'<br><span class="note" style="margin:0">لعرض المرفقات أو إرسال صور الفواتير للذكاء الاصطناعي ارفع ملفات ZIP الجوال للمجموعات: '+Object.keys(I.groupMsgs||{}).sort().map(g=>esc(g)+(I.restored.linked[g]?' ✔':' ✖')).join('، ')+(I.restored.note?' — '+esc(I.restored.note):'')+'</span> <button class="btn" id="btnSessClear" type="button" style="margin-inline-start:8px">مسح الجلسة المحفوظة</button></div>'
     :(I.sessInfo&&!I.cases.length?'<div class="banner" style="margin:0 0 10px;background:#eef6ff;border-color:#bcd6f5;color:inherit">🗂 في جلسة استخراج محفوظة على هذا الجهاز من '+esc(I.sessInfo.when)+' — '+I.sessInfo.n+' حالة (الفترة '+esc(I.sessInfo.from||'—')+' → '+esc(I.sessInfo.to||'—')+'). <button class="btn primary" id="btnSessLoad" type="button">استرجاع الجلسة</button> <button class="btn" id="btnSessClear" type="button">مسح الجلسة / رفع ملفات جديدة</button></div>':'');
   $('#impSrcs').innerHTML=sessBar+(I.srcs.length?'<div class="tw"><table><thead><tr><th>الملف</th><th>النوع</th><th>المجموعة</th><th>الرسائل</th><th>الفترة في الملف</th><th></th></tr></thead><tbody>'+I.srcs.map((s,i)=>{ const a=s.msgs[0], b=s.msgs[s.msgs.length-1];
       return '<tr><td>'+esc(s.file.name)+'</td><td>'+(s.media?'<span class="pill p-ok">مع الوسائط</span>':'<span class="pill p-na">نص فقط (ويب)</span>')+'</td><td><select data-impgsel="'+i+'">'+IMP_GROUPS.concat(['أخرى']).map(g=>'<option'+(s.group===g?' selected':'')+'>'+g+'</option>').join('')+'</select></td><td class="num">'+s.msgs.length+'</td><td class="mono">'+(a?ymd_(a.t)+' → '+ymd_(b.t):'—')+'</td><td><button class="btn" data-impdel="'+i+'">إزالة</button></td></tr>'; }).join('')+'</tbody></table></div>'+
     '<div class="grid" style="margin-top:10px;max-width:640px"><label class="f">من تاريخ<input type="date" id="impFrom" value="'+esc(I.from||'')+'"></label><label class="f">إلى تاريخ<input type="date" id="impTo" value="'+esc(I.to||'')+'"></label></div>'+
-    '<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnImpExtract"'+(I.busy?' disabled':'')+'>استخراج الحالات</button><span class="note" id="impExtractMsg">'+esc(I.extractMsg||'')+'</span></div>'+
+    '<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnImpExtract"'+(I.busy?' disabled':'')+'>استخراج الحالات</button><span class="note" id="impExtractMsg">'+esc(I.extractMsg||'')+'</span>'+(I.restored?'':syncBadge)+'</div>'+
     ((I.dropped||[]).length&&!I.busy?'<details style="margin-top:8px"><summary class="note" style="cursor:pointer">عرض الرسائل المستبعدة ('+I.dropped.length+'): ردود ومدح وتعليقات بدون مرفق</summary><div class="tw" style="margin-top:6px;max-height:320px;overflow:auto"><table><thead><tr><th>المجموعة</th><th>التاريخ</th><th>المرسل</th><th>السبب</th><th>النص</th></tr></thead><tbody>'+I.dropped.slice().sort((a,b)=>b.t-a.t).map(d=>'<tr><td>'+esc(d.g)+'</td><td class="mono" style="white-space:nowrap">'+ymd_(d.t)+' '+hm_(d.t)+'</td><td>'+esc(d.sender)+'</td><td>'+esc(d.why)+'</td><td style="font-size:12.5px">'+esc(String(d.text||'').slice(0,160))+'</td></tr>').join('')+'</tbody></table></div></details>':''):'');
   const s2=$('#impStep2'), s3=$('#impStep3'); s2.hidden=s3.hidden=!I.cases.length; if(!I.cases.length) return;
   const cats=impCats(), cnt={}; let none=0; I.cases.forEach(c=>{ c.cats.forEach(x=>{cnt[x]=(cnt[x]||0)+1;}); if(!c.cats.length) none++; });
@@ -2837,7 +2851,12 @@ async function impExtract(){
       +' (الفترة '+(I.from||'—')+' → '+(I.to||'—')+' · رسائل الفترة: '+Object.keys(I.diag).sort().map(g=>g+' '+I.diag[g]).join('، ')+')';
     if(!all.length){ const sp=I.span; I.extractMsg='لم تُستخرج أي حالة في الفترة '+(I.from||'—')+' → '+(I.to||'—')+'. رسائل الفترة في الملفات: '+Object.keys(I.diag).sort().map(g=>g+' '+I.diag[g]).join('، ')+(sp?'. الملفات تغطي من '+ymd_(sp[0])+' إلى '+ymd_(sp[1]):'')+'. تأكد من الفترة، وأن التقويم في الجوال ميلادي.'; }
   }catch(e){ I.extractMsg=''; toast(e.message||'تعذر الاستخراج.',true); }
-  I.busy=false; updateImport(); if(I.cases.length){ impSess.save(); impSyncCloud_(); }
+  if(I.cases.length){
+    impSess.save();
+    const m=$('#impExtractMsg'); if(m) m.textContent=trStr('جارٍ مزامنة التحليل مع حساب المعتمد…');
+    await impSyncCloud_(true);
+  }
+  I.busy=false; updateImport();
 }
 function impPayload(c,ai,aiErr){
       const parsedTotal=c.total||0, parsedUnits=c.units||0;
@@ -2902,8 +2921,9 @@ const impSess=(()=>{ const DB='use_imp_session', ST='s', TTL=7*86400000; let dbp
   function saveUi(){ const I=impState(); if(!S.me||!I.cases.length||I.busy) return; clearTimeout(uiT); uiT=setTimeout(()=>{ tx('readwrite',st=>st.put(Object.assign({user:uid()},uiOut(I)),'ui')).catch(()=>{}); },800); }
   async function info(){ try{ const d=await tx('readonly',st=>st.get('data')); if(!d) return null; if(d.user!==uid()||Date.now()-d.savedAt>TTL){ await clear(); return null; } return {when:when(d.savedAt),n:d.cases.length,from:d.from,to:d.to}; }catch(e){ return null; } }
   async function load(){ const d=await tx('readonly',st=>st.get('data')); if(!d||d.user!==uid()) return false; const u=await tx('readonly',st=>st.get('ui'));
-    const I=impState(); const stubs={}; Object.keys(d.groupMsgs||{}).forEach(g=>{ stubs[g]={stub:true,group:g,zip:null,byBase:{},media:false,msgs:d.groupMsgs[g].msgs,names:d.groupMsgs[g].names||{},file:{name:'(جلسة محفوظة)',size:0}}; });
-    I.cases=d.cases.map(o=>{ const c=Object.assign({},o); c.src=stubs[c.group]||{stub:true,group:c.group,zip:null,byBase:{}}; c.aiFiles=(o.aiIdx||[]).map(i=>c.atts[i]).filter(Boolean); delete c.aiIdx; return c; });
+    const I=impState(); const gm={}, stubs={}; Object.keys(d.groupMsgs||{}).forEach(g=>{ const msgs=(d.groupMsgs[g].msgs||[]).map(m=>Object.assign({},m,{t:new Date(m.t)})); gm[g]={msgs,names:d.groupMsgs[g].names||{}}; stubs[g]={stub:true,group:g,zip:null,byBase:{},media:false,msgs,names:gm[g].names,file:{name:'(جلسة محفوظة)',size:0}}; });
+    I.cases=d.cases.map(o=>{ const c=Object.assign({},o,{t:new Date(o.t),lastT:new Date(o.lastT||o.t)}); c.src=stubs[c.group]||{stub:true,group:c.group,zip:null,byBase:{}}; c.aiFiles=(o.aiIdx||[]).map(i=>c.atts[i]).filter(Boolean); delete c.aiIdx; return c; });
+    d.groupMsgs=gm;
     I.groupMsgs=d.groupMsgs||{}; I.groupNames=d.groupNames||{}; I.from=d.from; I.to=d.to; I.span=d.span; I.extractMsg=d.extractMsg||''; I.dropped=d.dropped||[]; I.diag=d.diag||{}; I.an=null; S._gmemo={};
     impDupMark_(I.cases);
     if(u&&u.user===uid()){ I.f={cats:new Set(u.f.cats),groups:new Set(u.f.groups),att:new Set(u.f.att),tier:new Set(u.f.tier),inv:!!u.f.inv,q:u.f.q||''}; I.sort=u.sort||I.sort; I.sel=new Set((u.sel||[]).filter(k=>I.cases.some(c=>c.key===k))); I.topN=u.topN; I.topCats=new Set(u.topCats||[]); I.done=u.done||{}; } else I.sel=new Set();
@@ -3425,16 +3445,17 @@ function anMsgs(key,g,name){
       (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(tsv):Promise.reject()).then(()=>toast('نُسخ '+vis().length+' سطر — الصقه في Excel.')).catch(()=>{ const ta=document.createElement('textarea'); ta.value=tsv; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); toast('نُسخ '+vis().length+' سطر.'); }catch(_){ toast('تعذر النسخ.',true); } ta.remove(); }); } });
   document.body.appendChild(m); const q=$('#anMsgQ'); if(q) q.focus();
 }
-async function impSyncCloud_(){
-  const I=impState(); if(!S.me||!S.me.id||!I.cases.length||!I.groupMsgs) return;
+async function impSyncCloud_(showToast){
+  const I=impState(); if(!S.me||!S.me.id||!I.cases.length||!I.groupMsgs||I.syncing) return false;
+  I.syncing=true; I.syncErr=''; updateImport();
   try{
     await hcLoad().catch(()=>{});
     const R=anCompute(), G=anAgg(R), K=G.kpi; I.an={R,G};
-    const to=ymd_(new Date(Math.max(...R.cases.map(c=>c.c.t)))), from=ymd_(new Date(Math.min(...R.cases.map(c=>c.c.t))));
+    const to=ymd_(new Date(Math.max(...R.cases.map(c=>+c.c.t)))), from=ymd_(new Date(Math.min(...R.cases.map(c=>+c.c.t))));
     const groups={}; G.groups.forEach(x=>{ groups[x.g]={cases:x.cases,ph:x.ph,inv:x.inv,net:Math.round(x.net),avg:x.avg,rate:x.rate,med:x.med,talent:x.talent,un:x.un,team:x.team||0,part:x.part||0,supMsgs:x.supMsgs||0,covered:x.covered||0}; });
     const snap={key:R.groups.join('-'),label:(R.groups.length>1?'المجموعات ':'المجموعة ')+R.groups.join('، '),from,to,
-      kpi:{cases:K.cases,ph:K.ph,br:K.br,inv:K.inv,net:Math.round(K.net),avg:K.avg,units:K.units,rate:K.rate,med:K.med,un:K.un,talent:K.talent},
-      groups:G.groups.map(x=>({g:x.g,cases:x.cases,ph:x.ph,team:x.team||0,part:x.part||0,inv:x.inv,net:Math.round(x.net),avg:x.avg,rate:x.rate,med:x.med,talent:x.talent,un:x.un})),
+      kpi:{cases:K.cases,ph:K.ph,br:K.br,inv:K.inv,net:Math.round(K.net),avg:K.avg,units:K.units,rate:K.rate,med:K.med,un:K.un,talent:K.talent,supMsgs:K.supMsgs||0,covered:K.covered||0,team:K.team||0},
+      groups:G.groups.map(x=>({g:x.g,cases:x.cases,ph:x.ph,team:x.team||0,part:x.part||0,inv:x.inv,net:Math.round(x.net),avg:x.avg,rate:x.rate,med:x.med,talent:x.talent,un:x.un,supMsgs:x.supMsgs||0,covered:x.covered||0})),
       sups:G.sups.slice(0,80).map(s=>({name:s.name,region:s.region||'',groups:s.groups,n:s.n,rep:s.rep,rate:s.rate,med:s.med,team:s.team||0,part:s.part||0})),
       tal:G.tal.slice(0,40).map(t=>({name:t.name,m:t.m,n:t.n,groups:t.groups,med:t.med})),
       cats:Object.keys(G.cats).map(k=>[k==='__none'?'غير مصنّف':k,G.cats[k]]).sort((a,b)=>b[1]-a[1]).slice(0,30),
@@ -3445,15 +3466,38 @@ async function impSyncCloud_(){
     const pt=new Date((I.to?new Date(I.to+'T23:59:59'):new Date(to+'T23:59:59')).getTime()+7*86400000);
     const gm={}; Object.keys(I.groupMsgs||{}).forEach(g=>{
       const src=I.groupMsgs[g]||{};
-      gm[g]={names:src.names||{},msgs:(src.msgs||[]).filter(m=>m.t>=pf&&m.t<=pt).map(m=>({t:+m.t,s:m.sender,b:String(m.body||'').slice(0,220)}))};
+      const gcs=I.cases.filter(c=>c.group===g);
+      const isOwn=m=>gcs.some(c=>c.sender===m.sender&&+m.t>=+c.t&&+m.t<=+c.lastT);
+      gm[g]={names:src.names||{},msgs:(src.msgs||[]).filter(m=>{
+        const mt=+m.t; if(mt<+pf||mt>+pt) return false;
+        const b0=String(m.body||''); if(/This message was deleted|تم حذف هذه الرسالة|https?:\/\/|www\.|^\s*$/i.test(b0)) return false;
+        const txt=b0.replace(/<attached:[^>]*>|<[a-z]+ omitted>|\b(?:image|video|audio|GIF|sticker|document) omitted\b|<This message was edited>|<تم تعديل هذه الرسالة>/gi,'').trim();
+        const sticker=!txt&&/STICKER|sticker omitted/i.test(b0);
+        if(!txt&&!sticker) return false;
+        if(!sticker&&isOwn(m)) return false;
+        return true;
+      }).map(m=>{
+        const b0=String(m.body||'');
+        const txt=b0.replace(/<attached:[^>]*>|<[a-z]+ omitted>|\b(?:image|video|audio|GIF|sticker|document) omitted\b|<This message was edited>|<تم تعديل هذه الرسالة>/gi,'').trim();
+        const sticker=!txt&&/STICKER|sticker omitted/i.test(b0);
+        return {t:+m.t,s:m.sender,b:sticker?'sticker omitted':txt.slice(0,180)};
+      })};
     });
-    const cs=I.cases.map(c=>({key:c.key,group:c.group,t:+c.t,lastT:+c.lastT,sender:c.sender,mention:c.mention||'',cats:c.cats||[],score:c.score||0,tier:c.tier||1,sigs:c.sigs||[],why:c.why||[],dupCount:c.dupCount||0,total:c.total,units:c.units,text:String(c.text||'').slice(0,600),
-      invoices:(c.invoices||[]).map(v=>({branch:v.branch||'',invoice:v.invoice||'',date:v.date||'',pharmacist:v.pharmacist||'',pharmNo:v.pharmNo||'',total:v.total,units:v.units,discount:v.discount,items:(v.items||[]).slice(0,25)})),
+    const cs=I.cases.map(c=>({key:c.key,group:c.group,t:+c.t,lastT:+c.lastT,sender:c.sender,mention:c.mention||'',cats:c.cats||[],score:c.score||0,tier:c.tier||1,sigs:c.sigs||[],why:c.why||[],dupCount:c.dupCount||0,total:c.total,units:c.units,text:String(c.text||'').slice(0,420),
+      invoices:(c.invoices||[]).map(v=>({branch:v.branch||'',invoice:v.invoice||'',date:v.date||'',pharmacist:v.pharmacist||'',pharmNo:v.pharmNo||'',total:v.total,units:v.units,discount:v.discount,items:(v.items||[]).slice(0,20)})),
       atts:(c.atts||[]).map(a=>({name:a.name||'',kind:a.kind||'',missing:!!a.missing,parsed:!!a.parsed})),
       aiIdx:(c.aiFiles||[]).map(a=>c.atts.indexOf(a)).filter(i=>i>=0)}));
     const payload=JSON.stringify({from:I.from||from,to:I.to||to,extractMsg:I.extractMsg||'',diag:I.diag||{},groupNames:I.groupNames||{},gm,cs});
-    if(payload.length<=850000) await call('impShareSave',{from:I.from||from,to:I.to||to,cases:I.cases.length,groups:R.groups,data:payload}).catch(()=>{});
-  }catch(e){ console.warn('cloud sync',e); }
+    await call('impShareSave',{from:I.from||from,to:I.to||to,cases:I.cases.length,groups:R.groups,data:payload});
+    I.synced=true; I.syncing=false; updateImport();
+    if(showToast) toast('✔ تمت مزامنة التحليل مع حساب المعتمد ('+I.cases.length+' حالة).');
+    return true;
+  }catch(e){
+    console.warn('cloud sync',e);
+    I.syncing=false; I.syncErr=e.message||'تعذرت المزامنة'; updateImport();
+    if(showToast) toast('تعذرت مزامنة التحليل: '+(e.message||'خطأ'),true);
+    return false;
+  }
 }
 async function impLoadCloud_(force){
   const I=impState(); if(I.cloudLoading) return false;
@@ -3472,15 +3516,15 @@ async function impLoadCloud_(force){
     I.cases=(d.cs||[]).map(o=>{ const c=Object.assign({},o,{t:new Date(o.t),lastT:new Date(o.lastT||o.t)}); c.src=stubs[c.group]||{stub:true,group:c.group,zip:null,byBase:{}}; c.aiFiles=(o.aiIdx||[]).map(i=>c.atts[i]).filter(Boolean); delete c.aiIdx; return c; });
     I.groupMsgs=gm; I.groupNames=d.groupNames||{}; I.from=d.from; I.to=d.to; I.extractMsg=d.extractMsg||''; I.diag=d.diag||{}; I.an=null; S._gmemo={};
     impDupMark_(I.cases);
-    I.cloudMeta=r.meta; I.cloudLoading=false; return I.cases.length>0;
+    I.cloudMeta=r.meta; I.synced=true; I.cloudLoading=false; return I.cases.length>0;
   }catch(e){ I.cloudLoading=false; return false; }
 }
 function updateAn(){
   const box=$('#anBox'); if(!box) return; const I=impState(), A=anState();
   if(!I.cases.length||!I.groupMsgs){
-    if(adminMode()&&!I.cloudChecked){ box.innerHTML='<p class="note">جارٍ التحميل…</p>'; Promise.all([impLoadCloud_(false),anHist()]).then(()=>updateAn()); return; }
+    if(adminMode()&&!I.cloudChecked){ box.innerHTML='<p class="note">جارٍ التحميل…</p>'; Promise.all([impLoadCloud_(true),anHist()]).then(()=>updateAn()); return; }
     if(I.cloudLoading){ box.innerHTML='<p class="note">جارٍ التحميل…</p>'; return; }
-    box.innerHTML=(S.anHist&&S.anHist.some(m=>(m.snaps||[]).length)?'<div class="banner" style="margin:0 0 10px;background:#eef6ff;border-color:#bcd6f5;color:inherit">📁 توجد ملخصات شهور سابقة محفوظة في تبويب «ملخصات الشهور». لعرض الجداول التفصيلية التفاعلية هنا، سيظهر لك التحليل تلقائيًا بمجرد أن يقوم المقيّم (أو أنت) برفع ملفات المجموعات والضغط على «استخراج الحالات».</div>':'')+'<div class="empty">ارفع ملفات المجموعات واضغط «استخراج الحالات» في تبويب «استيراد الحالات» أولًا. التحليل يعمل على نفس الملفات والفترة.</div>'; return;
+    box.innerHTML=(S.anHist&&S.anHist.some(m=>(m.snaps||[]).length)?'<div class="banner" style="margin:0 0 10px;background:#eef6ff;border-color:#bcd6f5;color:inherit">📁 توجد ملخصات شهور سابقة محفوظة في تبويب «ملخصات الشهور». لعرض الجداول التفصيلية التفاعلية هنا، سيظهر لك التحليل تلقائيًا بمجرد أن يقوم المقيّم (أو أنت) برفع ملفات المجموعات والضغط على «استخراج الحالات».</div>':'')+'<div class="empty">ارفع ملفات المجموعات واضغط «استخراج الحالات» في تبويب «استيراد الحالات» أولًا. التحليل يعمل على نفس الملفات والفترة.<div class="actions" style="margin-top:12px;justify-content:center"><button class="btn primary" id="btnAnCloudRefresh" type="button">🔄 تحديث من السحابة</button></div></div>'; return;
   }
   if(!S.hc){ box.innerHTML='<p class="note">جارٍ تحميل قائمة الموظفين…</p>'; hcLoad().catch(()=>{ S.hc={meta:null,people:[]}; }).then(updateAn); return; }
   if(!S.anHist){ anHist().then(updateAn); }
@@ -4539,7 +4583,7 @@ document.addEventListener('click',e=>{
   if(t.id==='btnRejectOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return decide('reject'); }
   if(t.id==='btnReopen'){S.rail.mode='reopen';return refreshEditor();}
   if(t.id==='btnReopenOk'){ if(!S.rail.reason.trim()){$('#railReason').focus();return;} return reopen(); }
-  if(t.dataset&&t.dataset.imptab){ S.impTab=t.dataset.imptab; return mountImport(); }
+  if(t.dataset&&t.dataset.imptab){ S.impTab=t.dataset.imptab; if(S.impTab==='an'&&!impState().cases.length) impState().cloudChecked=false; if(S.impTab==='rep') S.anHist=null; return mountImport(); }
   if(t.dataset&&t.dataset.ancat!==undefined){ const A=anState(); A.cat=A.cat===t.dataset.ancat?'':t.dataset.ancat; return updateAn(); }
   if(t.dataset&&t.dataset.ansup!==undefined){ anState().sup=t.dataset.ansup; return updateAn(); }
   if(t.dataset&&t.dataset.anpick){ impState().sel.add(t.dataset.anpick); toast('حُددت الحالة. حلّلها من «استيراد الحالات» لتُضاف لصندوق الوارد.'); return updateAn(); }
@@ -4553,7 +4597,8 @@ document.addEventListener('click',e=>{
   if(t.id==='btnAnMoreUn'){ anState().showAllUn=true; return updateAn(); }
   if(t.id==='btnAnXlsx'){ if(S.busy) return; S.busy=true; return anXlsx().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.id==='btnAnSave'){ if(S.busy) return; S.busy=true; return anSave().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
-  if(t.id==='btnAnCloudRefresh'){ const I=impState(); I.cases=[]; I.groupMsgs=null; I.cloudChecked=false; return impLoadCloud_(true).then(()=>{ updateAn(); updateImport(); }); }
+  if(t.id==='btnAnCloudRefresh'){ const I=impState(); I.cases=[]; I.groupMsgs=null; I.cloudChecked=false; S.anHist=null; updateAn(); return impLoadCloud_(true).then(ok=>{ if(ok) toast('✔ تم جلب أحدث تحليل من السحابة ('+I.cases.length+' حالة).'); else toast('لا توجد بيانات استخراج مرفوعة على السحابة بعد. افتح حساب المقيّم واضغط «مزامنة مع المعتمد» أو «استخراج الحالات».',true); updateAn(); updateImport(); }); }
+  if(t.id==='btnImpSyncNow') return impSyncCloud_(true);
   if(t.id==='btnHmAdd'){ (S.hcMan=S.hcMan||[]).push({name:'',phone:'',role:'talent',group:'',wa:''}); return updateHc(); }
   if(t.dataset&&t.dataset.hmdel!==undefined){ S.hcMan.splice(+t.dataset.hmdel,1); return updateHc(); }
   if(t.id==='btnHmSave'){ if(S.busy) return; S.busy=true; return hcManSave().catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
@@ -4575,7 +4620,7 @@ document.addEventListener('click',e=>{
   if(t.dataset&&t.dataset.impview) return impView(t.dataset.impview);
   if(t.dataset&&t.dataset.anmsg!==undefined) return anMsgs(t.dataset.anmsg,t.dataset.anmsgg,t.dataset.anmsgn);
   if(t.id==='btnImpQX'){ impState().f.q=''; return updateImport(); }
-  if(t.id==='btnSessLoad'){ return impSess.load().then(ok=>{ if(!ok) toast('تعذر استرجاع الجلسة.',true); else toast('استُرجعت الجلسة: '+impState().cases.length+' حالة.'); updateImport(); }).catch(()=>toast('تعذر استرجاع الجلسة.',true)); }
+  if(t.id==='btnSessLoad'){ return impSess.load().then(ok=>{ if(!ok) toast('تعذر استرجاع الجلسة.',true); else { toast('استُرجعت الجلسة: '+impState().cases.length+' حالة.'); impSyncCloud_(true); } updateImport(); }).catch(()=>toast('تعذر استرجاع الجلسة.',true)); }
   if(t.id==='btnSessClear'){ if(!confirm('مسح الجلسة المحفوظة على هذا الجهاز؟'+(impState().restored?' ستُفرغ الحالات المعروضة أيضًا.':''))) return; return impSess.clear().then(()=>{ const I=impState(); I.sessInfo=null; if(I.restored){ S.imp=null; } mountImport(); }); }
   if(t.id==='btnTopCatsClear'){ const I=impState(); I.topCats=new Set(); I.topCatsOpen=true; return updateImport(); }
   if(t.id==='btnImpTop'){ impState().topCatsOpen=false; return impTop(); }
