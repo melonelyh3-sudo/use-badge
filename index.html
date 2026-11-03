@@ -4767,15 +4767,16 @@ function cutWhite(im){
   const key=(im.src||'')+'|cut'; if(cutCache.has(key)) return cutCache.get(key);
   const base=trimmed(im); let out=base;
   try{
-    const w=base.width, h=base.height; const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.drawImage(base,0,0);
+    const PAD=6, w=base.width+PAD*2, h=base.height+PAD*2; const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.drawImage(base,PAD,PAD);
     const id=x.getImageData(0,0,w,h), d=id.data; const seen=new Uint8Array(w*h); const q=new Int32Array(w*h); let qh=0, qt=0;
-    const bg=i=>{ const r=d[i*4],g=d[i*4+1],b=d[i*4+2],a=d[i*4+3]; return a<20||(r>226&&g>226&&b>226&&Math.max(r,g,b)-Math.min(r,g,b)<22); };
+    const bg=i=>{ const r=d[i*4],g=d[i*4+1],b=d[i*4+2],a=d[i*4+3]; return a<20||(r>238&&g>238&&b>238&&Math.max(r,g,b)-Math.min(r,g,b)<14); };
     const push=i=>{ if(!seen[i]&&bg(i)){ seen[i]=1; q[qt++]=i; } };
     for(let xx=0;xx<w;xx++){ push(xx); push((h-1)*w+xx); } for(let y=0;y<h;y++){ push(y*w); push(y*w+w-1); }
     while(qh<qt){ const i=q[qh++], xx=i%w, y=(i/w)|0; d[i*4+3]=0; if(xx>0) push(i-1); if(xx<w-1) push(i+1); if(y>0) push(i-w); if(y<h-1) push(i+w); }
     // تنعيم الحافة: البكسل الفاتح الملاصق للخلفية المحذوفة يصبح شبه شفاف
     for(let i=0;i<w*h;i++){ if(seen[i]) continue; const xx=i%w, y=(i/w)|0; const nb=(xx>0&&seen[i-1])||(xx<w-1&&seen[i+1])||(y>0&&seen[i-w])||(y<h-1&&seen[i+w]); if(nb){ const l=(d[i*4]+d[i*4+1]+d[i*4+2])/3; if(l>200) d[i*4+3]=Math.round(d[i*4+3]*0.45); } }
-    if(qt<w*h*0.97){ x.putImageData(id,0,0); out=c; }
+    // إذا كانت المساحة المحذوفة داخل حدود المنتج كبيرة جدًا فالعبوة نفسها بيضاء: نترك الصورة كما هي
+    const inner=(base.width*base.height)||1, removedInner=qt-(w*h-inner); if(removedInner/inner<0.55){ x.putImageData(id,0,0); out=c; }
   }catch(e){}
   cutCache.set(key,out); return out;
 }
@@ -4801,22 +4802,38 @@ function layoutPost(cv,d,dry,redraw){
   tl.forEach(l=>{T(l,W/2,y,'#fff','700',44,'center'); y+=58;});
   T(d.month,W/2,y-6,'#4fb3f6','400',30,'center'); y+=44;
   // top: pills + products
-  const top=y; const P=d.products; const n=P.length; const cols=Math.min(Math.max(n,1),4), rows=Math.ceil(n/4)||0;
-  const slotW=Math.min(150*ik,430/cols), slotH=Math.round((rows>1?120:200)*ik);
-  const topH=Math.max(190, rows*(slotH+40));
+  const top=y; const P=d.products; const n=P.length;
+  // حتى 3 منتجات: بجانب بطاقتي الصيدلي والمشرف. 4 أو أكثر: صف كامل العرض تحتهما (صور أكبر وأسماء أوضح)
+  const full=false, perRow=Math.min(4,Math.max(n,1)), rows=n?Math.ceil(n/perRow):0;   // بجانب بطاقتي الصيدلي والمشرف: 4 بالصف، والزيادة تحتها
+  const areaW=435, areaX=40, gapX=10;
+  const slotW=Math.min(150*ik,(areaW-gapX*(perRow-1))/perRow), slotH=Math.round((rows>1?165:205)*ik), labH=Math.round(slotW*0.2)+14;
+  const prodTop=full?top+200:top;
+  const topH=full?200+rows*(slotH+labH)+10:Math.max(190, rows*(slotH+labH));
   [['الصيدلي',d.pharmacist,'#d9731a'],['المشرف',d.supervisor,'#0f9d8a']].forEach((p,i)=>{
     if(!p[1]) return; const py=top+i*100+10;
     if(!dry){ rrect(x,0,W-40-230,py,230,66,16); x.fillStyle=p[2]; x.fill(); }
     T(p[0],W-40-24,py+45,'#fff','700',z(34));
-    F('500',z(32)); const nm=wrapLines(x,p[1],260)[0]||''; T(nm,W-300-30,py+44,'#fff','500',z(32));
+    // الاسم كاملًا في سطر واحد: يصغر الخط حتى يتسع، ثم «…» إذا بقي طويلًا
+    let nfs=z(32); F('500',nfs); while(x.measureText(p[1]).width>250&&nfs>20){ nfs--; F('500',nfs); } let nm=String(p[1]); if(x.measureText(nm).width>250){ while(nm.length>1&&x.measureText(nm+'…').width>250) nm=nm.slice(0,-1); nm+='…'; } T(nm,W-300-30,py+44,'#fff','500',nfs);
   });
   P.forEach((name,i)=>{
-    const col=i%4, row=Math.floor(i/4); const inRow=Math.min(4,n-row*4); const rowW=inRow*slotW; const sx=40+(430-rowW)/2+col*slotW; const sy=top+row*(slotH+40);
+    const col=i%perRow, row=Math.floor(i/perRow); const inRow=Math.min(perRow,n-row*perRow); const rowW=inRow*slotW+(inRow-1)*gapX;
+    // RTL: أول منتج على اليمين في الصف الكامل
+    const sx=full?(areaX+(areaW-rowW)/2+(inRow-1-col)*(slotW+gapX)):(areaX+(areaW-rowW)/2+col*(slotW+gapX)); const sy=prodTop+row*(slotH+labH);
     if(dry) return;
+    // منصة عرض (قرص فضي) تحت كل منتج، والمنتج واقف عليها — بدون أسماء
+    const cx=sx+slotW/2, pw=Math.min(slotW*0.92,slotH*0.95), rx=pw/2, ry=Math.max(6,pw*0.11), th=Math.max(5,pw*0.06), cy=sy+slotH;
+    const glow=x.createRadialGradient(cx,cy+th+ry*0.6,1,cx,cy+th+ry*0.6,rx*1.1); glow.addColorStop(0,'rgba(140,190,255,.35)'); glow.addColorStop(1,'rgba(140,190,255,0)'); x.fillStyle=glow; x.beginPath(); x.ellipse(cx,cy+th+ry*0.6,rx*1.1,ry*1.6,0,0,Math.PI*2); x.fill();
+    const side=x.createLinearGradient(cx-rx,0,cx+rx,0); side.addColorStop(0,'#6f7f95'); side.addColorStop(0.5,'#c9d3df'); side.addColorStop(1,'#6f7f95');
+    x.fillStyle=side; x.beginPath(); x.ellipse(cx,cy+th,rx,ry,0,0,Math.PI); x.lineTo(cx-rx,cy); x.ellipse(cx,cy,rx,ry,0,Math.PI,0,true); x.closePath(); x.fill();
+    const topG=x.createLinearGradient(0,cy-ry,0,cy+ry); topG.addColorStop(0,'#ffffff'); topG.addColorStop(1,'#d7dee8'); x.fillStyle=topG; x.beginPath(); x.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); x.fill();
+    x.strokeStyle='rgba(255,255,255,.9)'; x.lineWidth=1.5; x.beginPath(); x.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); x.stroke();
     const im=getImg(d.pimgs&&d.pimgs[i],redraw);
-    if(im){ const t=d.cut?cutWhite(im):trimmed(im); const r=Math.min((slotW-14)/t.width,slotH/t.height); const w=t.width*r,h=t.height*r; x.drawImage(t,sx+(slotW-w)/2,sy+(slotH-h),w,h); }
-    else { rrect(x,0,sx+6,sy+slotH*0.25,slotW-12,slotH*0.75,12); x.fillStyle='rgba(255,255,255,.10)'; x.fill(); }
-    F('500',z(20)); const ln=wrapLines(x,name,slotW-10)[0]||''; x.textAlign='center'; x.fillStyle='#cfe6fb'; x.fillText(ln,sx+slotW/2,sy+slotH+z(26));
+    if(im){ const t=d.cut?cutWhite(im):trimmed(im); const r=Math.min((slotW-10)/t.width,(slotH-4)/t.height); const w=t.width*r,h=t.height*r;
+      // ظل خفيف تحت المنتج على المنصة
+      x.fillStyle='rgba(20,40,70,.18)'; x.beginPath(); x.ellipse(cx,cy+ry*0.15,Math.min(w*0.55,rx*0.85),ry*0.45,0,0,Math.PI*2); x.fill();
+      x.drawImage(t,cx-w/2,cy+ry*0.15-h,w,h); }
+    else { rrect(x,0,cx-slotW*0.28,cy-slotH*0.7,slotW*0.56,slotH*0.7,12); x.fillStyle='rgba(255,255,255,.10)'; x.fill(); }
   });
   y=top+topH+30;
   // participation box
