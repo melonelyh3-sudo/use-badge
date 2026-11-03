@@ -1167,6 +1167,8 @@ const TR_EXACT = {
   "إزالة الخلفية البيضاء من صور المنتجات": "Remove white background from product images",
   "✔ اعتماد": "✔ Approve",
   "🔄 غيرها": "🔄 Another",
+  "لا توجد أصناف مقروءة.": "No invoice items read.",
+  "لم تُذكر منتجات.": "No products mentioned.",
   "⏳ بانتظار الاعتماد": "⏳ Pending Approval",
   "✔ المعتمدة": "✔ Approved",
   "⬇ تحميل كل البوستات المعتمدة (ZIP)": "⬇ Download All Approved Posts (ZIP)",
@@ -1178,6 +1180,9 @@ const TR_EXACT = {
 
 };
 const TR_RX = [
+  [/^🧴 المنتجات في البوست \((\d+)\)$/, "🧴 Products in Post ($1)"],
+  [/^🧾 أصناف الفاتورة \((\d+)\)$/, "🧾 Invoice Items ($1)"],
+  [/^صافي الفاتورة:\s*$/, "Invoice net: "],
   // Inbox & Cases
   [/^🎯 (.+)$/, (_, s) => "🎯 " + (TR_EXACT[s] || trStr(s))],
   [/^✔ تم جلب (\d+) صورة منتج تلقائيًا وحفظها مع البوست\.$/, "✔ Auto-fetched and saved $1 product image(s) for the post."],
@@ -2268,7 +2273,7 @@ const ACTIONS={
       const r=resultsLive_(answers,badges);
       const startPoint=String(ai.startPoint||(summary?summary.split(/[\n.،]/)[0].trim().slice(0,160):'')||'').trim().slice(0,400);
       const outcome=String(ai.outcome||(summary?'تقديم الرعاية الصيدلانية والحل المناسب لاحتياج العميل':'')||'').trim().slice(0,400);
-      const rec={id:'',month,pharmacist,branch:String(x.branch||'').slice(0,120),supervisor:String(x.mention||x.supervisor||'').slice(0,120),
+      const rec={id:'',month,pharmacist,branch:String(x.branch||'').slice(0,120),supervisor:String(x.supervisor||x.mention||'').slice(0,120),
         reviewerId:u.id,reviewerName:u.name,summary,startPoint,outcome,
         situation:clean_(ai.situation,6,400),products:clean_(ai.products,8,80),
         invoiceItems,invoiceNote:String(ai.invoiceNote||'').slice(0,400),invoiceTotal:num_(x.total,0,1000000,2),invoiceCount:num_(x.units,0,500,0),
@@ -3330,7 +3335,7 @@ function inboxHtml(){
    '<select id="inboxCat" aria-label="التصنيف"><option value="">كل التصنيفات</option>'+cats.map(c=>'<option'+(c===f?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select><span class="note">خذ الحالة لتقييمها؛ تتحول لمسودة باسمك وفيها اقتراحات الذكاء الاصطناعي، ثم راجعها وأرسلها للاعتماد.</span></div>'+
    (admin?'<div class="actions" style="margin:8px 0">'+(stF==='dismissed'?'<button class="btn primary" id="btnInbBulkBack"'+(sel.size?'':' disabled')+'>↩ إرجاع المحدد للصندوق ('+sel.size+')</button>':inbAssignUi_(L,sel)+bulkEvalBtns+'<button class="btn" id="btnInbBulkDis"'+(sel.size?'':' disabled')+'>🚫 استبعاد المحدد ('+sel.size+')</button><button class="btn" id="btnInbBulkBack"'+([...sel].some(id=>(L.find(x=>x.id===id)||{}).status==='taken')?'':' disabled')+'>↩ إرجاع المحدد للصندوق</button>')+'</div>':'<div class="actions" style="margin:8px 0">'+bulkEvalBtns+'</div>')+
    '<div class="tw"><table><thead><tr><th style="width:34px"><input type="checkbox" id="inboxAll" aria-label="تحديد الكل"'+(rows.length&&rows.every(x=>sel.has(x.id))?' checked':'')+'></th><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>النص</th><th>الفاتورة</th><th></th></tr></thead><tbody>'+
-   rows.map(x=>'<tr><td><input type="checkbox" data-inbsel="'+esc(x.id)+'"'+(sel.has(x.id)?' checked':'')+'></td><td>'+esc(x.group)+'</td><td class="mono" style="white-space:nowrap">'+esc(x.date)+'<br>'+esc(x.time)+'</td><td>'+esc(x.pharmacist||x.sender)+(x.branch?'<div class="note" style="margin:0">فرع '+esc(x.branch)+'</div>':'')+'</td><td>'+(x.mention?esc(x.mention):x.supervisor?esc(x.supervisor)+' <span class="pill p-na" style="font-size:10.5px" title="من قائمة الموظفين">HC</span>':'—')+'</td><td>'+(x.cats||[]).map(c=>'<span class="pill p-na" style="margin:1px">'+esc(c)+'</span>').join(' ')+'</td><td style="max-width:320px;font-size:12.5px">'+(x.preview?esc(x.preview)+'…':'<span class="note">بدون نص</span>')+(x.hasAI?'':'<div class="note" style="margin:0;color:var(--warn)">بدون تحليل AI</div>')+'</td><td class="num">'+(x.total?Number(x.total).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td><td style="white-space:nowrap">'+
+   rows.map(x=>'<tr><td><input type="checkbox" data-inbsel="'+esc(x.id)+'"'+(sel.has(x.id)?' checked':'')+'></td><td>'+esc(x.group)+'</td><td class="mono" style="white-space:nowrap">'+esc(x.date)+'<br>'+esc(x.time)+'</td><td>'+esc(x.pharmacist||x.sender)+(x.branch?'<div class="note" style="margin:0">فرع '+esc(x.branch)+'</div>':'')+'</td><td>'+(x.supervisor?esc(x.supervisor)+' <span class="pill p-na" style="font-size:10.5px" title="من قائمة الموظفين">HC</span>':x.mention?esc(x.mention):'—')+'</td><td>'+(x.cats||[]).map(c=>'<span class="pill p-na" style="margin:1px">'+esc(c)+'</span>').join(' ')+'</td><td style="max-width:320px;font-size:12.5px">'+(x.preview?esc(x.preview)+'…':'<span class="note">بدون نص</span>')+(x.hasAI?'':'<div class="note" style="margin:0;color:var(--warn)">بدون تحليل AI</div>')+'</td><td class="num">'+(x.total?Number(x.total).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td><td style="white-space:nowrap">'+
      (x.status==='dismissed'?'<span class="pill p-no">مستبعدة</span> <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':x.status==='new'?'<button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>'+(admin?' <button class="btn" data-inbdis="'+esc(x.id)+'">استبعاد</button>':''):x.takenBy===S.me.id&&!admin?'<span class="pill p-ok">مُسندة لك</span> <button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>':'<span class="pill p-wait">مع '+esc(x.takenByName||'—')+'</span>'+(admin&&x.takenBy===S.me.id?' <button class="btn primary" data-take="'+esc(x.id)+'">ابدأ التقييم</button>':'')+(admin?' <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':''))+'</td></tr>').join('')+'</tbody></table></div></details>';
 }
 // إسناد يدوي: المدير يحدد الحالات ويختار المقيّم
@@ -3352,7 +3357,7 @@ function draftFromInbox_(x,dt){
   const existing=Object.values(getDrafts()).find(o=>!o.id&&o.inboxId===x.id);
   const d=existing?JSON.parse(JSON.stringify(existing)):newDraft();
   if(!existing) d.localKey='n'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
-  d.month=(x.date||'').slice(0,7)||d.month; d.pharmacist=!badName_(x.pharmacist)?x.pharmacist:(!badName_(x.sender)?x.sender:(x.pharmacist||x.sender||'')); d.branch=x.branch||''; d.supervisor=x.mention||x.supervisor||''; if(x.hcFill&&!x.mention&&x.supervisor) d.hcFill=1; d.summary=dt.text||'';
+  d.month=(x.date||'').slice(0,7)||d.month; d.pharmacist=!badName_(x.pharmacist)?x.pharmacist:(!badName_(x.sender)?x.sender:(x.pharmacist||x.sender||'')); d.branch=x.branch||''; d.supervisor=x.supervisor||x.mention||''; if(x.supervisor) d.hcFill=1; d.summary=dt.text||'';
   d.inboxId=x.id; d.source='واتساب '+x.group+' · '+x.date+' '+x.time+' · '+x.sender+((dt.atts||[]).some(a=>a.missing)?' · ⚠️ مرفق ناقص في التصدير':'');
   const codeToBadge={}; activeBadges().forEach(b=>(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;})); d.aiCodes=[];
   (ai.suggestions||[]).forEach(s=>{ d.answers[s.code]=s.answer; d.aiCodes.push(s.code); const bk=codeToBadge[s.code]; if(bk&&s.quote&&!d.reasons[bk]) d.reasons[bk]=s.quote; });
@@ -3384,11 +3389,11 @@ async function fillFromHc(){
   try{ await hcLoad(); if(!hcIndex().n){ S.busy=false; return toast('ارفع قائمة الموظفين أولًا من «المستخدمون والإعدادات».',true); }
     const inb=S.inbox||[]; const byId={}; inb.forEach(x=>{ byId[x.id]=x; });
     // 1) المسودات على هذا الجهاز
-    const all=getDrafts(); Object.keys(all).forEach(k=>{ const d=all[k]; if(d.id) return; if(d.supervisor&&d.branch&&!badName_(d.pharmacist)) return;
+    const all=getDrafts(); Object.keys(all).forEach(k=>{ const d=all[k]; if(d.id) return; if(d.supervisor&&d.hcFill&&d.branch&&!badName_(d.pharmacist)) return;
       const x=d.inboxId&&byId[d.inboxId]; let g=x&&x.group, snd=x&&x.sender, no=x&&x.pharmNo;
       if(!g){ const m=String(d.source||'').match(/واتساب\s+(\S+)\s+·\s+\S+\s+\S+\s+·\s+([^·]+)/); if(m){ g=m[1]; snd=m[2].trim(); } }
       const h=g?hcInfo_(g,snd,no):null; if(!h){ miss++; return; } let ch=false;
-      if(!d.supervisor&&h.supervisor){ d.supervisor=h.supervisor; d.hcFill=1; ch=true; } if(!d.branch&&h.branch){ d.branch=h.branch; ch=true; } if(badName_(d.pharmacist)&&h.name){ d.pharmacist=h.name; ch=true; }
+      if(h.supervisor&&d.supervisor!==h.supervisor&&(!d.supervisor||(x&&d.supervisor===x.mention)||(!x&&!d.hcFill))){ d.supervisor=h.supervisor; d.hcFill=1; ch=true; } if(!d.branch&&h.branch){ d.branch=h.branch; ch=true; } if(badName_(d.pharmacist)&&h.name){ d.pharmacist=h.name; ch=true; }
       if(ch){ putDraft(d); nd++; } });
     // 2) حالات صندوق الوارد
     const items=inb.filter(x=>x.status!=='done'&&(!x.supervisor||!x.branch||badName_(x.pharmacist))).map(x=>{ const h=hcInfo_(x.group,x.sender,x.pharmNo); return h?{id:x.id,supervisor:h.supervisor,branch:h.branch,pharmacist:badName_(x.pharmacist)?h.name:''}:null; }).filter(Boolean);
@@ -4721,12 +4726,12 @@ function updatePosts(){
       '<p class="note" style="margin:0">المشرف: '+esc(c.supervisor||'—')+' · الفرع: '+esc(c.branch||'—')+' · المقيّم: '+esc(c.reviewerName||'—')+'</p>'+
       '<div class="rail-row"><span>الشارات المتحققة</span>'+dotsFor(id,c)+'<b class="num">'+metCount(r)+'</b></div>'+
       (pastPick(id,c)?'<span class="pill p-wait" style="width:fit-content">سبق اختيار الصيدلي: '+esc(pastPick(id,c))+'</span>':'')+
-      (is.length?'<div class="banner" style="margin:0">⚠️ '+esc(is[0])+'</div>':'<span class="pill p-ok" style="width:fit-content">جاهزة للاعتماد</span>')+
+      (is.length?'<div class="banner" style="margin:0">⚠️ '+esc(is[0])+'</div>':'<span class="pill p-ok" style="width:fit-content">جاهزة للاعتماد</span>')+postProdsHtml_(c)+
       '<div class="actions"><button class="btn primary" type="button" data-papprove="'+esc(id)+'">✔ اعتماد</button><button class="btn" type="button" data-preturn="'+esc(id)+'">↩ إعادة للتصحيح</button><button class="btn bad" type="button" data-preject="'+esc(id)+'">✖ رفض</button><button class="btn" type="button" data-pposts="'+esc(id)+'">🖼 صور المنتجات</button><button class="btn" data-open="'+esc(id)+'">فتح الحالة</button></div></div></section>'; }
     return '<section class="panel" style="display:grid;grid-template-columns:minmax(0,540px) minmax(0,1fr);gap:18px;padding:16px;'+(d.featured?'border:2px solid var(--good);':'')+'"><canvas data-cv="'+esc(id)+'" style="width:100%;height:auto;border-radius:10px;display:block"></canvas>'+
       '<div style="display:flex;flex-direction:column;gap:10px;min-width:0"><h3 style="margin:0;color:var(--navy)">'+(d.featured?'<span class="pill p-ok" style="margin-inline-end:8px">★ أفضل مشاركة</span>':'')+(i+1)+'. '+esc(c.pharmacist||'—')+' <span class="mono" style="font-size:12px;color:var(--muted)">'+esc(id)+'</span></h3>'+
       '<p class="note" style="margin:0">المشرف: '+esc(c.supervisor||'—')+' · الفرع: '+esc(c.branch||'—')+' · المقيّم: '+esc(c.reviewerName||'—')+'</p>'+
-      '<div class="rail-row"><span>الشارات المتحققة</span>'+dotsFor(id,c)+'<b class="num">'+metCount(r)+'</b></div>'+
+      '<div class="rail-row"><span>الشارات المتحققة</span>'+dotsFor(id,c)+'<b class="num">'+metCount(r)+'</b></div>'+(ro?'':postProdsHtml_(c))+
       (!ro&&pastPick(id,c)?'<span class="pill p-wait" style="width:fit-content">سبق اختيار الصيدلي: '+esc(pastPick(id,c))+'</span>':'')+
       (ro&&c.reviewerId===S.me.id?'<span class="pill p-ok" style="width:fit-content">من حالاتك</span>':'')+
       (ro&&d.featured?'<div class="ok-msg">★ ضمن أفضل المشاركات · '+STAGE_AR[d.postStage||'selected']+'</div>':'')+(ro&&!d.featured?'<span class="pill p-na" style="width:fit-content">معتمدة</span>':'')+
@@ -4869,6 +4874,15 @@ function layoutPost(cv,d,dry,redraw){
 }
 // ينتظر تحميل كل الصور (منتجات، شارات، شعار) قبل رسم بوست خارج الشاشة
 function preloadImgs_(srcs){ return Promise.all(srcs.filter(Boolean).map(src=>new Promise(res=>{ if(getImg(src,null)) return res(); const e=imgCache.get(src); const t=setTimeout(res,8000); const done=()=>{ clearTimeout(t); res(); }; if(e&&e.im){ e.im.addEventListener('load',()=>{ e.ok=true; done(); },{once:true}); e.im.addEventListener('error',done,{once:true}); if(e.im.complete&&e.im.naturalWidth){ e.ok=true; done(); } } else done(); }))); }
+// أسماء المنتجات في البوست + أصناف الفاتورة، ليتأكد المعتمد قبل الاعتماد
+function postProdsHtml_(c){
+  const P=(c.products||[]).filter(Boolean), IV=(c.invoiceItems||[]).filter(Boolean);
+  const li=(x,i)=>'<li style="margin:2px 0" dir="auto">'+(i+1)+'. '+esc(x)+'</li>';
+  return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">'+
+    '<div class="panel" style="padding:10px 12px;background:var(--bg,#f6f8fb)"><b style="font-size:13px">🧴 المنتجات في البوست ('+P.length+')</b>'+(P.length?'<ol style="margin:6px 0 0;padding:0;list-style:none;font-size:13px">'+P.map(li).join('')+'</ol>':'<p class="note" style="margin:6px 0 0">لم تُذكر منتجات.</p>')+'</div>'+
+    '<div class="panel" style="padding:10px 12px;background:var(--bg,#f6f8fb)"><b style="font-size:13px">🧾 أصناف الفاتورة ('+IV.length+')</b>'+(IV.length?'<ol style="margin:6px 0 0;padding:0;list-style:none;font-size:13px">'+IV.map(li).join('')+'</ol>':'<p class="note" style="margin:6px 0 0">لا توجد أصناف مقروءة.</p>')+
+      (c.invoiceTotal?'<div class="note" style="margin:6px 0 0">صافي الفاتورة: <b class="num">'+Number(c.invoiceTotal).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+'</b> ر.س'+(c.invoiceCount?' · '+c.invoiceCount+' قطعة':'')+'</div>':'')+(c.invoiceNote?'<div class="note" style="margin:4px 0 0">ملاحظة المطابقة: '+esc(c.invoiceNote)+'</div>':'')+'</div></div>';
+}
 // اعتماد / إعادة / رفض من «بوستات الشهر» — نفس فحوصات الاعتماد في الحالة
 async function postsDecide(ids,kind,reason){
   ids=ids.filter(Boolean); if(!ids.length||S.busy) return;
