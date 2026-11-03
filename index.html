@@ -238,6 +238,24 @@ const IMPORT_CATS_DEFAULT=[
  {n:'الوزن والرياضة',k:'تخسيس, تنحيف, وزن, رجيم, دايت, كيتو, رياضه, جيم, بروتين, تمرين, عضلات, whey, protein, mounjaro, مونجارو, ozempic, اوزمبيك, صيام متقطع'},
  {n:'البرد والمناعة',k:'برد, انفلونزا, كحه, سعال, زكام, مناعه, احتقان, حلق, زور, التهاب الحلق, strepsils, ستربسلس, redoxon'}
 ];
+const IMPORT_SUBCATS_DEFAULT=[
+ {n:'تصبغات وتفتيح',k:'تصبغ, تصبغات, كلف, بقع, اثار حبوب, آثار حبوب, تفتيح, نضاره, هالات, اسمرار, توحيد لون, pigment, pigmentbio, even pigment, melamedic, mela b3, alpha plus, الفا بلس, avoquin, افوكوين, niacinamide, نياسيناميد, ثياميدول, thiamidol, depiwhite, ديبي وايت, lumiere, هيدروكينون, ميلانين, بايوديرما بيجمنت'},
+ {n:'حب الشباب والمسام',k:'حب الشباب, حبوب, بثور, رؤوس سوداء, رؤس سوداء, رؤوس بيضاء, مسام, دهنيه, بشرة دهنية, لمعان, افرازات دهنيه, acne, effaclar, ايفاكلار, sebium, سيبيوم, differin, ديفرين, acretin, اكرتين, epiduo, ايبيدو, benzac, بنزاك, salicylic, ساليسيليك, acnemycin, normaderm, نورماديرم, cleanance, كلينانس, ازيليك, azelaic'},
+ {n:'ترطيب وجفاف وإكزيما',k:'جفاف, بشره جافه, تقشر, تشقق, ترطيب, مرطب, اكزيما, إكزيما, حساسيه, تحسس, تهيج, احمرار, التهاب بشره, حاجز البشره, atoderm, اتوديرم, cicabio, سيكابيو, cicaplast, سيكابلاست, lipikar, ليبيكار, cerave moisturizing, سيرافي مرطب, cetaphil moisturizing, سيتافيل مرطب, bepanthen, بيبانثين, urea, يوريا, qv, كيو في, xeracalm'},
+ {n:'حماية من الشمس',k:'واقي شمس, واقي من الشمس, صن بلوك, حروق الشمس, التعرض للشمس, spf, sunscreen, sunblock, sunfluid, photoderm, فوتوديرم, anthelios, انثيليوس, eucerin sun, isdin, ايزدين, heliocare, هيليوكير'},
+ {n:'تجاعيد وعلامات التقدم',k:'تجاعيد, خطوط, علامات التقدم, شد البشره, شيخوخه, ترهل, retinol, ريتينول, liftactiv, ليفت اكتيف, hyalu b5, هيالو, hyaluronic, هيالورونيك, كولاجين للبشره, فيلر, filler, anti-age, anti aging'},
+ {n:'غسول وتنظيف البشرة',k:'غسول, تنظيف البشره, مزيل مكياج, ميسيلار, micellar, sensibio, سينسيبيو, foaming cleanser, hydrating cleanser, غسول لطيف'},
+ {n:'تساقط الشعر وإنباته',k:'تساقط, صلع, فراغات, انبات, تكثيف الشعر, ضعف الشعر, حواجب, رموش, priorin, بريورين, glopriorin, جلوبريورين, mostal, موستال, minoxidil, مينوكسيديل, avogain, افوجين, cystine, سيستين, anacaps, اناكابس, neoptide, نيوبتايد, aminexil, امينكسيل, hair loss, biotin, بيوتين'},
+ {n:'قشرة وفروة الرأس',k:'قشره, قشرة, حكه فروه, التهاب فروه, دهون الفروه, فروه دهنيه, dercos, ديكروس, nizoral, نيزورال, شامبو قشره, سيلينيوم, كيتوكونازول'},
+ {n:'تلف وجفاف الشعر',k:'هيشان, تقصف, تلف الشعر, شعر جاف, شعر مصبوغ, بروتين الشعر, بلسم, ماسك شعر, سيروم شعر, اولابليكس, olaplex'},
+ {n:'مفاصل وعظام وعضلات',k:'مفاصل, مفصل, ركبه, خشونه, ظهر, عظام, عضلات, شد عضلي, كدمه, التواء, dorofen, دوروفين, glucosamine, جلوكوزامين, move free, موف فري, joint, كالسيوم, فيتامين د, vitamin d, prima d3, بريما, voltaren, فولتارين, reparil, ريباريل, روكسونين, مسكن'},
+ {n:'طاقة وأعصاب ومناعة',k:'خمول, ارهاق, تعب, تركيز, اعصاب, تنميل, مناعه, اوميجا, omega, b12, نيوروبيون, neurobion, methycobal, ميثيكوبال, رويال جيلي, royal jelly, جنسنج, ginseng, سنتروم, centrum, جلوفيت, glovit, زنك, zinc, فيتامين سي, redoxon, ريدوكسون, coq10'},
+ {n:'أرق واضطرابات النوم',k:'نوم, ارق, سهر, توتر, قلق, ميلاتونين, melatonin, zzzquil, melfast, ملفاست, اشواغاندا, ashwagandha'},
+ {n:'قولون وحموضة وهضم',k:'قولون, انتفاخ, غازات, حموضه, حرقان, ارتجاع, معده, امساك, اسهال, عسر هضم, جرثومه, بروبيوتيك, probiotic, prolife, نيكسيوم, جافيسكون, مالوكس'},
+ {n:'برد وكحة والتهاب الحلق',k:'برد, انفلونزا, زكام, رشح, احتقان, جيوب انفيه, كحه, سعال, بلغم, حلق, التهاب الحلق, زور, strepsils, ستربسلس, بخاخ انف, اوتريفين'},
+ {n:'سمنة وتنحيف ورياضة',k:'تخسيس, تنحيف, نزول الوزن, سد الشهيه, حرق دهون, دايت, رجيم, كيتو, مونجارو, mounjaro, اوزمبيك, ozempic, واي بروتين, whey, protein, كرياتين'},
+ {n:'أمراض مزمنة ووصفتي',k:'وصفتي, wasfaty, وصفه تامين, ضغط, سكر, سكري, كوليسترول, كولسترول, انسولين, غده درقيه'}
+];
 /* ---------- Language & i18n (EN default, AR toggle) ---------- */
 const TR_EXACT = {
   // Topbar & Shell
@@ -1103,11 +1121,35 @@ const TR_EXACT = {
   "↩ للصندوق": "↩ To Inbox",
   "محفوظة كمسودة جاهزة. افتحها للمراجعة أو أرسل المسودات دفعة واحدة.": "Saved as draft. Click to review or submit all drafts at once.",
   "لا توجد مسودات جاهزة للإرسال.": "No drafts ready to submit.",
-  "أُرجعت المسودة إلى صندوق الوارد.": "Draft returned to Inbox."
+  "أُرجعت المسودة إلى صندوق الوارد.": "Draft returned to Inbox.",
+  "الحالة الدقيقة:": "Specific Condition:",
+  "تصبغات وتفتيح": "Pigmentation & Brightening",
+  "حب الشباب والمسام": "Acne & Pores",
+  "ترطيب وجفاف وإكزيما": "Moisturizing & Eczema",
+  "حماية من الشمس": "Sun Care & SPF",
+  "تجاعيد وعلامات التقدم": "Anti-Aging & Wrinkles",
+  "غسول وتنظيف البشرة": "Cleansers & Makeup Removal",
+  "تساقط الشعر وإنباته": "Hair Loss & Regrowth",
+  "قشرة وفروة الرأس": "Dandruff & Scalp Care",
+  "تلف وجفاف الشعر": "Damaged & Dry Hair",
+  "مفاصل وعظام وعضلات": "Joints, Bones & Muscles",
+  "طاقة وأعصاب ومناعة": "Energy, Nerves & Immunity",
+  "أرق واضطرابات النوم": "Sleep & Relaxation",
+  "قولون وحموضة وهضم": "IBS, Acidity & Digestion",
+  "برد وكحة والتهاب الحلق": "Cold, Cough & Sore Throat",
+  "سمنة وتنحيف ورياضة": "Weight Loss & Fitness",
+  "أمراض مزمنة ووصفتي": "Chronic Care & Wasfaty",
+  "🔍 جلب صور المنتجات تلقائيًا": "🔍 Auto-Fetch Product Images",
+  "جارٍ البحث عن صور المنتجات…": "Searching for product images…",
+  "🔍 بحث صورة": "🔍 Find Image",
+  "🔄 صورة أخرى": "🔄 Try Another",
+  "تعذر العثور على صورة تلقائية لهذا المنتج. يمكنك رفعها يدويًا.": "Could not auto-find an image for this product. You can upload one manually."
 
 };
 const TR_RX = [
   // Inbox & Cases
+  [/^🎯 (.+)$/, (_, s) => "🎯 " + (TR_EXACT[s] || trStr(s))],
+  [/^✔ تم جلب (\d+) صورة منتج تلقائيًا وحفظها مع البوست\.$/, "✔ Auto-fetched and saved $1 product image(s) for the post."],
   [/^📥 صندوق الوارد من الواتساب: (\d+) حالة جديدة(\s*·)?$/, "📥 WhatsApp Inbox: $1 new cases$2"],
   [/^📥 سحب المحدد لحالاتي \(مسودات\) \((\d+)\)$/, "📥 Move Selected to My Cases ($1)"],
   [/^🚀 إرسال المحدد للاعتماد مباشرة \((\d+)\)$/, "🚀 Submit Selected for Approval ($1)"],
@@ -1846,6 +1888,7 @@ const now_=()=>new Date().toISOString();
 const today_=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const rid=()=>Math.random().toString(36).slice(2,10);
 const clean_=(a,max,len)=>(Array.isArray(a)?a:[]).map(x=>String(x||'').trim().slice(0,len)).filter(Boolean).slice(0,max);
+const prodKey_=n=>{ const s=String(n||'').toLowerCase().replace(/[ً-ْـ]/g,'').replace(/[إأآ]/g,'ا').replace(/[^\p{L}\p{N}]+/gu,''); let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return 'pimg_'+h.toString(36)+s.length.toString(36); };
 const isHex_=v=>/^#[0-9a-fA-F]{6}$/.test(String(v||''));
 function err(m){ return new Error(m); }
 let chain=Promise.resolve();
@@ -2428,6 +2471,12 @@ const ACTIONS={
     }
     const docs=ok.length?await Store.getMany('postimgs',ok):{}; const out={}; ok.forEach(id=>{ out[id]=(docs[id]&&docs[id].imgs)||[]; }); return out;
   },
+  // مكتبة صور المنتجات المشتركة: أي صورة تُرفع أو تُجلب لمنتج تُستخدم تلقائيًا لنفس المنتج في كل البوستات
+  prodImgGet: async(u,p)=>{ const names=(Array.isArray(p.names)?p.names:[]).map(String).filter(Boolean).slice(0,80); if(!names.length) return {};
+    const keys=names.map(prodKey_); const got=await Store.getMany('hc',keys); const out={}; names.forEach((n,i)=>{ const d=got[keys[i]]; if(d&&d.img) out[n]=d.img; }); return out; },
+  prodImgSave:(u,p)=>withLock_(async()=>{ const name=String(p.name||'').trim(), img=String(p.img||'');
+    if(!name||img.indexOf('data:image/')!==0||img.length>45000) throw err('صورة منتج غير صالحة أو كبيرة.');
+    await Store.put('hc',prodKey_(name),{name:name.slice(0,120),img,at:now_(),by:u.name}); return {ok:true}; }),
   aiSuggest: async(u,p)=>{
     const set=await settings_(); if(!set.aiEnabled) throw err('الذكاء الاصطناعي غير مفعّل.');
     aiThrottle_(u,!!p.bulk);
@@ -2852,6 +2901,9 @@ function hashId_(s){ let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charC
 const ymd_=t=>t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
 const hm_=t=>String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
 function impCats(){ return (S.settings.importCats&&S.settings.importCats.length)?S.settings.importCats:IMPORT_CATS_DEFAULT; }
+// التصنيف الدقيق للحالة (تصبغات، حب شباب، ترطيب، تساقط شعر…) من نص الحالة وأصناف الفاتورة
+function impSubs(){ return IMPORT_SUBCATS_DEFAULT; }
+function subOf_(c){ if(!Array.isArray(c.sub)) c.sub=WA.categorize(c.text||'',[].concat(...(c.invoices||[]).map(v=>v.items||[])),impSubs()); return c.sub; }
 
 function mountImport(){
   impState(); const adm=adminMode(); if(!adm) S.impTab='imp';
@@ -2882,7 +2934,7 @@ function impDupMark_(cases){ const by={}; cases.forEach(c=>{ c.dupInv=[]; [...ne
 function impDupTitle_(c){ return 'رقم الفاتورة مكرر مع:\n'+c.dupInv.map(d=>d.group+' · '+ymd_(d.t)+' '+hm_(d.t)+' · '+d.sender+' (فاتورة '+d.inv+')').join('\n'); }
 function impFiltered(){
   const I=impState(), oldKeys=new Set((S.inboxKeys||[])), W=impWords_();
-  return I.cases.filter(c=>(!W.length||impSearchHit_(c,W))&&(!I.f.groups.size||I.f.groups.has(c.group))&&(!I.f.cats.size||c.cats.some(x=>I.f.cats.has(x))||(I.f.cats.has('__none')&&!c.cats.length))&&(!I.f.inv||c.invoices.length||c.aiFiles.length)&&(!I.f.att.size||impAttKinds(c).some(k=>I.f.att.has(k)))&&(!I.f.tier.size||I.f.tier.has(String(c.tier)))).sort(impCmp_());
+  return I.cases.filter(c=>(!W.length||impSearchHit_(c,W))&&(!I.f.groups.size||I.f.groups.has(c.group))&&(!I.f.cats.size||c.cats.some(x=>I.f.cats.has(x))||(I.f.cats.has('__none')&&!c.cats.length))&&(!I.f.inv||c.invoices.length||c.aiFiles.length)&&(!I.f.att.size||impAttKinds(c).some(k=>I.f.att.has(k)))&&(!I.f.tier.size||I.f.tier.has(String(c.tier)))&&(!I.f.sub||!I.f.sub.size||subOf_(c).some(x=>I.f.sub.has(x)))).sort(impCmp_());
 }
 // حالة مرفقات الحالة: missing ناقص من التصدير، parsed فاتورة مقروءة، scan صورة/PDF ممسوح، none بدون مرفق
 function impAttKinds(c){ if(!c.atts.length) return ['none']; const k=(c.dupInv&&c.dupInv.length)?['dup']:[]; if(c.atts.some(a=>a.missing)) k.push('missing'); if(c.atts.some(a=>a.parsed)) k.push('parsed'); if(c.atts.some(a=>!a.missing&&!a.parsed)) k.push('scan'); return k; }
@@ -2897,7 +2949,7 @@ function impRenderRows(){
     const dup=(c.dupInv&&c.dupInv.length)?'<span class="pill p-no" style="white-space:nowrap" title="'+esc(impDupTitle_(c))+'">⚠️ فاتورة مكررة</span> ':'';
     const st=(S.inboxDis||[]).includes(c.key)?'<span class="pill p-no">مستبعدة</span>':I.done&&I.done[c.key]?'<span class="pill p-ok">أُضيفت</span>':oldKeys.has(c.key)?'<span class="pill p-na">مستوردة سابقًا</span>':'<span class="pill p-na">جديدة</span>';
     const sc='<span class="pill '+(c.tier===3?'p-ok':c.tier===2?'p-wait':'p-na')+'" data-impdetail="'+esc(c.key)+'" title="اضغط لتفاصيل الحالة والترشيح" style="white-space:nowrap;cursor:pointer">'+'⭐'.repeat(c.tier||1)+' '+(c.score||0)+'</span>'+((c.sigs||[]).length?'<div class="note" style="margin:2px 0 0;font-size:11px">'+esc(c.sigs.join(' · '))+'</div>':'');
-    return '<tr><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td class="num note" style="margin:0">'+(ri+1)+'</td><td style="min-width:110px">'+sc+'</td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+(nm?'<div class="note" style="margin:0">'+esc(nm)+(c.invoices[0].branch?' · فرع '+esc(c.invoices[0].branch):'')+'</div>':'')+'</td><td>'+esc(c.mention||'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+'</td><td style="max-width:340px;font-size:12.5px;cursor:pointer" data-impdetail="'+esc(c.key)+'" title="اضغط لعرض الحالة كاملة">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+dup+att+'</td><td class="num">'+(c.total!=null?c.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="12"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
+    return '<tr><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td class="num note" style="margin:0">'+(ri+1)+'</td><td style="min-width:110px">'+sc+'</td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+(nm?'<div class="note" style="margin:0">'+esc(nm)+(c.invoices[0].branch?' · فرع '+esc(c.invoices[0].branch):'')+'</div>':'')+'</td><td>'+esc(c.mention||'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+subOf_(c).map(x=>'<span class="pill p-ok" style="margin:1px">🎯 '+esc(x)+'</span>').join(' ')+'</td><td style="max-width:340px;font-size:12.5px;cursor:pointer" data-impdetail="'+esc(c.key)+'" title="اضغط لعرض الحالة كاملة">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+dup+att+'</td><td class="num">'+(c.total!=null?c.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="12"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
   const sab=$('#impSelAllBox'); if(sab){ sab.checked=rows.length>0&&rows.every(c=>I.sel.has(c.key)); }
   const qn=$('#impQN'); if(qn) qn.textContent=I.f.q?rows.length+' نتيجة':'';
 }
@@ -2914,11 +2966,13 @@ function updateImport(){
     '<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnImpExtract"'+(I.busy?' disabled':'')+'>استخراج الحالات</button><span class="note" id="impExtractMsg">'+esc(I.extractMsg||'')+'</span>'+(I.restored?'':syncBadge)+'</div>'+
     ((I.dropped||[]).length&&!I.busy?'<details style="margin-top:8px"><summary class="note" style="cursor:pointer">عرض الرسائل المستبعدة ('+I.dropped.length+'): ردود ومدح وتعليقات بدون مرفق</summary><div class="tw" style="margin-top:6px;max-height:320px;overflow:auto"><table><thead><tr><th>المجموعة</th><th>التاريخ</th><th>المرسل</th><th>السبب</th><th>النص</th></tr></thead><tbody>'+I.dropped.slice().sort((a,b)=>b.t-a.t).map(d=>'<tr><td>'+esc(d.g)+'</td><td class="mono" style="white-space:nowrap">'+ymd_(d.t)+' '+hm_(d.t)+'</td><td>'+esc(d.sender)+'</td><td>'+esc(d.why)+'</td><td style="font-size:12.5px">'+esc(String(d.text||'').slice(0,160))+'</td></tr>').join('')+'</tbody></table></div></details>':''):'');
   const s2=$('#impStep2'), s3=$('#impStep3'); s2.hidden=s3.hidden=!I.cases.length; if(!I.cases.length) return;
+  I.f.sub=I.f.sub||new Set();
   const cats=impCats(), cnt={}; let none=0; I.cases.forEach(c=>{ c.cats.forEach(x=>{cnt[x]=(cnt[x]||0)+1;}); if(!c.cats.length) none++; });
   const gcnt={}; I.cases.forEach(c=>{ gcnt[c.group]=(gcnt[c.group]||0)+1; });
   const chip=(attr,val,label,n,on)=>'<label class="chip'+(on?' on':'')+'"><input type="checkbox" '+attr+'="'+esc(val)+'"'+(on?' checked':'')+'>'+esc(label)+' <b>'+n+'</b></label>';
   $('#impFilters').innerHTML='<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap"><b style="font-size:13px">بحث:</b><input type="search" id="impQ" value="'+esc(I.f.q||'')+'" placeholder="اسم، صيدلي، مشرف، فرع، رقم فاتورة، كلمة من النص أو صنف…" style="flex:1;min-width:240px;max-width:560px">'+(I.f.q?'<button class="btn" id="btnImpQX" type="button" aria-label="مسح البحث">✕</button>':'')+'<span class="note" id="impQN" style="margin:0"></span></div>'+
     '<div><b style="font-size:13px">التصنيف:</b> '+cats.map(c=>chip('data-impcat',c.n,c.n,cnt[c.n]||0,I.f.cats.has(c.n))).join('')+chip('data-impcat','__none','غير مصنّف',none,I.f.cats.has('__none'))+'<span class="note"> (بدون اختيار = الكل)</span></div>'+
+     '<div style="margin-top:6px"><b style="font-size:13px">الحالة الدقيقة:</b> '+impSubs().map(s=>{ const n=I.cases.filter(c=>subOf_(c).includes(s.n)).length; return n?chip('data-impsub',s.n,s.n,n,I.f.sub.has(s.n)):''; }).join('')+'</div>'+
     '<div style="margin-top:6px"><b style="font-size:13px">المجموعة:</b> '+Object.keys(gcnt).sort().map(g=>chip('data-impgrp',g,g,gcnt[g],I.f.groups.has(g))).join('')+
     '</div><div style="margin-top:6px"><b style="font-size:13px">الترشيح:</b> '+[3,2,1].map(t=>chip('data-imptier',String(t),TIER_AR[t],I.cases.filter(c=>c.tier===t).length,I.f.tier.has(String(t)))).join('')+
     ' '+
@@ -2999,7 +3053,7 @@ function impPayload(c,ai,aiErr){
       const units=(parsedUnits+(ai&&c.aiFiles.length&&+ai.invoiceCount||0))||null;
       const inv0=c.invoices[0]||{};
       const light={id:hashId_(c.key),key:c.key,group:c.group,date:ymd_(c.t),time:hm_(c.t),sender:cleanSender_(c.sender),pharmacist:fixName_(inv0.pharmacist||''),pharmNo:inv0.pharmNo||'',branch:inv0.branch||'',
-        mention:c.mention||'',cats:c.cats,preview:(c.text||'').slice(0,160),total,units,attN:c.atts.length,attMissing:c.atts.filter(a=>a.missing).length,dup:c.dupCount||0,hasAI:!!ai,aiErr};
+        mention:c.mention||'',cats:c.cats.concat(subOf_(c).map(s=>'🎯 '+s)).slice(0,12),preview:(c.text||'').slice(0,160),total,units,attN:c.atts.length,attMissing:c.atts.filter(a=>a.missing).length,dup:c.dupCount||0,hasAI:!!ai,aiErr};
       const detail={id:light.id,text:c.text||'',invoices:c.invoices.map(v=>({branch:v.branch,invoice:v.invoice,date:v.date,pharmacist:fixName_(v.pharmacist),pharmNo:v.pharmNo,total:v.total,units:v.units,discount:v.discount,items:v.items})),
         atts:c.atts.map(a=>({name:a.name,kind:a.kind,missing:!!a.missing,parsed:!!a.parsed})),ai};
   return {light,detail};
@@ -4550,7 +4604,7 @@ function updatePosts(){
       (!ro&&d.featured?'<div class="ok-msg">★ ضمن أفضل المشاركات</div><label class="f">مرحلة البوست<select data-stage="'+esc(id)+'" style="width:100%">'+STAGE_KEYS.map(k=>'<option value="'+k+'"'+((d.postStage||'selected')===k?' selected':'')+'>'+STAGE_AR[k]+'</option>').join('')+'</select></label>':'')+
       '<div class="actions">'+(ro?'':d.featured?'<button class="btn bad" data-unpick="'+esc(id)+'">إلغاء الاختيار</button>':'<button class="btn primary" data-pick="'+esc(id)+'"'+(picked>=N?' disabled':'')+'>★ اختيار كأفضل مشاركة</button>')+'<button class="btn" data-dlpost="'+esc(id)+'">تحميل PNG</button>'+(!ro||c.reviewerId===S.me.id?'<button class="btn" data-open="'+esc(id)+'">فتح الحالة</button>':'')+'</div></div></section>';
   }).join('');
-  call('getPostImages',{ids}).then(m=>{ ids.forEach(id=>{ const cv=document.querySelector('canvas[data-cv="'+id+'"]'); const imgs=(m&&m[id])||[]; const again=()=>{ const c2=document.querySelector('canvas[data-cv="'+id+'"]'); if(c2) drawPost(c2,id,imgs,null); }; drawPost(cv,id,imgs,again); }); }).catch(()=>{ ids.forEach(id=>drawPost(document.querySelector('canvas[data-cv="'+id+'"]'),id,[],null)); });
+  call('getPostImages',{ids}).then(m=>withLib_(ids,m||{})).then(m=>{ ids.forEach(id=>{ const cv=document.querySelector('canvas[data-cv="'+id+'"]'); const imgs=(m&&m[id])||[]; const again=()=>{ const c2=document.querySelector('canvas[data-cv="'+id+'"]'); if(c2) drawPost(c2,id,imgs,null); }; drawPost(cv,id,imgs,again); }); }).catch(()=>{ ids.forEach(id=>drawPost(document.querySelector('canvas[data-cv="'+id+'"]'),id,[],null)); });
 }
 /* ---------- Post generator ---------- */
 // خط البوست الثابت
@@ -4671,7 +4725,7 @@ function preloadImgs_(srcs){ return Promise.all(srcs.filter(Boolean).map(src=>ne
 async function bestZip(){
   const ids=[...S.cases.values()].filter(c=>c.month===S.postsMonth&&statusOf(c.id)==='Approved'&&(S.dec.get(c.id)||{}).featured).map(c=>c.id).sort();
   if(!ids.length) return toast('لم تُختر أفضل المشاركات لهذا الشهر بعد.',true); if(S.busy) return; S.busy=true; const b=$('#btnBestZip'); if(b){ b.disabled=true; b.textContent='جارٍ التجهيز…'; }
-  try{ await WA.libs(); const zip=new JSZip(); let m={}; try{ m=await call('getPostImages',{ids}); }catch(e){}
+  try{ await WA.libs(); const zip=new JSZip(); let m={}; try{ m=await call('getPostImages',{ids}); }catch(e){} m=await withLib_(ids,m);
     const safe=v=>String(v||'').replace(/[\\/:*?"<>|]+/g,' ').trim().slice(0,40);
     for(let i=0;i<ids.length;i++){ const id=ids[i], d=postData(id), imgs=(m&&m[id])||[];
       await preloadImgs_(imgs.concat(d.badges.map(x=>x.icon),[d.logo]));
@@ -4689,9 +4743,54 @@ async function drawPost(cv,id,imgs,again){
   cv.width=1080; cv.height=Math.ceil(H); layoutPost(cv,d,false,again);
 }
 function renderPost(){ return drawPost($('#postCv'),S.postId,S.pimgs,()=>{ if(S.view==='post') renderPost(); }); }
+/* ----- صور المنتجات التلقائية: المكتبة المشتركة أولًا، ثم البحث في قواعد صور المنتجات المفتوحة ----- */
+async function withLib_(ids,m){
+  m=m||{}; const need=new Set();
+  ids.forEach(id=>{ const c=S.cases.get(id); if(!c) return; (c.products||[]).forEach((p,i)=>{ if(p&&!((m[id]||[])[i])) need.add(p); }); });
+  if(!need.size) return m; let lib={}; try{ lib=await call('prodImgGet',{names:[...need].slice(0,80)})||{}; }catch(e){}
+  ids.forEach(id=>{ const c=S.cases.get(id); if(!c) return; const a=(m[id]||[]).slice(); (c.products||[]).forEach((p,i)=>{ if(!a[i]&&lib[p]) a[i]=lib[p]; }); m[id]=a; });
+  return m;
+}
+function loadImgCors_(url){ return new Promise((res,rej)=>{ const im=new Image(); im.crossOrigin='anonymous'; const t=setTimeout(()=>rej(new Error('timeout')),12000); im.onload=()=>{ clearTimeout(t); res(im); }; im.onerror=()=>{ clearTimeout(t); rej(new Error('img')); }; im.src=url; }); }
+function imgToProd_(im){ try{ for(const [h,type,q] of [[360,'image/webp',.85],[300,'image/webp',.8],[260,'image/jpeg',.8],[200,'image/jpeg',.75]]){ const r=Math.min(1,h/Math.max(im.naturalWidth||im.width,im.naturalHeight||im.height)); const cw=Math.max(1,Math.round((im.naturalWidth||im.width)*r)),ch=Math.max(1,Math.round((im.naturalHeight||im.height)*r)); const c=document.createElement('canvas'); c.width=cw;c.height=ch; const x=c.getContext('2d'); if(type==='image/jpeg'){x.fillStyle='#fff';x.fillRect(0,0,cw,ch);} x.drawImage(im,0,0,cw,ch); const u=c.toDataURL(type,q); if(u.length<44000&&u.indexOf('data:image/')===0) return u; } }catch(e){} return null; }
+async function fetchJson_(url){ const ac=new AbortController(); const t=setTimeout(()=>ac.abort(),12000); try{ const r=await fetch(url,{signal:ac.signal}); if(!r.ok) return null; return await r.json(); }catch(e){ return null; } finally{ clearTimeout(t); } }
+// يبحث عن صورة عبوة المنتج بالاسم (Open Beauty Facts ثم Open Food Facts للمكملات)، skip لتجربة صورة أخرى
+async function webProdImg_(name,skip){
+  const q=encodeURIComponent(String(name||'').replace(/[×x]\s*\d+$/i,'').trim()); if(!q) return null;
+  const f='&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,image_front_url,image_url';
+  const cands=[];
+  for(const base of ['https://world.openbeautyfacts.org','https://world.openfoodfacts.org']){
+    const j=await fetchJson_(base+'/cgi/search.pl?search_terms='+q+f);
+    ((j&&j.products)||[]).forEach(p=>{ const u=p.image_front_url||p.image_url; if(u&&!cands.includes(u)) cands.push(u); });
+    if(cands.length>(skip||0)+1) break;
+  }
+  for(let k=(skip||0);k<cands.length;k++){ try{ const im=await loadImgCors_(cands[k]); const u=imgToProd_(im); if(u) return u; }catch(e){} }
+  return null;
+}
+function pimgPrev_(){ document.querySelectorAll('[data-pimgprev]').forEach(el=>{ const i=+el.dataset.pimgprev; el.innerHTML=S.pimgs[i]?'<img src="'+S.pimgs[i]+'" alt="" style="height:44px">':''; }); }
+function savePimgs_(id){ const arr=[]; for(let k=0;k<8;k++) arr.push(S.pimgs[k]||''); return call('savePostImages',{id,imgs:arr}); }
+async function autoProdImgs(only){
+  const id=S.postId, c=S.cases.get(id); if(!c||!canEditImgs(id)||S.pimgBusy) return; const P=c.products||[];
+  const idx=only!=null?[only]:P.map((p,i)=>i).filter(i=>P[i]&&!S.pimgs[i]); if(!idx.length) return;
+  S.pimgBusy=true; const btn=$('#btnAutoImgs'); if(btn){ btn.disabled=true; btn.textContent=trStr('جارٍ البحث عن صور المنتجات…'); }
+  let n=0;
+  try{
+    let lib={}; if(only==null){ try{ lib=await call('prodImgGet',{names:idx.map(i=>P[i])})||{}; }catch(e){} }
+    for(const i of idx){
+      if(S.postId!==id) break;
+      let u=lib[P[i]]||null, fromWeb=false;
+      if(!u){ S.pfindSkip=S.pfindSkip||{}; const sk=only!=null?(S.pfindSkip[id+'|'+i]||0):0; u=await webProdImg_(P[i],sk); fromWeb=!!u; if(only!=null) S.pfindSkip[id+'|'+i]=sk+1; }
+      if(u){ S.pimgs[i]=u; n++; pimgPrev_(); renderPost(); if(fromWeb) call('prodImgSave',{name:P[i],img:u}).catch(()=>{}); }
+    }
+    if(n){ await savePimgs_(id); S.postsSig=''; toast('✔ تم جلب '+n+' صورة منتج تلقائيًا وحفظها مع البوست.'); }
+    else toast('تعذر العثور على صورة تلقائية لهذا المنتج. يمكنك رفعها يدويًا.',true);
+  }catch(e){ toast(e.message,true); }
+  S.pimgBusy=false; const b2=$('#btnAutoImgs'); if(b2){ b2.disabled=false; b2.textContent=trStr('🔍 جلب صور المنتجات تلقائيًا'); }
+}
 function canEditImgs(id){ return adminMode()||(statusOf(id)==='Approved'&&(S.cases.get(id)||{}).reviewerId===S.me.id); }
 async function openPost(id){ S.postId=id; S.view='post'; S.pimgs=[]; S.postFrom=S.view; S.openId=null; S.draft=null; renderShell(); mount(); window.scrollTo(0,0);
-  try{ const r=await call('getPostImages',{ids:[id]}); if(S.view==='post'&&S.postId===id){ S.pimgs=(r[id]||[]).slice(); renderPost(); const pv=document.querySelectorAll('[data-pimgprev]'); pv.forEach(el=>{ const i=+el.dataset.pimgprev; el.innerHTML=S.pimgs[i]?'<img src="'+S.pimgs[i]+'" alt="" style="height:44px">':''; }); } }catch(e){} }
+  try{ const r=await call('getPostImages',{ids:[id]}); if(S.view==='post'&&S.postId===id){ S.pimgs=(r[id]||[]).slice(); const before=S.pimgs.filter(Boolean).length; const m2=await withLib_([id],{[id]:S.pimgs.slice()}); if(S.view!=='post'||S.postId!==id) return; S.pimgs=(m2[id]||[]).slice(); renderPost(); pimgPrev_();
+    const added=S.pimgs.filter(Boolean).length-before; if(added>0&&canEditImgs(id)){ savePimgs_(id).then(()=>{ S.postsSig=''; toast('✔ تم جلب '+added+' صورة منتج تلقائيًا وحفظها مع البوست.'); }).catch(()=>{}); } } }catch(e){} }
 function resizeProduct(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [h,type,q] of [[360,'image/webp',.85],[300,'image/webp',.8],[260,'image/jpeg',.8],[200,'image/jpeg',.75]]){ const r=Math.min(1,h/Math.max(im.width,im.height)); const cw=Math.round(im.width*r),ch=Math.round(im.height*r); const c=document.createElement('canvas'); c.width=cw;c.height=ch; const x=c.getContext('2d'); if(type==='image/jpeg'){x.fillStyle='#fff';x.fillRect(0,0,cw,ch);} x.drawImage(im,0,0,cw,ch); const u=c.toDataURL(type,q); if(u.length<44000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('صورة المنتج كبيرة جدًا.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
 function mountPost(){
   const c=S.cases.get(S.postId); const d=postData(S.postId);
@@ -4699,7 +4798,7 @@ function mountPost(){
   $('#main').innerHTML='<div class="bar"><button class="btn" id="btnPostBack">← الحالة</button><b class="mono">'+esc(S.postId)+'</b><span class="sp"></span><button class="btn primary" id="btnPostDl">تحميل الصورة PNG</button></div>'+
    (miss.length?'<div class="banner">ناقص في البوست: '+esc(miss.join('، '))+'. عدّل الحالة (زر إعادة الفتح للمدير) أو اترك هذه الأجزاء.</div>':'')+
    '<div class="ed"><div class="ed-main"><canvas id="postCv" aria-label="معاينة البوست"></canvas></div><aside class="ed-rail"><div class="panel sec"><h3>صور المنتجات</h3><p class="note" style="margin:0 0 10px">'+(canEditImgs(S.postId)?'تُحفظ مع الحالة، وتظهر للمعتمد في صفحة بوستات الشهر.':'الصور محفوظة من المقيّم ولا يمكن تعديلها بعد الاعتماد.')+'</p>'+
-   (d.products.length?d.products.map((p,i)=>'<label class="f" style="margin-bottom:8px">'+esc(p)+'<span data-pimgprev="'+i+'"></span>'+(canEditImgs(S.postId)?'<input type="file" accept="image/*" data-pimg="'+i+'">':'')+'</label>').join(''):'<p class="note">لم تُذكر منتجات في الحالة.</p>')+
+   (d.products.length?(canEditImgs(S.postId)?'<div class="actions" style="margin:0 0 10px"><button class="btn primary" type="button" id="btnAutoImgs">🔍 جلب صور المنتجات تلقائيًا</button></div>':'')+d.products.map((p,i)=>'<label class="f" style="margin-bottom:8px">'+esc(p)+'<span data-pimgprev="'+i+'"></span>'+(canEditImgs(S.postId)?'<span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept="image/*" data-pimg="'+i+'"><button class="btn" type="button" data-pfind="'+i+'">🔍 بحث صورة</button></span>':'')+'</label>').join(''):'<p class="note">لم تُذكر منتجات في الحالة.</p>')+
    '</div>'+postScaleUi()+'<div class="panel sec"><h3>ملاحظة</h3><p class="note" style="margin:0">الشارات ونقاط القوة تُؤخذ من نتيجة الاعتماد تلقائيًا. هذه صورة أولية لفريق التصميم أو للنشر المباشر. إن لم يبدأ التنزيل، اضغط مطولًا على الصورة واحفظها.</p></div></aside></div>';
   renderPost();
 }
@@ -4796,6 +4895,8 @@ document.addEventListener('click',e=>{
   if(t.dataset.dlpost){ const cv=document.querySelector('canvas[data-cv="'+t.dataset.dlpost+'"]'); if(cv) cv.toBlob(b=>{ if(b) saveFile('USE_Post_'+t.dataset.dlpost+'.png',b).catch(e=>toast(e.message,true)); },'image/png'); return; }
   if(t.id==='btnBestCount'){ const v=parseInt(($('#bestCountIn')||{}).value,10); if(S.busy) return; S.busy=true; return call('saveSettings',{bestCount:v}).then(()=>{toast('تم حفظ عدد أفضل المشاركات: '+v); return load();}).catch(e=>toast(e.message,true)).then(()=>{S.busy=false; S.postsSig=''; onData();}); }
   if(t.id==='btnPostDl') return dlPost();
+  if(t.id==='btnAutoImgs') return autoProdImgs(null);
+  if(t.dataset&&t.dataset.pfind!==undefined){ e.preventDefault(); return autoProdImgs(+t.dataset.pfind); }
   if(t.dataset.ladd&&S.draft&&!locked()){ S.draft[t.dataset.ladd].push(''); relist(); const ins=document.querySelectorAll('[data-l^="'+t.dataset.ladd+':"]'); if(ins.length) ins[ins.length-1].focus(); return; }
   if(t.dataset.ldel&&S.draft&&!locked()){ const [k,i]=t.dataset.ldel.split(':'); S.draft[k].splice(+i,1); relist(); return touch(); }
   if(t.id==='aiKeyTest'){ if(S.busy) return; S.busy=true; t.textContent='...جارٍ الاختبار'; return call('aiTest').then(r=>{ S.aiKeyMsg={ok:true,text:'الاتصال يعمل. ردّ تجريبي: '+r.sample}; }).catch(e=>{S.aiKeyMsg={ok:false,text:e.message};}).then(()=>{S.busy=false; updateLog();}); }
@@ -4929,6 +5030,7 @@ document.addEventListener('change',e=>{
   if(el.dataset&&el.dataset.impgsel!==undefined){ const I=impState(); I.srcs[+el.dataset.impgsel].group=el.value; I.cases=[]; I.sel=new Set(); return updateImport(); }
   if(el.id==='impFrom'||el.id==='impTo'){ const I=impState(); I[el.id==='impFrom'?'from':'to']=el.value; return; }
   if(el.dataset&&el.dataset.impcat){ const I=impState(); el.checked?I.f.cats.add(el.dataset.impcat):I.f.cats.delete(el.dataset.impcat); return updateImport(); }
+  if(el.dataset&&el.dataset.impsub){ const I=impState(); I.f.sub=I.f.sub||new Set(); el.checked?I.f.sub.add(el.dataset.impsub):I.f.sub.delete(el.dataset.impsub); return updateImport(); }
   if(el.dataset&&el.dataset.imptier){ const I=impState(); el.checked?I.f.tier.add(el.dataset.imptier):I.f.tier.delete(el.dataset.imptier); return updateImport(); }
   if(el.dataset&&el.dataset.impatt){ const I=impState(); el.checked?I.f.att.add(el.dataset.impatt):I.f.att.delete(el.dataset.impatt); return updateImport(); }
   if(el.dataset&&el.dataset.impgrp){ const I=impState(); el.checked?I.f.groups.add(el.dataset.impgrp):I.f.groups.delete(el.dataset.impgrp); return updateImport(); }
@@ -4944,7 +5046,7 @@ document.addEventListener('change',e=>{
   if(el.id==='inboxCat'){ S.inboxCat=el.value; S.inboxOpen=true; return updateCases(); }
   if(el.id==='invFile'&&el.files&&el.files[0]&&S.draft){ const f=el.files[0]; el.value=''; prepInvoice(f).then(x=>{ x.draft=S.draft; S.invoice=x; invUi(); toast('أُرفقت الفاتورة. اضغط «اقترح» لقراءتها مع النص.'); }).catch(e=>toast(e.message,true)); return; }
   if(el.id==='stageSel'){ call('setPostStage',{id:S.draft.id,stage:el.value}).then(load).then(onData).catch(e=>{toast(e.message,true);}); return; }
-  if(el.dataset&&el.dataset.pimg!==undefined&&el.files&&el.files[0]){ const i=+el.dataset.pimg, id=S.postId; resizeProduct(el.files[0]).then(u=>{ S.pimgs[i]=u; const pv=$('[data-pimgprev="'+i+'"]'); if(pv) pv.innerHTML='<img src="'+u+'" alt="" style="height:44px">'; renderPost(); const arr=[]; for(let k=0;k<8;k++) arr.push(S.pimgs[k]||''); return call('savePostImages',{id,imgs:arr}).then(()=>toast('حُفظت صورة المنتج.')); }).catch(e=>toast(e.message,true)); return; }
+  if(el.dataset&&el.dataset.pimg!==undefined&&el.files&&el.files[0]){ const i=+el.dataset.pimg, id=S.postId; resizeProduct(el.files[0]).then(u=>{ S.pimgs[i]=u; const pv=$('[data-pimgprev="'+i+'"]'); if(pv) pv.innerHTML='<img src="'+u+'" alt="" style="height:44px">'; renderPost(); const arr=[]; for(let k=0;k<8;k++) arr.push(S.pimgs[k]||''); return call('savePostImages',{id,imgs:arr}).then(()=>{ toast('حُفظت صورة المنتج.'); const pn=((S.cases.get(id)||{}).products||[])[i]; if(pn) call('prodImgSave',{name:pn,img:u}).catch(()=>{}); }); }).catch(e=>toast(e.message,true)); return; }
   if(el.dataset&&el.dataset.stage){ call('setPostStage',{id:el.dataset.stage,stage:el.value}).then(load).then(onData).catch(e=>toast(e.message,true)); return; }
   if(el.id==='bIcon'&&S.bd&&el.files&&el.files[0]){ resizeIcon(el.files[0]).then(u=>{ S.bd.icon=u; $('#bIconPrev').innerHTML='<img src="'+u+'" width="56" height="56" alt="">'; }).catch(e=>toast(e.message,true)); return; }
   if(el.id==='pMonth'){ S.postsMonth=el.value; return updatePosts(); }
