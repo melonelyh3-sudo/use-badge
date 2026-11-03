@@ -1167,6 +1167,12 @@ const TR_EXACT = {
   "إزالة الخلفية البيضاء من صور المنتجات": "Remove white background from product images",
   "✔ اعتماد": "✔ Approve",
   "🔄 غيرها": "🔄 Another",
+  "⏳ بانتظار الاعتماد": "⏳ Pending Approval",
+  "✔ المعتمدة": "✔ Approved",
+  "⬇ تحميل كل البوستات المعتمدة (ZIP)": "⬇ Download All Approved Posts (ZIP)",
+  "↩ إعادة للتصحيح": "↩ Return for Revision",
+  "✖ رفض": "✖ Reject",
+  "🖼 صور المنتجات": "🖼 Product Images",
   "مقترحة من النت": "Suggested from web",
   "لا توجد صور في المكتبة بعد.": "No images in the library yet."
 
@@ -2431,7 +2437,7 @@ const ACTIONS={
     return {featured:on,postStage:d.postStage};
   }); },
   // مقاس نصوص وصور البوست لكل حالة (85% – 115%)
-  setPostScale:(u,p)=>withLock_(async()=>{ const d=await decOf_(p.id); if(!d||d.status!=='Approved') throw err('البوست يخص الحالات المعتمدة فقط.');
+  setPostScale:(u,p)=>withLock_(async()=>{ const d=await decOf_(p.id); if(!d||!(d.status==='Approved'||(u.role==='admin'&&d.status==='Pending'))) throw err('البوست يخص الحالات المعتمدة فقط.');
     const c=await Store.get('cases',p.id); if(u.role!=='admin'&&!(c&&c.reviewerId===u.id)) throw err('غير مسموح.');
     const cl=v=>Math.max(85,Math.min(115,Math.round((+v||100)/5)*5)); d.postScale={t:cl(p.t),i:cl(p.i),cut:p.cut!==false}; await Store.put('decisions',p.id,d); return {postScale:d.postScale}; }),
   setPostStage:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
@@ -4644,10 +4650,10 @@ function updateBest(){
 }
 /* ---------- Posts of the month (approver) ---------- */
 const isBest=id=>statusOf(id)==='Approved'&&!!(S.dec.get(id)||{}).featured;
-function nominatedMonths(){ return [...new Set([...S.cases.values()].filter(c=>statusOf(c.id)==='Approved').map(c=>c.month))].sort().reverse(); }
+function nominatedMonths(){ const adm=adminMode(); return [...new Set([...S.cases.values()].filter(c=>statusOf(c.id)==='Approved'||(adm&&statusOf(c.id)==='Pending')).map(c=>c.month))].sort().reverse(); }
 function mountPosts(){
   if(!adminMode()){ $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>'; S.postsSig=''; return; }
-  $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span><label class="f" style="flex-direction:row;align-items:center;gap:8px">عدد أفضل المشاركات<input type="number" id="bestCountIn" min="1" max="20" value="'+(S.settings.bestCount||3)+'" style="width:70px;border:1.5px solid var(--line);border-radius:7px;padding:6px 8px"></label><button class="btn" id="btnBestCount">حفظ العدد</button><button class="btn primary" id="btnBestZip">⬇ تحميل أفضل المشاركات (ZIP)</button></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>';
+  $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span><label class="f" style="flex-direction:row;align-items:center;gap:8px">عدد أفضل المشاركات<input type="number" id="bestCountIn" min="1" max="20" value="'+(S.settings.bestCount||3)+'" style="width:70px;border:1.5px solid var(--line);border-radius:7px;padding:6px 8px"></label><button class="btn" id="btnBestCount">حفظ العدد</button><button class="btn" id="btnAllZip">⬇ تحميل كل البوستات المعتمدة (ZIP)</button><button class="btn primary" id="btnBestZip">⬇ تحميل أفضل المشاركات (ZIP)</button></div><div id="pTabs" class="actions" style="margin:0 0 12px"></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>';
   S.postsSig='';
 }
 function updatePosts(){
@@ -4655,15 +4661,32 @@ function updatePosts(){
   if(!S.postsMonth||!ms.includes(S.postsMonth)) S.postsMonth=ms[0]||'';
   const ro=!adminMode();
   sel.innerHTML=ms.length?ms.map(m=>'<option value="'+m+'">'+esc(monthLabel(m))+'</option>').join(''):'<option value="">'+'لا توجد حالات معتمدة'+'</option>'; sel.value=S.postsMonth;
-  const ids=[...S.cases.values()].filter(c=>c.month===S.postsMonth&&statusOf(c.id)==='Approved').map(c=>c.id).sort((a,b)=>{ if(ro&&isBest(a)!==isBest(b)) return isBest(a)?-1:1; const ra=metCount(resultsOf(a,S.cases.get(a))), rb=metCount(resultsOf(b,S.cases.get(b))); return rb-ra||a.localeCompare(b); });
+  const inM=[...S.cases.values()].filter(c=>c.month===S.postsMonth);
+  const nPend=inM.filter(c=>statusOf(c.id)==='Pending').length, nAppr=inM.filter(c=>statusOf(c.id)==='Approved').length, nBest=inM.filter(c=>statusOf(c.id)==='Approved'&&(S.dec.get(c.id)||{}).featured).length;
+  if(ro) S.postsView='approved'; else if(!S.postsView) S.postsView=nPend?'pending':'approved';
+  const PV=S.postsView; const pend=PV==='pending';
+  const tb=$('#pTabs'); if(tb) tb.innerHTML=ro?'':[['pending','⏳ بانتظار الاعتماد',nPend],['approved','✔ المعتمدة',nAppr],['best','★ أفضل المشاركات',nBest]].map(([k,l,n])=>'<button class="chip'+(PV===k?' on':'')+'" type="button" data-pview="'+k+'">'+l+' <b>'+n+'</b></button>').join('');
+  S.pSel=S.pSel||new Set();
+  const ids=inM.filter(c=>pend?statusOf(c.id)==='Pending':statusOf(c.id)==='Approved'&&(PV!=='best'||(S.dec.get(c.id)||{}).featured)).map(c=>c.id).sort((a,b)=>{ if(ro&&isBest(a)!==isBest(b)) return isBest(a)?-1:1; const ra=metCount(resultsOf(a,S.cases.get(a))), rb=metCount(resultsOf(b,S.cases.get(b))); return rb-ra||a.localeCompare(b); });
   const N=S.settings.bestCount||3; const picked=ids.filter(id=>(S.dec.get(id)||{}).featured).length;
   if(ro){ const nb=ids.filter(isBest).length; $('#pSummary').innerHTML=ids.length?'<div class="kpis"><div class="panel kpi"><span>المشاركات المعتمدة</span><b>'+ids.length+'</b></div><div class="panel kpi"><span>★ أفضل المشاركات</span><b>'+nb+'</b></div></div>'+(nb?'':'<div class="note" style="margin-bottom:12px">لم يختر المعتمد أفضل المشاركات لهذا الشهر بعد.</div>'):''; }
+  else if(pend){ [...S.pSel].forEach(id=>{ if(!ids.includes(id)) S.pSel.delete(id); }); $('#pSummary').innerHTML=ids.length?'<div class="actions" style="margin:0 0 12px;align-items:center"><label class="chip"><input type="checkbox" id="pSelAll"'+(ids.length&&ids.every(id=>S.pSel.has(id))?' checked':'')+'>تحديد الكل</label><button class="btn primary" type="button" id="btnPApproveSel"'+(S.pSel.size&&!S.busy?'':' disabled')+'>✔ اعتماد المحدد ('+S.pSel.size+')</button><span class="note" style="margin:0">راجع البوست والشارات ثم اعتمد. الصور تُضاف بعد الاعتماد (أو الآن من «🖼 صور المنتجات»).</span></div>':''; }
   else $('#pSummary').innerHTML=ids.length?'<div class="kpis"><div class="panel kpi"><span>معتمدة</span><b>'+ids.length+'</b></div><div class="panel kpi"><span>أفضل المشاركات المختارة</span><b>'+picked+' / '+N+'</b></div></div>'+(picked>=N?'<div class="ok-msg" style="margin-bottom:12px">اكتمل العدد المحدد. لإضافة حالة أخرى ألغِ اختيار واحدة أو ارفع العدد.</div>':''):'';
-  const sig=(ro?'ro|':'')+S.postsMonth+'|'+N+'|'+ids.map(id=>{const c=S.cases.get(id),d=S.dec.get(id)||{}; return id+':'+(d.featured?1:0)+':'+(d.postStage||'')+':'+(c.updatedAt||'');}).join(',');
+  const sig=(ro?'ro|':'')+PV+'|'+[...S.pSel].join(',')+'|'+S.postsMonth+'|'+N+'|'+ids.map(id=>{const c=S.cases.get(id),d=S.dec.get(id)||{}; return id+':'+statusOf(id)+':'+(d.featured?1:0)+':'+(d.postStage||'')+':'+(c.updatedAt||'')+':'+JSON.stringify(d.postScale||'');}).join(',');
   if(sig===S.postsSig) return; S.postsSig=sig;
   const box=$('#pList');
+  if(!ids.length&&pend){ box.innerHTML='<div class="panel empty"><b>لا توجد حالات بانتظار الاعتماد في هذا الشهر</b>كل حالة يرسلها المقيّم للاعتماد تظهر هنا كبوست جاهز، وتعتمدها من هنا.</div>'; return; }
+  if(!ids.length&&PV==='best'){ box.innerHTML='<div class="panel empty"><b>لم تُختر أفضل المشاركات بعد</b>اختَرها من تبويب «المعتمدة».</div>'; return; }
   if(!ids.length){ box.innerHTML=ro?'<div class="panel empty"><b>لا توجد حالات معتمدة بعد</b>تظهر هنا كل الحالات المعتمدة، وأفضل المشاركات أولًا.</div>':'<div class="panel empty"><b>لا توجد بوستات بعد</b>تظهر هنا كل الحالات المعتمدة مع البوست المولَّد لكل منها، ومنها تختار أفضل المشاركات.</div>'; return; }
   box.innerHTML=ids.map((id,i)=>{ const c=S.cases.get(id), d=S.dec.get(id)||{}, r=resultsOf(id,c);
+    if(pend){ const is=issuesFor(id,c,true);
+      return '<section class="panel" style="display:grid;grid-template-columns:minmax(0,540px) minmax(0,1fr);gap:18px;padding:16px;'+(S.pSel.has(id)?'border:2px solid var(--accent,#1f6feb);':'')+'"><canvas data-cv="'+esc(id)+'" style="width:100%;height:auto;border-radius:10px;display:block"></canvas>'+
+      '<div style="display:flex;flex-direction:column;gap:10px;min-width:0"><h3 style="margin:0;color:var(--navy);display:flex;gap:8px;align-items:center"><input type="checkbox" data-psel="'+esc(id)+'"'+(S.pSel.has(id)?' checked':'')+' aria-label="تحديد"><span>'+(i+1)+'. '+esc(c.pharmacist||'—')+'</span> <span class="mono" style="font-size:12px;color:var(--muted)">'+esc(id)+'</span></h3>'+
+      '<p class="note" style="margin:0">المشرف: '+esc(c.supervisor||'—')+' · الفرع: '+esc(c.branch||'—')+' · المقيّم: '+esc(c.reviewerName||'—')+'</p>'+
+      '<div class="rail-row"><span>الشارات المتحققة</span>'+dotsFor(id,c)+'<b class="num">'+metCount(r)+'</b></div>'+
+      (pastPick(id,c)?'<span class="pill p-wait" style="width:fit-content">سبق اختيار الصيدلي: '+esc(pastPick(id,c))+'</span>':'')+
+      (is.length?'<div class="banner" style="margin:0">⚠️ '+esc(is[0])+'</div>':'<span class="pill p-ok" style="width:fit-content">جاهزة للاعتماد</span>')+
+      '<div class="actions"><button class="btn primary" type="button" data-papprove="'+esc(id)+'">✔ اعتماد</button><button class="btn" type="button" data-preturn="'+esc(id)+'">↩ إعادة للتصحيح</button><button class="btn bad" type="button" data-preject="'+esc(id)+'">✖ رفض</button><button class="btn" type="button" data-pposts="'+esc(id)+'">🖼 صور المنتجات</button><button class="btn" data-open="'+esc(id)+'">فتح الحالة</button></div></div></section>'; }
     return '<section class="panel" style="display:grid;grid-template-columns:minmax(0,540px) minmax(0,1fr);gap:18px;padding:16px;'+(d.featured?'border:2px solid var(--good);':'')+'"><canvas data-cv="'+esc(id)+'" style="width:100%;height:auto;border-radius:10px;display:block"></canvas>'+
       '<div style="display:flex;flex-direction:column;gap:10px;min-width:0"><h3 style="margin:0;color:var(--navy)">'+(d.featured?'<span class="pill p-ok" style="margin-inline-end:8px">★ أفضل مشاركة</span>':'')+(i+1)+'. '+esc(c.pharmacist||'—')+' <span class="mono" style="font-size:12px;color:var(--muted)">'+esc(id)+'</span></h3>'+
       '<p class="note" style="margin:0">المشرف: '+esc(c.supervisor||'—')+' · الفرع: '+esc(c.branch||'—')+' · المقيّم: '+esc(c.reviewerName||'—')+'</p>'+
@@ -4672,7 +4695,7 @@ function updatePosts(){
       (ro&&c.reviewerId===S.me.id?'<span class="pill p-ok" style="width:fit-content">من حالاتك</span>':'')+
       (ro&&d.featured?'<div class="ok-msg">★ ضمن أفضل المشاركات · '+STAGE_AR[d.postStage||'selected']+'</div>':'')+(ro&&!d.featured?'<span class="pill p-na" style="width:fit-content">معتمدة</span>':'')+
       (!ro&&d.featured?'<div class="ok-msg">★ ضمن أفضل المشاركات</div><label class="f">مرحلة البوست<select data-stage="'+esc(id)+'" style="width:100%">'+STAGE_KEYS.map(k=>'<option value="'+k+'"'+((d.postStage||'selected')===k?' selected':'')+'>'+STAGE_AR[k]+'</option>').join('')+'</select></label>':'')+
-      '<div class="actions">'+(ro?'':d.featured?'<button class="btn bad" data-unpick="'+esc(id)+'">إلغاء الاختيار</button>':'<button class="btn primary" data-pick="'+esc(id)+'"'+(picked>=N?' disabled':'')+'>★ اختيار كأفضل مشاركة</button>')+'<button class="btn" data-dlpost="'+esc(id)+'">تحميل PNG</button>'+(!ro||c.reviewerId===S.me.id?'<button class="btn" data-open="'+esc(id)+'">فتح الحالة</button>':'')+'</div></div></section>';
+      '<div class="actions">'+(ro?'':d.featured?'<button class="btn bad" data-unpick="'+esc(id)+'">إلغاء الاختيار</button>':'<button class="btn primary" data-pick="'+esc(id)+'"'+(picked>=N?' disabled':'')+'>★ اختيار كأفضل مشاركة</button>')+'<button class="btn" data-dlpost="'+esc(id)+'">تحميل PNG</button>'+(canEditImgs(id)?'<button class="btn" type="button" data-pposts="'+esc(id)+'">🖼 صور المنتجات</button>':'')+(!ro||c.reviewerId===S.me.id?'<button class="btn" data-open="'+esc(id)+'">فتح الحالة</button>':'')+'</div></div></section>';
   }).join('');
   call('getPostImages',{ids}).then(m=>withLib_(ids,m||{})).then(m=>{ ids.forEach(id=>{ const cv=document.querySelector('canvas[data-cv="'+id+'"]'); const imgs=(m&&m[id])||[]; const again=()=>{ const c2=document.querySelector('canvas[data-cv="'+id+'"]'); if(c2) drawPost(c2,id,imgs,null); }; drawPost(cv,id,imgs,again); }); }).catch(()=>{ ids.forEach(id=>drawPost(document.querySelector('canvas[data-cv="'+id+'"]'),id,[],null)); });
 }
@@ -4810,18 +4833,28 @@ function layoutPost(cv,d,dry,redraw){
 }
 // ينتظر تحميل كل الصور (منتجات، شارات، شعار) قبل رسم بوست خارج الشاشة
 function preloadImgs_(srcs){ return Promise.all(srcs.filter(Boolean).map(src=>new Promise(res=>{ if(getImg(src,null)) return res(); const e=imgCache.get(src); const t=setTimeout(res,8000); const done=()=>{ clearTimeout(t); res(); }; if(e&&e.im){ e.im.addEventListener('load',()=>{ e.ok=true; done(); },{once:true}); e.im.addEventListener('error',done,{once:true}); if(e.im.complete&&e.im.naturalWidth){ e.ok=true; done(); } } else done(); }))); }
-async function bestZip(){
-  const ids=[...S.cases.values()].filter(c=>c.month===S.postsMonth&&statusOf(c.id)==='Approved'&&(S.dec.get(c.id)||{}).featured).map(c=>c.id).sort();
-  if(!ids.length) return toast('لم تُختر أفضل المشاركات لهذا الشهر بعد.',true); if(S.busy) return; S.busy=true; const b=$('#btnBestZip'); if(b){ b.disabled=true; b.textContent='جارٍ التجهيز…'; }
+// اعتماد / إعادة / رفض من «بوستات الشهر» — نفس فحوصات الاعتماد في الحالة
+async function postsDecide(ids,kind,reason){
+  ids=ids.filter(Boolean); if(!ids.length||S.busy) return;
+  if(kind==='approve'&&ids.length>1&&!confirm('اعتماد '+ids.length+' حالة دفعة واحدة؟')) return;
+  S.busy=true; let ok=0; const bad=[];
+  for(const id of ids){ try{ if(kind==='return') await call('reopen',{id,reason}); else await call('decide',{id,kind,reason:reason||''}); ok++; if(S.pSel) S.pSel.delete(id); }catch(e){ if(e.code==='auth'){ S.busy=false; return logout(true); } bad.push(id+': '+(e.message||'خطأ')); } }
+  S.busy=false; try{ await load(); }catch(e){} S.postsSig=''; onData();
+  const verb=kind==='approve'?'اعتُمدت':kind==='reject'?'رُفضت':'أُعيدت للتصحيح';
+  toast((ok?verb+' '+ok+' حالة.':'')+(bad.length?' تعذر '+bad.length+': '+bad.slice(0,3).join(' | '):''),!ok);
+}
+async function bestZip(all){
+  const ids=[...S.cases.values()].filter(c=>c.month===S.postsMonth&&statusOf(c.id)==='Approved'&&(all||(S.dec.get(c.id)||{}).featured)).map(c=>c.id).sort();
+  if(!ids.length) return toast(all?'لا توجد حالات معتمدة في هذا الشهر.':'لم تُختر أفضل المشاركات لهذا الشهر بعد.',true); if(S.busy) return; S.busy=true; const BID=all?'#btnAllZip':'#btnBestZip', BTX=all?'⬇ تحميل كل البوستات المعتمدة (ZIP)':'⬇ تحميل أفضل المشاركات (ZIP)'; const b=$(BID); if(b){ b.disabled=true; b.textContent='جارٍ التجهيز… (قد يأخذ دقيقة)'; }
   try{ await WA.libs(); const zip=new JSZip(); let m={}; try{ m=await call('getPostImages',{ids}); }catch(e){} m=await withLib_(ids,m);
     const safe=v=>String(v||'').replace(/[\\/:*?"<>|]+/g,' ').trim().slice(0,40);
     for(let i=0;i<ids.length;i++){ const id=ids[i], d=postData(id), imgs=(m&&m[id])||[];
       await preloadImgs_(imgs.concat(d.badges.map(x=>x.icon),[d.logo]));
       const cv=document.createElement('canvas'); await drawPost(cv,id,imgs,null);
       const blob=await new Promise(r=>cv.toBlob(r,'image/png')); if(blob) zip.file(String(i+1).padStart(2,'0')+'_'+safe(d.pharmacist)+'_'+id+'.png',blob); }
-    const out=await zip.generateAsync({type:'blob'}); await saveFile('USE_Best_Posts_'+S.postsMonth+'.zip',out); toast('جُهّز ملف ZIP فيه '+ids.length+' بوست.'); }
+    const out=await zip.generateAsync({type:'blob'}); await saveFile((all?'USE_Approved_Posts_':'USE_Best_Posts_')+S.postsMonth+'.zip',out); toast('جُهّز ملف ZIP فيه '+ids.length+' بوست.'); }
   catch(e){ toast(e.message||'تعذر تجهيز الملف.',true); }
-  S.busy=false; if(b){ b.disabled=false; b.textContent='⬇ تحميل أفضل المشاركات (ZIP)'; }
+  S.busy=false; if(b){ b.disabled=false; b.textContent=BTX; }
 }
 async function drawPost(cv,id,imgs,again){
   if(!cv||!S.cases.get(id)) return; const d=postData(id); d.pimgs=imgs||[];
@@ -4986,13 +5019,13 @@ document.addEventListener('click',e=>{
   if(t.id==='btnReloadPage'){ location.reload(); return; }
   if(t.id==='btnAiSuggest') return runAiSuggest();
   if(t.id==='invClear'){ S.invoice=null; return invUi(); }
-  if(t.dataset.post) return openPost(t.dataset.post);
+  if(t.dataset.post){ S.postBackTo=''; return openPost(t.dataset.post); }
   if(t.dataset.openbest){ e.preventDefault(); S.view='cases'; renderShell(); return openCase(t.dataset.open); }
   if(t.dataset.pick){ if(S.busy) return; S.busy=true; t.disabled=true; return call('setFeatured',{id:t.dataset.pick,featured:true}).then(()=>{ toast('اختيرت الحالة '+t.dataset.pick+' ضمن أفضل المشاركات.'); return load(); }).catch(err=>toast(err.message,true)).then(()=>{S.busy=false; onData();}); }
   if(t.id==='btnPickCancel'){ S.pick=null; return updateBest(); }
   if(t.id==='btnPickOk'){ if(S.busy) return; S.busy=true; const id=S.pick.id; return call('setFeatured',{id,featured:true,reason:S.pick.reason}).then(()=>{S.pick=null; return load();}).catch(err=>{ if(S.pick) S.pick.err=err.message; }).then(()=>{S.busy=false; onData();}); }
   if(t.dataset.unpick){ if(S.busy) return; S.busy=true; return call('setFeatured',{id:t.dataset.unpick,featured:false}).then(load).catch(err=>toast(err.message,true)).then(()=>{S.busy=false; onData();}); }
-  if(t.id==='btnPostBack'){ const id=S.postId; S.view='cases'; S.postId=null; renderShell(); return openCase(id); }
+  if(t.id==='btnPostBack'){ const id=S.postId; S.postId=null; if(S.postBackTo==='posts'){ S.postBackTo=''; S.postsSig=''; return go('posts'); } S.view='cases'; renderShell(); return openCase(id); }
   if(t.dataset.dlpost){ const cv=document.querySelector('canvas[data-cv="'+t.dataset.dlpost+'"]'); if(cv) cv.toBlob(b=>{ if(b) saveFile('USE_Post_'+t.dataset.dlpost+'.png',b).catch(e=>toast(e.message,true)); },'image/png'); return; }
   if(t.id==='btnBestCount'){ const v=parseInt(($('#bestCountIn')||{}).value,10); if(S.busy) return; S.busy=true; return call('saveSettings',{bestCount:v}).then(()=>{toast('تم حفظ عدد أفضل المشاركات: '+v); return load();}).catch(e=>toast(e.message,true)).then(()=>{S.busy=false; S.postsSig=''; onData();}); }
   if(t.id==='btnPostDl') return dlPost();
@@ -5066,7 +5099,13 @@ document.addEventListener('click',e=>{
   if(t.id==='btnInbTakeMany') return inboxTakeMany();
   if(t.id==='btnInbSubmitMany') return inboxSubmitMany();
   if(t.dataset&&t.dataset.pscale) return postScaleStep(t.dataset.pscale);
-  if(t.id==='btnBestZip') return bestZip();
+  if(t.id==='btnBestZip') return bestZip(false);
+  if(t.id==='btnAllZip') return bestZip(true);
+  if(t.dataset&&t.dataset.pview){ S.postsView=t.dataset.pview; S.postsSig=''; return updatePosts(); }
+  if(t.dataset&&t.dataset.pposts){ S.postBackTo='posts'; return openPost(t.dataset.pposts); }
+  if(t.dataset&&t.dataset.papprove) return postsDecide([t.dataset.papprove],'approve');
+  if(t.id==='btnPApproveSel') return postsDecide([...(S.pSel||[])],'approve');
+  if(t.dataset&&(t.dataset.preturn||t.dataset.preject)){ const id=t.dataset.preturn||t.dataset.preject, ret=!!t.dataset.preturn; const r=window.prompt(trStr(ret?'سبب الإعادة للمقيّم للتصحيح (يظهر له في الحالة):':'سبب الرفض (يظهر للمقيّم):'),''); if(r==null) return; if(!r.trim()) return toast(ret?'اكتب سبب الإعادة للتصحيح.':'اكتب سبب الرفض.',true); return postsDecide([id],ret?'return':'reject',r.trim()); }
   if(t.dataset&&t.dataset.take) return inboxTake(t.dataset.take);
   if(t.dataset&&(t.dataset.inbdis||t.dataset.inbback)){ const id=t.dataset.inbdis||t.dataset.inbback; if(S.busy) return; S.busy=true; return call('inboxSet',{id,status:t.dataset.inbdis?'dismissed':'new'}).then(load).then(()=>{ S.inboxOpen=true; onData(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.dataset&&t.dataset.impview) return impView(t.dataset.impview);
@@ -5128,6 +5167,8 @@ document.addEventListener('input',e=>{
   if(el.dataset&&el.dataset.isp!==undefined&&S.isubEdit){ S.isubEdit[+el.dataset.isp].p=el.value; return; }
   if(el.id==='plibFiles'&&el.files&&el.files.length){ const fs=[...el.files]; el.value=''; return plibUpload(fs); }
   if(el.dataset&&el.dataset.pcut){ return postScaleStep('cut'); }
+  if(el.dataset&&el.dataset.psel){ S.pSel=S.pSel||new Set(); el.checked?S.pSel.add(el.dataset.psel):S.pSel.delete(el.dataset.psel); S.postsSig=''; return updatePosts(); }
+  if(el.id==='pSelAll'){ S.pSel=new Set(el.checked?[...S.cases.values()].filter(c=>c.month===S.postsMonth&&statusOf(c.id)==='Pending').map(c=>c.id):[]); S.postsSig=''; return updatePosts(); }
   if(el.dataset&&el.dataset.icn!==undefined&&S.icEdit){ S.icEdit[+el.dataset.icn].n=el.value; return; }
   if(el.dataset&&el.dataset.ick!==undefined&&S.icEdit){ S.icEdit[+el.dataset.ick].k=el.value; return; }
   if(el.id==='pickReason'&&S.pick){S.pick.reason=el.value;return;}
