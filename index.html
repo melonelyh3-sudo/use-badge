@@ -4765,18 +4765,36 @@ function trimmed(im){
 const cutCache=new Map();
 function cutWhite(im){
   const key=(im.src||'')+'|cut'; if(cutCache.has(key)) return cutCache.get(key);
-  const base=trimmed(im); let out=base;
+  let out=trimmed(im);
   try{
-    const PAD=6, w=base.width+PAD*2, h=base.height+PAD*2; const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.drawImage(base,PAD,PAD);
+    // 1) لون الخلفية الفعلي من حواف الصورة الأصلية (أبيض أو رمادي فاتح أو بيج)
+    const W0=im.naturalWidth||im.width, H0=im.naturalHeight||im.height, sc=Math.min(1,900/Math.max(W0,H0)); const w0=Math.max(1,Math.round(W0*sc)), h0=Math.max(1,Math.round(H0*sc));
+    const PAD=8, w=w0+PAD*2, h=h0+PAD*2; const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d');
+    const t0=document.createElement('canvas'); t0.width=w0; t0.height=h0; const x0=t0.getContext('2d'); x0.drawImage(im,0,0,w0,h0); const d0=x0.getImageData(0,0,w0,h0).data;
+    let br=0,bgc=0,bb=0,bn=0; const smp=(xx,yy)=>{ const i=(yy*w0+xx)*4; if(d0[i+3]<20) return; br+=d0[i]; bgc+=d0[i+1]; bb+=d0[i+2]; bn++; };
+    for(let xx=0;xx<w0;xx+=2){ smp(xx,0); smp(xx,1); smp(xx,h0-1); smp(xx,h0-2); } for(let yy=0;yy<h0;yy+=2){ smp(0,yy); smp(1,yy); smp(w0-1,yy); smp(w0-2,yy); }
+    if(!bn){ cutCache.set(key,out); return out; } br/=bn; bgc/=bn; bb/=bn;
+    if((br+bgc+bb)/3<185){ cutCache.set(key,out); return out; }   // الخلفية ليست فاتحة: لا نلمسها
+    x.fillStyle='rgb('+Math.round(br)+','+Math.round(bgc)+','+Math.round(bb)+')'; x.fillRect(0,0,w,h); x.drawImage(t0,PAD,PAD);
     const id=x.getImageData(0,0,w,h), d=id.data; const seen=new Uint8Array(w*h); const q=new Int32Array(w*h); let qh=0, qt=0;
-    const bg=i=>{ const r=d[i*4],g=d[i*4+1],b=d[i*4+2],a=d[i*4+3]; return a<20||(r>238&&g>238&&b>238&&Math.max(r,g,b)-Math.min(r,g,b)<14); };
+    // 2) بكسل خلفية = قريب من لون الحواف (يتحمل ضجيج JPEG والظلال الفاتحة جدًا)
+    const bg=i=>{ const r=d[i*4],g=d[i*4+1],b=d[i*4+2],a=d[i*4+3]; if(a<20) return true; const dist=Math.abs(r-br)+Math.abs(g-bgc)+Math.abs(b-bb); return dist<=42&&Math.max(r,g,b)-Math.min(r,g,b)<34&&(r+g+b)/3>=175; };
     const push=i=>{ if(!seen[i]&&bg(i)){ seen[i]=1; q[qt++]=i; } };
     for(let xx=0;xx<w;xx++){ push(xx); push((h-1)*w+xx); } for(let y=0;y<h;y++){ push(y*w); push(y*w+w-1); }
     while(qh<qt){ const i=q[qh++], xx=i%w, y=(i/w)|0; d[i*4+3]=0; if(xx>0) push(i-1); if(xx<w-1) push(i+1); if(y>0) push(i-w); if(y<h-1) push(i+w); }
-    // تنعيم الحافة: البكسل الفاتح الملاصق للخلفية المحذوفة يصبح شبه شفاف
-    for(let i=0;i<w*h;i++){ if(seen[i]) continue; const xx=i%w, y=(i/w)|0; const nb=(xx>0&&seen[i-1])||(xx<w-1&&seen[i+1])||(y>0&&seen[i-w])||(y<h-1&&seen[i+w]); if(nb){ const l=(d[i*4]+d[i*4+1]+d[i*4+2])/3; if(l>200) d[i*4+3]=Math.round(d[i*4+3]*0.45); } }
-    // إذا كانت المساحة المحذوفة داخل حدود المنتج كبيرة جدًا فالعبوة نفسها بيضاء: نترك الصورة كما هي
-    const inner=(base.width*base.height)||1, removedInner=qt-(w*h-inner); if(removedInner/inner<0.55){ x.putImageData(id,0,0); out=c; }
+    // 2b) ظل المنتج على الأرضية (رمادي محايد في الربع السفلي) متصل بالخلفية: يُزال أيضًا
+    const sh=i=>{ const y=(i/w)|0; if(y<h*0.72) return false; const r=d[i*4],g=d[i*4+1],b=d[i*4+2]; return Math.max(r,g,b)-Math.min(r,g,b)<16&&(r+g+b)/3>=150; };
+    qh=0; qt=0; for(let i=0;i<w*h;i++){ if(!seen[i]) continue; const xx=i%w, y=(i/w)|0; [xx>0?i-1:-1,xx<w-1?i+1:-1,y>0?i-w:-1,y<h-1?i+w:-1].forEach(j=>{ if(j>=0&&!seen[j]&&sh(j)){ seen[j]=1; q[qt++]=j; } }); }
+    while(qh<qt){ const i=q[qh++], xx=i%w, y=(i/w)|0; d[i*4+3]=0; [xx>0?i-1:-1,xx<w-1?i+1:-1,y>0?i-w:-1,y<h-1?i+w:-1].forEach(j=>{ if(j>=0&&!seen[j]&&sh(j)){ seen[j]=1; q[qt++]=j; } }); }
+    // 3) تنعيم الحافة
+    for(let i=0;i<w*h;i++){ if(seen[i]) continue; const xx=i%w, y=(i/w)|0; const nb=(xx>0&&seen[i-1])||(xx<w-1&&seen[i+1])||(y>0&&seen[i-w])||(y<h-1&&seen[i+w]); if(nb){ const l=(d[i*4]+d[i*4+1]+d[i*4+2])/3; if(l>195) d[i*4+3]=Math.round(d[i*4+3]*0.4); } }
+    // 4) قص على حدود المنتج الفعلية (ليظهر بحجمه الكامل على المنصة)
+    let X0=w,Y0=h,X1=-1,Y1=-1, opaque=0; for(let y=0;y<h;y++) for(let xx=0;xx<w;xx++){ if(d[(y*w+xx)*4+3]>40){ opaque++; if(xx<X0)X0=xx; if(xx>X1)X1=xx; if(y<Y0)Y0=y; if(y>Y1)Y1=y; } }
+    // إذا لم يبقَ إلا القليل فالعبوة نفسها بيضاء وابتلعتها الخلفية: نترك الصورة كما هي
+    // حدود المحتوى المختلف عن لون الخلفية (قبل الإزالة) — للمقارنة: إن صغر المنتج كثيرًا بعد الإزالة فقد ابتُلع جزء منه
+    let cx0=w0,cy0=h0,cx1=-1,cy1=-1; for(let yy=0;yy<h0;yy++) for(let xx=0;xx<w0;xx++){ const i=(yy*w0+xx)*4; const r=d0[i],g=d0[i+1],b=d0[i+2]; if(d0[i+3]<20) continue; const dist=Math.abs(r-br)+Math.abs(g-bgc)+Math.abs(b-bb); if(dist>42||Math.max(r,g,b)-Math.min(r,g,b)>=34||(r+g+b)/3<175){ if(xx<cx0)cx0=xx; if(xx>cx1)cx1=xx; if(yy<cy0)cy0=yy; if(yy>cy1)cy1=yy; } }
+    const areaT=cx1>=cx0?((cx1-cx0+1)*(cy1-cy0+1)):1;
+    if(X1>X0&&Y1>Y0&&opaque>(X1-X0+1)*(Y1-Y0+1)*0.18&&opaque>w0*h0*0.04&&(X1-X0+1)*(Y1-Y0+1)>=areaT*0.45){ x.putImageData(id,0,0); const cw=X1-X0+1, ch=Y1-Y0+1; const o=document.createElement('canvas'); o.width=cw; o.height=ch; o.getContext('2d').drawImage(c,X0,Y0,cw,ch,0,0,cw,ch); out=o; }
   }catch(e){}
   cutCache.set(key,out); return out;
 }
