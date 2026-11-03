@@ -238,23 +238,28 @@ const IMPORT_CATS_DEFAULT=[
  {n:'الوزن والرياضة',k:'تخسيس, تنحيف, وزن, رجيم, دايت, كيتو, رياضه, جيم, بروتين, تمرين, عضلات, whey, protein, mounjaro, مونجارو, ozempic, اوزمبيك, صيام متقطع'},
  {n:'البرد والمناعة',k:'برد, انفلونزا, كحه, سعال, زكام, مناعه, احتقان, حلق, زور, التهاب الحلق, strepsils, ستربسلس, redoxon'}
 ];
+// p = التصنيف الرئيسي الذي يتبع له (للعرض والتجميع). الكلمات: أعراض/احتياجات أولًا، ثم أسماء خطوط المنتجات (وليس الماركة كاملة)
 const IMPORT_SUBCATS_DEFAULT=[
- {n:'تصبغات وتفتيح',k:'تصبغ, تصبغات, كلف, بقع, اثار حبوب, آثار حبوب, تفتيح, نضاره, هالات, اسمرار, توحيد لون, pigment, pigmentbio, even pigment, melamedic, mela b3, alpha plus, الفا بلس, avoquin, افوكوين, niacinamide, نياسيناميد, ثياميدول, thiamidol, depiwhite, ديبي وايت, lumiere, هيدروكينون, ميلانين, بايوديرما بيجمنت'},
- {n:'حب الشباب والمسام',k:'حب الشباب, حبوب, بثور, رؤوس سوداء, رؤس سوداء, رؤوس بيضاء, مسام, دهنيه, بشرة دهنية, لمعان, افرازات دهنيه, acne, effaclar, ايفاكلار, sebium, سيبيوم, differin, ديفرين, acretin, اكرتين, epiduo, ايبيدو, benzac, بنزاك, salicylic, ساليسيليك, acnemycin, normaderm, نورماديرم, cleanance, كلينانس, ازيليك, azelaic'},
- {n:'ترطيب وجفاف وإكزيما',k:'جفاف, بشره جافه, تقشر, تشقق, ترطيب, مرطب, اكزيما, إكزيما, حساسيه, تحسس, تهيج, احمرار, التهاب بشره, حاجز البشره, atoderm, اتوديرم, cicabio, سيكابيو, cicaplast, سيكابلاست, lipikar, ليبيكار, cerave moisturizing, سيرافي مرطب, cetaphil moisturizing, سيتافيل مرطب, bepanthen, بيبانثين, urea, يوريا, qv, كيو في, xeracalm'},
- {n:'حماية من الشمس',k:'واقي شمس, واقي من الشمس, صن بلوك, حروق الشمس, التعرض للشمس, spf, sunscreen, sunblock, sunfluid, photoderm, فوتوديرم, anthelios, انثيليوس, eucerin sun, isdin, ايزدين, heliocare, هيليوكير'},
- {n:'تجاعيد وعلامات التقدم',k:'تجاعيد, خطوط, علامات التقدم, شد البشره, شيخوخه, ترهل, retinol, ريتينول, liftactiv, ليفت اكتيف, hyalu b5, هيالو, hyaluronic, هيالورونيك, كولاجين للبشره, فيلر, filler, anti-age, anti aging'},
- {n:'غسول وتنظيف البشرة',k:'غسول, تنظيف البشره, مزيل مكياج, ميسيلار, micellar, sensibio, سينسيبيو, foaming cleanser, hydrating cleanser, غسول لطيف'},
- {n:'تساقط الشعر وإنباته',k:'تساقط, صلع, فراغات, انبات, تكثيف الشعر, ضعف الشعر, حواجب, رموش, priorin, بريورين, glopriorin, جلوبريورين, mostal, موستال, minoxidil, مينوكسيديل, avogain, افوجين, cystine, سيستين, anacaps, اناكابس, neoptide, نيوبتايد, aminexil, امينكسيل, hair loss, biotin, بيوتين'},
- {n:'قشرة وفروة الرأس',k:'قشره, قشرة, حكه فروه, التهاب فروه, دهون الفروه, فروه دهنيه, dercos, ديكروس, nizoral, نيزورال, شامبو قشره, سيلينيوم, كيتوكونازول'},
- {n:'تلف وجفاف الشعر',k:'هيشان, تقصف, تلف الشعر, شعر جاف, شعر مصبوغ, بروتين الشعر, بلسم, ماسك شعر, سيروم شعر, اولابليكس, olaplex'},
- {n:'مفاصل وعظام وعضلات',k:'مفاصل, مفصل, ركبه, خشونه, ظهر, عظام, عضلات, شد عضلي, كدمه, التواء, dorofen, دوروفين, glucosamine, جلوكوزامين, move free, موف فري, joint, كالسيوم, فيتامين د, vitamin d, prima d3, بريما, voltaren, فولتارين, reparil, ريباريل, روكسونين, مسكن'},
- {n:'طاقة وأعصاب ومناعة',k:'خمول, ارهاق, تعب, تركيز, اعصاب, تنميل, مناعه, اوميجا, omega, b12, نيوروبيون, neurobion, methycobal, ميثيكوبال, رويال جيلي, royal jelly, جنسنج, ginseng, سنتروم, centrum, جلوفيت, glovit, زنك, zinc, فيتامين سي, redoxon, ريدوكسون, coq10'},
- {n:'أرق واضطرابات النوم',k:'نوم, ارق, سهر, توتر, قلق, ميلاتونين, melatonin, zzzquil, melfast, ملفاست, اشواغاندا, ashwagandha'},
- {n:'قولون وحموضة وهضم',k:'قولون, انتفاخ, غازات, حموضه, حرقان, ارتجاع, معده, امساك, اسهال, عسر هضم, جرثومه, بروبيوتيك, probiotic, prolife, نيكسيوم, جافيسكون, مالوكس'},
- {n:'برد وكحة والتهاب الحلق',k:'برد, انفلونزا, زكام, رشح, احتقان, جيوب انفيه, كحه, سعال, بلغم, حلق, التهاب الحلق, زور, strepsils, ستربسلس, بخاخ انف, اوتريفين'},
- {n:'سمنة وتنحيف ورياضة',k:'تخسيس, تنحيف, نزول الوزن, سد الشهيه, حرق دهون, دايت, رجيم, كيتو, مونجارو, mounjaro, اوزمبيك, ozempic, واي بروتين, whey, protein, كرياتين'},
- {n:'أمراض مزمنة ووصفتي',k:'وصفتي, wasfaty, وصفه تامين, ضغط, سكر, سكري, كوليسترول, كولسترول, انسولين, غده درقيه'}
+ {n:'تصبغات وتفتيح',p:'العناية بالبشرة',k:'تصبغ, تصبغات, كلف, بقع داكنه, بقع غامقه, اثار حبوب, آثار حبوب, اثار الحبوب, تفتيح, توحيد لون, اسمرار, اسوداد, هالات, هالات سوداء, pigment, pigmentbio, anti-pigment, anti pigment, even pigment, melamedic, mela b3, alpha plus, الفا بلس, avoquin, افوكوين, thiamidol, ثياميدول, depiwhite, ديبي وايت, هيدروكينون'},
+ {n:'حب الشباب والمسام',p:'العناية بالبشرة',k:'حب الشباب, حب شباب, حبوب الوجه, حبوب بالوجه, حبوب في الوجه, حبوب ف الوجه, بثور, رؤوس سوداء, رؤس سوداء, رؤوس بيضاء, مسام واسعه, انسداد المسام, acne, effaclar, ايفاكلار, sebium, سيبيوم, differin, ديفرين, acretin, اكرتين, epiduo, ايبيدو, benzac, بنزاك, normaderm, نورماديرم, cleanance, كلينانس, ازيليك, azelaic, salicylic, ساليسيليك'},
+ {n:'بشرة دهنية ولمعان',p:'العناية بالبشرة',k:'بشره دهنيه, بشرتها دهنيه, بشرته دهنيه, دهنيه مختلطه, مختلطه, لمعان, افرازات دهنيه, oily skin, oil control'},
+ {n:'ترطيب وجفاف وإكزيما',p:'العناية بالبشرة',k:'جفاف, بشره جافه, تقشر, تشقق, ترطيب, اكزيما, حساسيه جلد, بشره حساسه, تهيج, احمرار, حاجز البشره, atoderm, اتوديرم, cicabio, سيكابيو, cicaplast, سيكابلاست, lipikar, ليبيكار, bepanthen, بيبانثين, urea, يوريا, sensibio, سينسيبيو'},
+ {n:'حماية من الشمس',p:'العناية بالبشرة',k:'واقي شمس, واقي من الشمس, واقي الشمس, صن بلوك, حروق الشمس, التعرض للشمس, spf, sunscreen, sunblock, photoderm, فوتوديرم, anthelios, انثيليوس, heliocare, هيليوكير, isdin, ايزدين'},
+ {n:'تجاعيد وعلامات التقدم',p:'العناية بالبشرة',k:'تجاعيد, خطوط رفيعه, علامات التقدم, شد البشره, شيخوخه, ترهل, retinol, ريتينول, liftactiv, ليفت اكتيف, hyalu b5, هيالو, hyaluronic, هيالورونيك, anti-age, anti aging'},
+ {n:'تساقط الشعر وإنباته',p:'الشعر',k:'تساقط, صلع, فراغات, انبات, تكثيف الشعر, ضعف الشعر, priorin, بريورين, glopriorin, جلوبريورين, mostal, موستال, minoxidil, مينوكسيديل, avogain, افوجين, anacaps, اناكابس, neoptide, نيوبتايد, aminexil, امينكسيل, hair loss'},
+ {n:'قشرة وفروة الرأس',p:'الشعر',k:'قشره, قشرة, حكه فروه, حكه في الفروه, التهاب فروه, فروه دهنيه, dercos, ديكروس, nizoral, نيزورال, كيتوكونازول'},
+ {n:'تلف وجفاف الشعر',p:'الشعر',k:'هيشان, تقصف, تلف الشعر, شعر جاف, شعر مصبوغ, بروتين الشعر, ماسك شعر, سيروم شعر, olaplex, اولابليكس'},
+ {n:'نقص فيتامينات ومعادن',p:'الفيتامينات والمكملات',k:'نقص فيتامين, نقص فيتامين د, فيتامين د, vitamin d, نقص حديد, انيميا, فقر دم, حديد, ferrous, كالسيوم, calcium, b12, ب12, نقص المغنيسيوم, مغنيسيوم, magnesium, prima d3, بريما'},
+ {n:'طاقة وتركيز ومناعة',p:'الفيتامينات والمكملات',k:'خمول, ارهاق, اجهاد, تعب عام, قلة التركيز, ضعف التركيز, تشتت, ذاكره, اعصاب, تنميل, مناعه, اوميجا, omega, نيوروبيون, neurobion, رويال جيلي, royal jelly, جنسنج, ginseng, سنتروم, centrum, جلوفيت, glovit, coq10'},
+ {n:'مفاصل وعظام وعضلات',p:'الألم والأدوية بدون وصفة',k:'مفاصل, مفصل, ركبه, خشونه, الم الظهر, الام الظهر, وجع الظهر, عظام, هشاشه, شد عضلي, الم عضلي, كدمه, التواء, glucosamine, جلوكوزامين, move free, موف فري, joint, كولاجين للمفاصل, voltaren, فولتارين, reparil, ريباريل, dorofen, دوروفين'},
+ {n:'صداع وآلام عامة',p:'الألم والأدوية بدون وصفة',k:'صداع, شقيقه, الم الاسنان, الم الدوره, تقلصات, بنادول, panadol, ادفيل, advil, بروفين, brufen'},
+ {n:'أرق واضطرابات النوم',p:'النوم',k:'ارق, صعوبه النوم, قله النوم, اضطراب النوم, سهر, توتر, قلق, ميلاتونين, melatonin, zzzquil, melfast, ملفاست, اشواغاندا, ashwagandha'},
+ {n:'قولون وحموضة وهضم',p:'الجهاز الهضمي',k:'قولون, انتفاخ, غازات, حموضه, حرقان, ارتجاع, امساك, اسهال, عسر هضم, جرثومه, بروبيوتيك, probiotic, prolife, نيكسيوم, جافيسكون, gaviscon'},
+ {n:'برد وكحة والتهاب الحلق',p:'البرد والمناعة',k:'برد, انفلونزا, زكام, رشح, احتقان, جيوب انفيه, كحه, سعال, بلغم, التهاب الحلق, التهاب الزور, strepsils, ستربسلس, بخاخ انف, اوتريفين, otrivin'},
+ {n:'سمنة وتنحيف ورياضة',p:'الوزن والرياضة',k:'تخسيس, تنحيف, نزول الوزن, نقص الوزن, سد الشهيه, حرق دهون, حرق الدهون, دايت, رجيم, كيتو, مونجارو, mounjaro, اوزمبيك, ozempic, واي بروتين, whey, كرياتين'},
+ {n:'ضعف جنسي وصحة الرجل',p:'صحة الرجل',k:'انتصاب, الانتصاب, ضعف جنسي, الرغبه, القدره الجنسيه, الصحه الجنسيه, سرعه القذف, منشط, تستوستيرون, بروستاتا, prostate, سنافي, snafi, ارجينين, arginine, خصوبه الرجل'},
+ {n:'العناية بالطفل والأم',p:'الأم والطفل',k:'حفاض, التسلخات, تسلخات, سرة الطفل, رضيع, حليب اطفال, مغص الرضع, حامل, الحمل, رضاعه, قمل, nyda'},
+ {n:'أمراض مزمنة ووصفتي',p:'وصفتي',k:'وصفتي, wasfaty, وصفه تامين, ضغط الدم, سكر الدم, السكري, سكري, كوليسترول, كولسترول, انسولين, غده درقيه'}
 ];
 /* ---------- Language & i18n (EN default, AR toggle) ---------- */
 const TR_EXACT = {
@@ -1143,7 +1148,27 @@ const TR_EXACT = {
   "جارٍ البحث عن صور المنتجات…": "Searching for product images…",
   "🔍 بحث صورة": "🔍 Find Image",
   "🔄 صورة أخرى": "🔄 Try Another",
-  "تعذر العثور على صورة تلقائية لهذا المنتج. يمكنك رفعها يدويًا.": "Could not auto-find an image for this product. You can upload one manually."
+  "تعذر العثور على صورة تلقائية لهذا المنتج. يمكنك رفعها يدويًا.": "Could not auto-find an image for this product. You can upload one manually.",
+  "بشرة دهنية ولمعان": "Oily Skin & Shine",
+  "نقص فيتامينات ومعادن": "Vitamin & Mineral Deficiency",
+  "طاقة وتركيز ومناعة": "Energy, Focus & Immunity",
+  "صداع وآلام عامة": "Headache & General Pain",
+  "ضعف جنسي وصحة الرجل": "Sexual Health & Men's Care",
+  "العناية بالطفل والأم": "Mother & Baby Care",
+  "التصنيفات الدقيقة (مشكلة العميل)": "Specific Conditions (Customer Need)",
+  "مكتبة صور المنتجات": "Product Image Library",
+  "+ تصنيف دقيق": "+ Specific Condition",
+  "حفظ التصنيفات الدقيقة": "Save Specific Conditions",
+  "📁 رفع صور للمكتبة": "📁 Upload Images to Library",
+  "بحث في المكتبة…": "Search library…",
+  "الحالات الدقيقة (مشكلة العميل) حسب المجموعة": "Specific Conditions by Group",
+  "الحالة الدقيقة": "Specific Condition",
+  "غير محدد": "Unspecified",
+  "إزالة الخلفية البيضاء من صور المنتجات": "Remove white background from product images",
+  "✔ اعتماد": "✔ Approve",
+  "🔄 غيرها": "🔄 Another",
+  "مقترحة من النت": "Suggested from web",
+  "لا توجد صور في المكتبة بعد.": "No images in the library yet."
 
 };
 const TR_RX = [
@@ -1883,7 +1908,7 @@ const DEFAULT_BADGES=[
 ];
 const DEFAULT_STRENGTH={USE:'كشف الاحتياج الحقيقي',OFFERS:'الاستفادة من العروض',COMPLETE:'تقديم حل متكامل',CROSS:'البيع المتقاطع المناسب',WASFATY:'توظيف وصفتي'};
 const STAGES=['selected','design','final','sent','published'];
-const SET_DEFAULT={importCats:null,scoreSigs:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
+const SET_DEFAULT={importCats:null,importSubs:null,scoreSigs:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
 const now_=()=>new Date().toISOString();
 const today_=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const rid=()=>Math.random().toString(36).slice(2,10);
@@ -2408,7 +2433,7 @@ const ACTIONS={
   // مقاس نصوص وصور البوست لكل حالة (85% – 115%)
   setPostScale:(u,p)=>withLock_(async()=>{ const d=await decOf_(p.id); if(!d||d.status!=='Approved') throw err('البوست يخص الحالات المعتمدة فقط.');
     const c=await Store.get('cases',p.id); if(u.role!=='admin'&&!(c&&c.reviewerId===u.id)) throw err('غير مسموح.');
-    const cl=v=>Math.max(85,Math.min(115,Math.round((+v||100)/5)*5)); d.postScale={t:cl(p.t),i:cl(p.i)}; await Store.put('decisions',p.id,d); return {postScale:d.postScale}; }),
+    const cl=v=>Math.max(85,Math.min(115,Math.round((+v||100)/5)*5)); d.postScale={t:cl(p.t),i:cl(p.i),cut:p.cut!==false}; await Store.put('decisions',p.id,d); return {postScale:d.postScale}; }),
   setPostStage:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
     if(STAGES.indexOf(p.stage)<0) throw err('مرحلة غير معروفة.');
     const d=await decOf_(p.id); if(!d||d.status!=='Approved'||!d.featured) throw err('المراحل تخص الحالات المختارة لبوست الشهر فقط.');
@@ -2425,6 +2450,8 @@ const ACTIONS={
       s.scoreSigs=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
     if('importCats' in p&&p.importCats!=null){ const L=Array.isArray(p.importCats)?p.importCats:null; if(!L||L.length>30) throw err('قائمة التصنيفات غير صالحة.');
       s.importCats=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
+    if('importSubs' in p&&p.importSubs!=null){ const L=Array.isArray(p.importSubs)?p.importSubs:null; if(!L||L.length>60) throw err('قائمة التصنيفات الدقيقة غير صالحة.');
+      s.importSubs=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),p:String(c&&c.p||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
     if('bestCount' in p){ const n=parseInt(p.bestCount,10); if(!(n>=1&&n<=20)) throw err('عدد أفضل المشاركات بين 1 و20.'); s.bestCount=n; }
     if('brandLogo' in p){ const lg=String(p.brandLogo||''); if(lg&&(lg.indexOf('data:image/')!==0||lg.length>60000)) throw err('صورة الشعار غير صالحة أو كبيرة جدًا.'); s.brandLogo=lg; }
     delete s.aiEnabled; delete s.aiSource;
@@ -2476,7 +2503,11 @@ const ACTIONS={
     const keys=names.map(prodKey_); const got=await Store.getMany('hc',keys); const out={}; names.forEach((n,i)=>{ const d=got[keys[i]]; if(d&&d.img) out[n]=d.img; }); return out; },
   prodImgSave:(u,p)=>withLock_(async()=>{ const name=String(p.name||'').trim(), img=String(p.img||'');
     if(!name||img.indexOf('data:image/')!==0||img.length>45000) throw err('صورة منتج غير صالحة أو كبيرة.');
-    await Store.put('hc',prodKey_(name),{name:name.slice(0,120),img,at:now_(),by:u.name}); return {ok:true}; }),
+    await Store.put('hc',prodKey_(name),{name:name.slice(0,120),img,at:now_(),by:u.name});
+    const ix=(await Store.get('hc','pimg_index'))||{names:[]}; const nk=prodKey_(name); if(!(ix.names||[]).some(n=>prodKey_(n)===nk)){ ix.names=(ix.names||[]).concat([name.slice(0,120)]).slice(-3000); await Store.put('hc','pimg_index',ix); }
+    return {ok:true}; }),
+  prodImgList: async(u)=>{ const ix=(await Store.getMany('hc',['pimg_index'])).pimg_index; return {names:(ix&&ix.names)||[]}; },
+  prodImgDel:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{ const name=String(p.name||''); const nk=prodKey_(name); await Store.put('hc',nk,{}); const ix=(await Store.get('hc','pimg_index'))||{names:[]}; ix.names=(ix.names||[]).filter(n=>prodKey_(n)!==nk); await Store.put('hc','pimg_index',ix); return {ok:true}; }); },
   aiSuggest: async(u,p)=>{
     const set=await settings_(); if(!set.aiEnabled) throw err('الذكاء الاصطناعي غير مفعّل.');
     aiThrottle_(u,!!p.bulk);
@@ -2902,8 +2933,18 @@ const ymd_=t=>t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+Str
 const hm_=t=>String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
 function impCats(){ return (S.settings.importCats&&S.settings.importCats.length)?S.settings.importCats:IMPORT_CATS_DEFAULT; }
 // التصنيف الدقيق للحالة (تصبغات، حب شباب، ترطيب، تساقط شعر…) من نص الحالة وأصناف الفاتورة
-function impSubs(){ return IMPORT_SUBCATS_DEFAULT; }
-function subOf_(c){ if(!Array.isArray(c.sub)) c.sub=WA.categorize(c.text||'',[].concat(...(c.invoices||[]).map(v=>v.items||[])),impSubs()); return c.sub; }
+function impSubs(){ return (S.settings.importSubs&&S.settings.importSubs.length)?S.settings.importSubs:IMPORT_SUBCATS_DEFAULT; }
+function subParent_(n){ const x=impSubs().find(s=>s.n===n); return x?x.p||'':''; }
+// تصنيف دقيق رئيسي (الأكثر ذكرًا لكلماته) + ثانٍ إن وُجد — بحد أقصى اثنين
+function subOf_(c){ if(Array.isArray(c.sub)) return c.sub;
+  // الشكوى تُذكر عادة قبل «تم ترشيح / Cross-selling» (وزن 4)، وما بعدها ترشيحات وبيع إضافي (وزن 1)، وأصناف الفاتورة (وزن 1)
+  const prep=t=>{ const hay=' '+WA.normA(String(t||'')).toLowerCase()+' '; return {hay,words:' '+hay.replace(/[^\p{L}\p{N}\s\-+]/gu,' ').replace(/\s+/g,' ')+' '}; };
+  const txt=String(c.text||''); const cut=txt.search(/تم\s*ترشيح|ترشيح|رشحت|رشحنا|cross|كروس|up-?sell|اب\s*سيل|تم\s*صرف|تم\s*عرض|عرضت|اقترحت/i);
+  const T=prep(cut>15?txt.slice(0,cut):txt), T2=prep(cut>15?txt.slice(cut):''), IT=prep([].concat(...(c.invoices||[]).map(v=>(v.items||[]).map(i=>i.name))).join(' '));
+  const hits=(X,k)=>(k.length<=3?X.words.split(' '+k+' ').length:X.hay.split(k).length)-1;
+  const sc=impSubs().map((x,ix)=>{ let n=0; [...new Set(String(x.k||'').split(/[,،\n]/).map(k=>WA.normA(k).toLowerCase().trim()).filter(k=>k.length>=2))].forEach(k=>{ n+=4*hits(T,k)+hits(T2,k)+hits(IT,k); }); return {n:x.n,v:n,ix}; }).filter(x=>x.v>0).sort((a,b)=>b.v-a.v||a.ix-b.ix);
+  // الثاني يُعرض فقط إذا ذُكر في النص (وليس صنفًا إضافيًا في الفاتورة فقط)
+  c.sub=sc.filter((x,k)=>k===0||x.v>=2).slice(0,2).map(x=>x.n); return c.sub; }
 
 function mountImport(){
   impState(); const adm=adminMode(); if(!adm) S.impTab='imp';
@@ -2924,7 +2965,7 @@ function impSortState(){ const I=impState(); if(!I.sort||typeof I.sort!=='object
 function impCmp_(){ const so=impSortState(), d=IMP_SORT[so.k]||IMP_SORT.score;
   return (a,b)=>{ const x=d.v(a), y=d.v(b); const r=d.num?(x-y):(String(x)||'\uffff').localeCompare(String(y)||'\uffff','ar'); return (r*so.dir)||(b.score-a.score)||(a.t-b.t); }; }
 // بحث نصي: المرسل، الصيدلي، المشرف، الفرع، رقم الفاتورة، النص، أصناف الفاتورة — كل الكلمات لازم تكون موجودة
-function impSearchHit_(c,words){ if(!c._s){ c._s=WA.normA([c.sender,cleanSender_(c.sender),c.mention,c.group,c.text].concat([].concat(...c.invoices.map(v=>[v.pharmacist,fixName_(v.pharmacist),v.pharmNo,v.branch,v.invoice].concat((v.items||[]).map(x=>x.name))))).filter(Boolean).join(' \u0001 ')); }
+function impSearchHit_(c,words){ if(!c._s){ c._s=WA.normA([c.sender,cleanSender_(c.sender),c.mention,c.group,c.text].concat(subOf_(c)).concat([].concat(...c.invoices.map(v=>[v.pharmacist,fixName_(v.pharmacist),v.pharmNo,v.branch,v.invoice].concat((v.items||[]).map(x=>x.name))))).filter(Boolean).join(' \u0001 ')); }
   return words.every(w=>c._s.includes(w)); }
 function impWords_(){ const q=WA.normA(impState().f.q||'').trim(); return q?q.split(' ').filter(Boolean):[]; }
 // الفواتير المكررة: نفس رقم الفاتورة المطبوع في أكثر من حالة (أي مجموعة، أي مرسل، أي وقت)
@@ -2949,7 +2990,7 @@ function impRenderRows(){
     const dup=(c.dupInv&&c.dupInv.length)?'<span class="pill p-no" style="white-space:nowrap" title="'+esc(impDupTitle_(c))+'">⚠️ فاتورة مكررة</span> ':'';
     const st=(S.inboxDis||[]).includes(c.key)?'<span class="pill p-no">مستبعدة</span>':I.done&&I.done[c.key]?'<span class="pill p-ok">أُضيفت</span>':oldKeys.has(c.key)?'<span class="pill p-na">مستوردة سابقًا</span>':'<span class="pill p-na">جديدة</span>';
     const sc='<span class="pill '+(c.tier===3?'p-ok':c.tier===2?'p-wait':'p-na')+'" data-impdetail="'+esc(c.key)+'" title="اضغط لتفاصيل الحالة والترشيح" style="white-space:nowrap;cursor:pointer">'+'⭐'.repeat(c.tier||1)+' '+(c.score||0)+'</span>'+((c.sigs||[]).length?'<div class="note" style="margin:2px 0 0;font-size:11px">'+esc(c.sigs.join(' · '))+'</div>':'');
-    return '<tr><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td class="num note" style="margin:0">'+(ri+1)+'</td><td style="min-width:110px">'+sc+'</td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+(nm?'<div class="note" style="margin:0">'+esc(nm)+(c.invoices[0].branch?' · فرع '+esc(c.invoices[0].branch):'')+'</div>':'')+'</td><td>'+esc(c.mention||'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+subOf_(c).map(x=>'<span class="pill p-ok" style="margin:1px">🎯 '+esc(x)+'</span>').join(' ')+'</td><td style="max-width:340px;font-size:12.5px;cursor:pointer" data-impdetail="'+esc(c.key)+'" title="اضغط لعرض الحالة كاملة">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+dup+att+'</td><td class="num">'+(c.total!=null?c.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="12"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
+    return '<tr><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td class="num note" style="margin:0">'+(ri+1)+'</td><td style="min-width:110px">'+sc+'</td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+(nm?'<div class="note" style="margin:0">'+esc(nm)+(c.invoices[0].branch?' · فرع '+esc(c.invoices[0].branch):'')+'</div>':'')+'</td><td>'+esc(c.mention||'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+(subOf_(c).length?'<div style="margin-top:3px">'+subOf_(c).map((x,k)=>'<span class="pill '+(k?'p-na':'p-ok')+'" style="margin:1px" title="'+(k?'تصنيف دقيق إضافي':'التصنيف الدقيق الرئيسي')+(subParent_(x)?' · '+esc(subParent_(x)):'')+'">🎯 '+esc(x)+'</span>').join(' ')+'</div>':'')+'</td><td style="max-width:340px;font-size:12.5px;cursor:pointer" data-impdetail="'+esc(c.key)+'" title="اضغط لعرض الحالة كاملة">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+dup+att+'</td><td class="num">'+(c.total!=null?c.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="12"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
   const sab=$('#impSelAllBox'); if(sab){ sab.checked=rows.length>0&&rows.every(c=>I.sel.has(c.key)); }
   const qn=$('#impQN'); if(qn) qn.textContent=I.f.q?rows.length+' نتيجة':'';
 }
@@ -2972,7 +3013,7 @@ function updateImport(){
   const chip=(attr,val,label,n,on)=>'<label class="chip'+(on?' on':'')+'"><input type="checkbox" '+attr+'="'+esc(val)+'"'+(on?' checked':'')+'>'+esc(label)+' <b>'+n+'</b></label>';
   $('#impFilters').innerHTML='<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap"><b style="font-size:13px">بحث:</b><input type="search" id="impQ" value="'+esc(I.f.q||'')+'" placeholder="اسم، صيدلي، مشرف، فرع، رقم فاتورة، كلمة من النص أو صنف…" style="flex:1;min-width:240px;max-width:560px">'+(I.f.q?'<button class="btn" id="btnImpQX" type="button" aria-label="مسح البحث">✕</button>':'')+'<span class="note" id="impQN" style="margin:0"></span></div>'+
     '<div><b style="font-size:13px">التصنيف:</b> '+cats.map(c=>chip('data-impcat',c.n,c.n,cnt[c.n]||0,I.f.cats.has(c.n))).join('')+chip('data-impcat','__none','غير مصنّف',none,I.f.cats.has('__none'))+'<span class="note"> (بدون اختيار = الكل)</span></div>'+
-     '<div style="margin-top:6px"><b style="font-size:13px">الحالة الدقيقة:</b> '+impSubs().map(s=>{ const n=I.cases.filter(c=>subOf_(c).includes(s.n)).length; return n?chip('data-impsub',s.n,s.n,n,I.f.sub.has(s.n)):''; }).join('')+'</div>'+
+     '<div style="margin-top:6px"><b style="font-size:13px">الحالة الدقيقة:</b> '+(()=>{ const L=impSubs().map(s=>({s,n:I.cases.filter(c=>subOf_(c).includes(s.n)).length})).filter(x=>x.n); const P=[...new Set(L.map(x=>x.s.p||''))]; return P.map(pp=>(pp?'<span class="note" style="margin:0 4px 0 6px">'+esc(pp)+':</span>':'')+L.filter(x=>(x.s.p||'')===pp).map(x=>chip('data-impsub',x.s.n,x.s.n,x.n,I.f.sub.has(x.s.n))).join('')).join(''); })()+'</div>'+
     '<div style="margin-top:6px"><b style="font-size:13px">المجموعة:</b> '+Object.keys(gcnt).sort().map(g=>chip('data-impgrp',g,g,gcnt[g],I.f.groups.has(g))).join('')+
     '</div><div style="margin-top:6px"><b style="font-size:13px">الترشيح:</b> '+[3,2,1].map(t=>chip('data-imptier',String(t),TIER_AR[t],I.cases.filter(c=>c.tier===t).length,I.f.tier.has(String(t)))).join('')+
     ' '+
@@ -3373,6 +3414,28 @@ async function submitAllDrafts(){
 }
 
 /* ----- import categories editor (settings) ----- */
+function updateIsub(){
+  const box=$('#isubBox'); if(!box) return; if(!S.isubEdit) S.isubEdit=JSON.parse(JSON.stringify(impSubs())); const cats=impCats().map(c=>c.n);
+  box.innerHTML='<p class="note" style="margin:0 0 10px">التصنيف الدقيق يحدد مشكلة العميل أو احتياجه (تصبغات، حب شباب، تساقط شعر…). لكل حالة تصنيف دقيق رئيسي = الأكثر ذكرًا لكلماته في النص وأصناف الفاتورة، وتصنيف ثانٍ إن وُجد. اكتب أعراضًا واحتياجات وأسماء <b>خطوط</b> المنتجات (Effaclar، Anthelios) وليس الماركة كاملة، وتجنّب الكلمات العامة مثل «حبوب» أو «غسول».</p>'+
+   S.isubEdit.map((c,i)=>'<div class="grid" style="grid-template-columns:180px 170px 1fr auto;align-items:start;margin-bottom:8px"><input type="text" data-isn="'+i+'" value="'+esc(c.n)+'" placeholder="اسم التصنيف الدقيق"><select data-isp="'+i+'" aria-label="التصنيف الرئيسي"><option value="">— التصنيف الرئيسي —</option>'+cats.map(n=>'<option'+(n===c.p?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select><textarea data-isk="'+i+'" rows="2" placeholder="كلمات مفتاحية مفصولة بفواصل">'+esc(c.k)+'</textarea><button class="btn bad" data-isdel="'+i+'" aria-label="حذف">×</button></div>').join('')+
+   '<div class="actions"><button class="btn" id="btnIsAdd">+ تصنيف دقيق</button><button class="btn primary" id="btnIsSave">حفظ التصنيفات الدقيقة</button><button class="btn" id="btnIsReset">استعادة الافتراضي</button></div>';
+}
+async function updatePlib(){
+  const box=$('#plibBox'); if(!box) return; if(!S.plib){ box.innerHTML='<p class="note">جارٍ تحميل المكتبة…</p>'; try{ S.plib={names:(await call('prodImgList',{})).names||[],imgs:{}}; }catch(e){ S.plib={names:[],imgs:{}}; } }
+  const L=S.plib.names.slice().sort((a,b)=>a.localeCompare(b)); const need=L.filter(n=>!(n in S.plib.imgs)).slice(0,80);
+  if(need.length){ try{ const got=await call('prodImgGet',{names:need})||{}; need.forEach(n=>{ S.plib.imgs[n]=got[n]||''; }); }catch(e){ need.forEach(n=>{ S.plib.imgs[n]=''; }); } }
+  const q=WA.normA(S.plibQ||'').trim(); const V=L.filter(n=>!q||WA.normA(n).includes(q));
+  box.innerHTML='<p class="note" style="margin:0 0 10px">أي صورة منتج تُرفع في بوست تُحفظ هنا تلقائيًا وتظهر في كل بوست فيه نفس المنتج. للرفع الجماعي: اختر صورًا كثيرة مرة واحدة، و<b>اسم كل ملف = اسم المنتج</b> (مثل <span class="mono">La Roche Anthelios.png</span>).</p>'+
+    '<div class="actions"><label class="btn primary">📁 رفع صور للمكتبة<input type="file" id="plibFiles" accept="image/*" multiple hidden></label><input type="search" id="plibQ" value="'+esc(S.plibQ||'')+'" placeholder="بحث في المكتبة…" style="min-width:220px"><span class="note" id="plibMsg">'+L.length+' منتج</span></div>'+
+    (V.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:10px">'+V.slice(0,240).map(n=>'<div class="panel" style="padding:8px;text-align:center"><div style="height:90px;display:flex;align-items:center;justify-content:center">'+(S.plib.imgs[n]?'<img src="'+S.plib.imgs[n]+'" alt="" style="max-height:88px;max-width:100%">':'<span class="note">…</span>')+'</div><div style="font-size:12px;margin:6px 0;word-break:break-word">'+esc(n)+'</div>'+(adminMode()?'<button class="btn bad" type="button" data-plibdel="'+esc(n)+'" style="padding:2px 8px;min-height:0">حذف</button>':'')+'</div>').join('')+'</div>'+(V.length>240?'<p class="note">يظهر أول 240 — استخدم البحث.</p>':''):'<div class="empty" style="padding:16px">لا توجد صور في المكتبة بعد.</div>');
+  if(L.some(n=>!(n in S.plib.imgs))) setTimeout(()=>{ if($('#plibBox')) updatePlib(); },50);
+}
+async function plibUpload(files){
+  const L=[...files].filter(f=>/^image\//.test(f.type)); if(!L.length) return; let ok=0, bad=[]; const m=$('#plibMsg');
+  for(let k=0;k<L.length;k++){ const f=L[k]; const name=f.name.replace(/\.[a-z0-9]+$/i,'').replace(/[_]+/g,' ').replace(/\s+/g,' ').trim(); if(m) m.textContent='جارٍ رفع '+(k+1)+' من '+L.length+'…';
+    try{ const u=await resizeProduct(f); await call('prodImgSave',{name,img:u}); ok++; if(S.plib){ if(!S.plib.names.includes(name)) S.plib.names.push(name); S.plib.imgs[name]=u; } }catch(e){ bad.push(f.name); } }
+  toast('✔ أُضيفت '+ok+' صورة للمكتبة.'+(bad.length?' تعذر: '+bad.slice(0,5).join('، '):''),!ok); updatePlib();
+}
 function updateIc(){
   const box=$('#icBox'); if(!box) return; if(!S.icEdit) S.icEdit=JSON.parse(JSON.stringify(impCats()));
   box.innerHTML='<p class="note" style="margin:0 0 10px">تُصنَّف حالات الواتساب تلقائيًا عند الاستيراد إذا ظهرت أي كلمة من كلمات التصنيف في نص الحالة أو أصناف الفاتورة. اكتب الكلمات مفصولة بفواصل (عربي أو إنجليزي، أسماء منتجات أو أعراض). الحالة قد تأخذ أكثر من تصنيف.</p>'+
@@ -3694,8 +3757,9 @@ function anAgg(R){
     SM.filter(m=>m.g===g).forEach(m=>{ const r=row(m.key,m.name,m.role); r.written+=m.written; r.sticker+=m.sticker; });
     Object.values(rows).sort((a,b)=>(a.role==='none')-(b.role==='none')||String(a.name).localeCompare(String(b.name))).forEach(r=>supRows.push(r)); });
   const topics={}; R.groups.forEach(g=>{ topics[g]={}; C.filter(c=>c.g===g).forEach(c=>{ topics[g][c.topic]=(topics[g][c.topic]||0)+1; }); });
+  const subs={}; R.groups.forEach(g=>{ subs[g]={}; C.filter(c=>c.g===g).forEach(c=>{ const k=subOf_(c.c)[0]||'__none'; subs[g][k]=(subs[g][k]||0)+1; }); });
   const talRows=Object.values(R.talMsg||{}).map(t=>{ const n=(tal[t.key]||{}).n||0, med=(tal[t.key]||{}).med; return {key:t.key,name:t.name,byGroup:t.byGroup||{},m:t.m,n,med}; }).sort((a,b)=>b.m-a.m);
-  return {kpi:kAll,groups,sups:supL,supRows,topics,talRows,tal:talL,cats,topPh,nonPart,un:C.filter(c=>!c.first).sort((a,b)=>b.c.t-a.c.t)};
+  return {kpi:kAll,groups,sups:supL,supRows,topics,subs,talRows,tal:talL,cats,topPh,nonPart,un:C.filter(c=>!c.first).sort((a,b)=>b.c.t-a.c.t)};
 }
 function anChart(R){
   const C=R.cases; if(!C.length) return '';
@@ -3862,6 +3926,10 @@ function updateAn(){
   h+='<section class="panel sec"><h3>توزيع الحالات على التصنيفات حسب المجموعة</h3><div class="tw"><table><thead><tr><th>التصنيف</th>'+R.groups.map(g=>'<th>'+esc(g)+'</th>').join('')+'<th>الإجمالي</th><th>النسبة</th></tr></thead><tbody>'+
     Object.keys(tAll).sort((a,b)=>(a==='__none')-(b==='__none')||tAll[b]-tAll[a]).map(k=>'<tr><td>'+esc(tl(k))+'</td>'+R.groups.map(g=>'<td class="num">'+(G.topics[g][k]||0)+'</td>').join('')+'<td class="num"><b>'+tAll[k]+'</b></td><td class="num">'+pct_(tAll[k],tTot)+'%</td></tr>').join('')+
     '</tbody></table></div><p class="note">لكل حالة تصنيف رئيسي واحد: التصنيف الأكثر ظهورًا لكلماته في النص وأصناف الفاتورة.</p></section>';
+  { const sAll={}; Object.values(G.subs||{}).forEach(o=>Object.keys(o).forEach(k=>{ sAll[k]=(sAll[k]||0)+o[k]; })); const sTot=Object.values(sAll).reduce((a,b)=>a+b,0);
+    if(sTot) h+='<section class="panel sec"><h3>الحالات الدقيقة (مشكلة العميل) حسب المجموعة</h3><div class="tw"><table><thead><tr><th>الحالة الدقيقة</th><th>التصنيف الرئيسي</th>'+R.groups.map(g=>'<th>'+esc(g)+'</th>').join('')+'<th>الإجمالي</th><th>النسبة</th></tr></thead><tbody>'+
+      Object.keys(sAll).sort((a,b)=>(a==='__none')-(b==='__none')||sAll[b]-sAll[a]).map(k=>'<tr><td>'+(k==='__none'?'<span class="note" style="margin:0">غير محدد</span>':'🎯 '+esc(k))+'</td><td class="note" style="margin:0">'+esc(k==='__none'?'—':subParent_(k)||'—')+'</td>'+R.groups.map(g=>'<td class="num">'+((G.subs[g]||{})[k]||0)+'</td>').join('')+'<td class="num"><b>'+sAll[k]+'</b></td><td class="num">'+pct_(sAll[k],sTot)+'%</td></tr>').join('')+
+      '</tbody></table></div><p class="note">لكل حالة تصنيف دقيق رئيسي واحد في هذا الجدول. القائمة وكلماتها تُعدّل من «المستخدمون والإعدادات».</p></section>'; }
   h+='<div class="grid2">'+
 
     '<section class="panel sec"><h3>ردود فريق Talent</h3>'+(G.talRows.length?'<div class="tw"><table><thead><tr><th>العضو</th>'+R.groups.map(g=>'<th>'+esc(g)+'</th>').join('')+'<th>الردود (رسائل)</th><th>حالات ردّ عليها</th><th>وسيط الوقت</th></tr></thead><tbody>'+G.talRows.map(t=>'<tr><td>'+anMsgBtn_(t.key,'',esc(t.name),t.name)+'</td>'+R.groups.map(g=>'<td class="num">'+((t.byGroup[g]||0)?anMsgBtn_(t.key,g,t.byGroup[g],t.name):0)+'</td>').join('')+'<td class="num"><b>'+anMsgBtn_(t.key,'',t.m,t.name)+'</b></td><td class="num">'+t.n+'</td><td class="num">'+fmtDur_(t.med)+'</td></tr>').join('')+'</tbody></table></div><p class="note">«الردود» = كل رسالة مكتوبة من العضو في الفترة (ولو حرف أو إيموجي)، عدا الستيكر والمحذوفة والرسائل التي فيها روابط.</p></section><section class="panel sec">':'<div class="empty">'+(hasHc?'لا توجد ردود من فريق Talent في الفترة.':'تحتاج قائمة الموظفين لتمييز فريق Talent.')+'</div></section><section class="panel sec">')+
@@ -4023,8 +4091,10 @@ async function anXlsx(){
   [26,30,12,13,11,13,12,12,12,12,4,24].forEach((w,i)=>{ ws.getColumn(i+1).width=w; }); for(let i=13;i<=13+nG+2;i++) ws.getColumn(i).width=11;
   // ---- detail sheets ----
   const sheet=(name,head,rows,widths)=>{ const w=wb.addWorksheet(name,{views:[{rightToLeft:true,state:'frozen',ySplit:1}]}); head.forEach((h,i)=>H(w.getCell(1,i+1),h)); rows.forEach((r,k)=>r.forEach((v,i)=>{ const c=w.getCell(k+2,i+1); c.value=v; c.font={name:'Arial',size:10}; c.alignment={vertical:'top',wrapText:i===r.length-1}; })); (widths||[]).forEach((x,i)=>{ w.getColumn(i+1).width=x; }); return w; };
-  sheet('الحالات',['المجموعة','التاريخ','الوقت','الصيدلي','الفرع','المشرف','التصنيف الرئيسي','كل التصنيفات','صافي الفاتورة','القطع','عدد الردود','أول رد بعد (د)','رد المشرف بعد (د)','من ردّ','النص'],
-    R.cases.map(c=>[c.g,ymd_(c.c.t),hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',tl(c.topic),c.c.cats.join('، '),c.net?Math.round(c.net*100)/100:'',c.units||'',c.replies.length,c.first?mins_(c.first-c.c.t):'',c.supT?mins_(c.supT-c.c.t):'',[...new Set(c.replies.map(r=>r.name))].join('، '),(c.c.text||'').slice(0,1000)]),[8,12,8,26,8,22,20,26,12,8,10,12,12,26,80]);
+  sheet('الحالات',['المجموعة','التاريخ','الوقت','الصيدلي','الفرع','المشرف','التصنيف الرئيسي','كل التصنيفات','الحالة الدقيقة','صافي الفاتورة','القطع','عدد الردود','أول رد بعد (د)','رد المشرف بعد (د)','من ردّ','النص'],
+    R.cases.map(c=>[c.g,ymd_(c.c.t),hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',tl(c.topic),c.c.cats.join('، '),subOf_(c.c).join('، '),c.net?Math.round(c.net*100)/100:'',c.units||'',c.replies.length,c.first?mins_(c.first-c.c.t):'',c.supT?mins_(c.supT-c.c.t):'',[...new Set(c.replies.map(r=>r.name))].join('، '),(c.c.text||'').slice(0,1000)]),[8,12,8,26,8,22,20,26,26,12,8,10,12,12,26,80]);
+  { const sAll={}; Object.values(G.subs||{}).forEach(o=>Object.keys(o).forEach(k=>{ sAll[k]=(sAll[k]||0)+o[k]; }));
+    sheet('الحالات الدقيقة',['الحالة الدقيقة','التصنيف الرئيسي'].concat(R.groups,['الإجمالي']),Object.keys(sAll).sort((a,b)=>(a==='__none')-(b==='__none')||sAll[b]-sAll[a]).map(k=>[k==='__none'?'غير محدد':k,k==='__none'?'':subParent_(k)].concat(R.groups.map(g=>(G.subs[g]||{})[k]||0),[sAll[k]])),[30,26].concat(R.groups.map(()=>10),[12])); }
   sheet('بلا رد',['المجموعة','التاريخ','الصيدلي','الفرع','المشرف','النص'],G.un.map(c=>[c.g,ymd_(c.c.t)+' '+hm_(c.c.t),c.ph.name,c.branch,c.sup?c.sup.name:'',(c.c.text||'').slice(0,500)]),[8,18,26,8,22,80]);
   if(G.nonPart.length) sheet('لم يشاركوا',['الاسم','الفرع','المجموعة','المشرف'],G.nonPart.map(p=>[p.ar||p.en,p.branch,p.group,p.sup]),[34,10,16,26]);
   if(R.unknown.length) sheet('غير معروفين',['الاسم في الواتساب','المجموعة','الحالات'],R.unknown.map(u=>[u.name,u.g,u.n]),[34,10,10]);
@@ -4519,7 +4589,7 @@ function mountRules(){
 /* ---------- Log & settings ---------- */
 function mountUsers(){ $('#main').innerHTML=usersHtml(); }
 function mountLog(){
-  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">قائمة الموظفين (مرجع تحليل الواتساب)</h2><div class="panel sec" id="hcBox"></div><h2 class="sh">تصنيفات استيراد الواتساب</h2><div class="panel sec" id="icBox"></div><h2 class="sh">إشارات ترشيح الحالات</h2><div class="panel sec" id="scBox"></div><h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
+  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">قائمة الموظفين (مرجع تحليل الواتساب)</h2><div class="panel sec" id="hcBox"></div><h2 class="sh">تصنيفات استيراد الواتساب</h2><div class="panel sec" id="icBox"></div><h2 class="sh">التصنيفات الدقيقة (مشكلة العميل)</h2><div class="panel sec" id="isubBox"></div><h2 class="sh">مكتبة صور المنتجات</h2><div class="panel sec" id="plibBox"></div><h2 class="sh">إشارات ترشيح الحالات</h2><div class="panel sec" id="scBox"></div><h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
 }
 function updateDeleted(){
   const box=$('#delBox'); if(!box) return; const L=S.deleted||[];
@@ -4528,7 +4598,7 @@ function updateDeleted(){
     L.map(x=>'<tr><td class="mono">'+esc(x.id)+'</td><td>'+esc(x.pharmacist||'—')+' / '+esc(x.branch||'—')+'</td><td>'+esc(x.reviewerName||'—')+'</td><td>'+esc(x.deletedBy)+'</td><td class="mono">'+esc(String(x.deletedAt).slice(0,10))+'</td><td>'+esc(x.deleteReason)+'</td><td><button class="btn" data-restore="'+esc(x.id)+'">استرجاع</button></td></tr>').join('')+'</tbody></table></div>';
 }
 function updateLog(){
-  updateDeleted(); updateIc(); updateHc(); updateSc();
+  updateDeleted(); updateIc(); updateIsub(); S.plib=null; updatePlib(); updateHc(); updateSc();
   const ab=$('#aiBox');
   if(ab){
     const srcAr={backend:'متصل بـ Claude عبر الخادم',claude:'متصل بـ Claude (داخل Claude)',endpoint:'متصل عبر خادم القسم التقني',none:'غير متصل في هذه النسخة'}[S.settings.aiSource||'none'];
@@ -4627,6 +4697,24 @@ function trimmed(im){
   }catch(e){}
   trimCache.set(key,out); return out;
 }
+// إزالة الخلفية البيضاء المتصلة بحواف الصورة (لا تمس الأبيض داخل العبوة)
+const cutCache=new Map();
+function cutWhite(im){
+  const key=(im.src||'')+'|cut'; if(cutCache.has(key)) return cutCache.get(key);
+  const base=trimmed(im); let out=base;
+  try{
+    const w=base.width, h=base.height; const c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.drawImage(base,0,0);
+    const id=x.getImageData(0,0,w,h), d=id.data; const seen=new Uint8Array(w*h); const q=new Int32Array(w*h); let qh=0, qt=0;
+    const bg=i=>{ const r=d[i*4],g=d[i*4+1],b=d[i*4+2],a=d[i*4+3]; return a<20||(r>226&&g>226&&b>226&&Math.max(r,g,b)-Math.min(r,g,b)<22); };
+    const push=i=>{ if(!seen[i]&&bg(i)){ seen[i]=1; q[qt++]=i; } };
+    for(let xx=0;xx<w;xx++){ push(xx); push((h-1)*w+xx); } for(let y=0;y<h;y++){ push(y*w); push(y*w+w-1); }
+    while(qh<qt){ const i=q[qh++], xx=i%w, y=(i/w)|0; d[i*4+3]=0; if(xx>0) push(i-1); if(xx<w-1) push(i+1); if(y>0) push(i-w); if(y<h-1) push(i+w); }
+    // تنعيم الحافة: البكسل الفاتح الملاصق للخلفية المحذوفة يصبح شبه شفاف
+    for(let i=0;i<w*h;i++){ if(seen[i]) continue; const xx=i%w, y=(i/w)|0; const nb=(xx>0&&seen[i-1])||(xx<w-1&&seen[i+1])||(y>0&&seen[i-w])||(y<h-1&&seen[i+w]); if(nb){ const l=(d[i*4]+d[i*4+1]+d[i*4+2])/3; if(l>200) d[i*4+3]=Math.round(d[i*4+3]*0.45); } }
+    if(qt<w*h*0.97){ x.putImageData(id,0,0); out=c; }
+  }catch(e){}
+  cutCache.set(key,out); return out;
+}
 function rrect(x,c,a,b,w,h,r){ x.beginPath(); x.moveTo(a+r,b); x.arcTo(a+w,b,a+w,b+h,r); x.arcTo(a+w,b+h,a,b+h,r); x.arcTo(a,b+h,a,b,r); x.arcTo(a,b,a+w,b,r); x.closePath(); }
 function wrapLines(x,text,maxW){ const words=String(text||'').split(/\s+/).filter(Boolean); const lines=[]; let cur=''; words.forEach(w=>{ const t=cur?cur+' '+w:w; if(x.measureText(t).width>maxW&&cur){lines.push(cur);cur=w;} else cur=t; }); if(cur) lines.push(cur); return lines; }
 function hexToRgb_(h){h=(h||'#1f4e78').replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
@@ -4635,7 +4723,7 @@ function postData(id){
   const c=S.cases.get(id); const r=resultsOf(id,c);
   const met=allBadges().filter(b=>r[b.key]==='Met');
   const sc=(S.postScaleTmp&&S.postScaleTmp[id])||(S.dec.get(id)||{}).postScale||{t:100,i:100};
-  return {ts:(sc.t||100)/100,is:(sc.i||100)/100,month:monthLabelAr(c.month),pharmacist:c.pharmacist||'',supervisor:c.supervisor||'',start:c.startPoint||'',outcome:c.outcome||'',situation:c.situation||[],products:c.products||[],badges:met,brand:S.settings.brandPrimary||'#1f4e78',accent:S.settings.brandAccent||'#c9a86a',logo:S.settings.brandLogo||''};
+  return {cut:sc.cut!==false,ts:(sc.t||100)/100,is:(sc.i||100)/100,month:monthLabelAr(c.month),pharmacist:c.pharmacist||'',supervisor:c.supervisor||'',start:c.startPoint||'',outcome:c.outcome||'',situation:c.situation||[],products:c.products||[],badges:met,brand:S.settings.brandPrimary||'#1f4e78',accent:S.settings.brandAccent||'#c9a86a',logo:S.settings.brandLogo||''};
 }
 function layoutPost(cv,d,dry,redraw){
   const W=1080, x=cv.getContext('2d'); const H0=dry?4000:cv.height;
@@ -4662,7 +4750,7 @@ function layoutPost(cv,d,dry,redraw){
     const col=i%4, row=Math.floor(i/4); const inRow=Math.min(4,n-row*4); const rowW=inRow*slotW; const sx=40+(430-rowW)/2+col*slotW; const sy=top+row*(slotH+40);
     if(dry) return;
     const im=getImg(d.pimgs&&d.pimgs[i],redraw);
-    if(im){ const t=trimmed(im); const r=Math.min((slotW-14)/t.width,slotH/t.height); const w=t.width*r,h=t.height*r; x.drawImage(t,sx+(slotW-w)/2,sy+(slotH-h),w,h); }
+    if(im){ const t=d.cut?cutWhite(im):trimmed(im); const r=Math.min((slotW-14)/t.width,slotH/t.height); const w=t.width*r,h=t.height*r; x.drawImage(t,sx+(slotW-w)/2,sy+(slotH-h),w,h); }
     else { rrect(x,0,sx+6,sy+slotH*0.25,slotW-12,slotH*0.75,12); x.fillStyle='rgba(255,255,255,.10)'; x.fill(); }
     F('500',z(20)); const ln=wrapLines(x,name,slotW-10)[0]||''; x.textAlign='center'; x.fillStyle='#cfe6fb'; x.fillText(ln,sx+slotW/2,sy+slotH+z(26));
   });
@@ -4753,37 +4841,50 @@ async function withLib_(ids,m){
 }
 function loadImgCors_(url){ return new Promise((res,rej)=>{ const im=new Image(); im.crossOrigin='anonymous'; const t=setTimeout(()=>rej(new Error('timeout')),12000); im.onload=()=>{ clearTimeout(t); res(im); }; im.onerror=()=>{ clearTimeout(t); rej(new Error('img')); }; im.src=url; }); }
 function imgToProd_(im){ try{ for(const [h,type,q] of [[360,'image/webp',.85],[300,'image/webp',.8],[260,'image/jpeg',.8],[200,'image/jpeg',.75]]){ const r=Math.min(1,h/Math.max(im.naturalWidth||im.width,im.naturalHeight||im.height)); const cw=Math.max(1,Math.round((im.naturalWidth||im.width)*r)),ch=Math.max(1,Math.round((im.naturalHeight||im.height)*r)); const c=document.createElement('canvas'); c.width=cw;c.height=ch; const x=c.getContext('2d'); if(type==='image/jpeg'){x.fillStyle='#fff';x.fillRect(0,0,cw,ch);} x.drawImage(im,0,0,cw,ch); const u=c.toDataURL(type,q); if(u.length<44000&&u.indexOf('data:image/')===0) return u; } }catch(e){} return null; }
-async function fetchJson_(url){ const ac=new AbortController(); const t=setTimeout(()=>ac.abort(),12000); try{ const r=await fetch(url,{signal:ac.signal}); if(!r.ok) return null; return await r.json(); }catch(e){ return null; } finally{ clearTimeout(t); } }
-// يبحث عن صورة عبوة المنتج بالاسم (Open Beauty Facts ثم Open Food Facts للمكملات)، skip لتجربة صورة أخرى
+async function fetchJson_(url){ const ac=new AbortController(); const t=setTimeout(()=>ac.abort(),15000); try{ const r=await fetch(url,{signal:ac.signal}); if(!r.ok) return {err:r.status===429?'busy':'net'}; return {j:await r.json()}; }catch(e){ return {err:e&&e.name==='AbortError'?'timeout':'net'}; } finally{ clearTimeout(t); } }
+// يبحث عن صورة عبوة المنتج بالاسم (Open Beauty Facts ثم Open Food Facts للمكملات) — يرجع {u} أو {err:'none'|'timeout'|'busy'|'net'|'blocked'}
 async function webProdImg_(name,skip){
-  const q=encodeURIComponent(String(name||'').replace(/[×x]\s*\d+$/i,'').trim()); if(!q) return null;
+  const q=encodeURIComponent(String(name||'').replace(/[×x]\s*\d+$/i,'').trim()); if(!q) return {err:'none'};
   const f='&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,image_front_url,image_url';
-  const cands=[];
+  const cands=[]; let lastErr='';
   for(const base of ['https://world.openbeautyfacts.org','https://world.openfoodfacts.org']){
-    const j=await fetchJson_(base+'/cgi/search.pl?search_terms='+q+f);
-    ((j&&j.products)||[]).forEach(p=>{ const u=p.image_front_url||p.image_url; if(u&&!cands.includes(u)) cands.push(u); });
-    if(cands.length>(skip||0)+1) break;
+    const r=await fetchJson_(base+'/cgi/search.pl?search_terms='+q+f); if(r.err){ lastErr=r.err; continue; }
+    ((r.j&&r.j.products)||[]).forEach(p=>{ const u=p.image_front_url||p.image_url; if(u&&!cands.includes(u)) cands.push(u); });
+    if(cands.length>(skip||0)) break;
   }
-  for(let k=(skip||0);k<cands.length;k++){ try{ const im=await loadImgCors_(cands[k]); const u=imgToProd_(im); if(u) return u; }catch(e){} }
-  return null;
+  if(cands.length<=(skip||0)) return {err:lastErr||'none'};
+  for(let k=(skip||0);k<cands.length;k++){ try{ const im=await loadImgCors_(cands[k]); const u=imgToProd_(im); if(u) return {u,k}; }catch(e){} }
+  return {err:'blocked'};
 }
-function pimgPrev_(){ document.querySelectorAll('[data-pimgprev]').forEach(el=>{ const i=+el.dataset.pimgprev; el.innerHTML=S.pimgs[i]?'<img src="'+S.pimgs[i]+'" alt="" style="height:44px">':''; }); }
-function savePimgs_(id){ const arr=[]; for(let k=0;k<8;k++) arr.push(S.pimgs[k]||''); return call('savePostImages',{id,imgs:arr}); }
+const WEB_ERR={none:'ما في نتيجة لهذا المنتج في قاعدة الصور المفتوحة. استخدم «🔎 Google» ثم الصق الصورة هنا.',timeout:'قاعدة الصور ما ردّت في الوقت (بطيئة). جرّب بعد دقيقة أو استخدم «🔎 Google».',busy:'قاعدة الصور مشغولة (حد الطلبات). جرّب بعد دقيقة أو استخدم «🔎 Google».',net:'تعذر الاتصال بقاعدة الصور. استخدم «🔎 Google» ثم الصق الصورة.',blocked:'لقينا صورة لكن موقعها يمنع نسخها. استخدم «🔎 Google» ثم الصق الصورة.'};
+function googleImgUrl_(name){ return 'https://www.google.com/search?tbm=isch&q='+encodeURIComponent(String(name||'')+' product'); }
+// تعيين صورة منتج في البوست وحفظها مع البوست وفي المكتبة المشتركة
+function setProdImg_(i,u,toLib){ const id=S.postId; const c=S.cases.get(id); if(!c) return Promise.resolve(); S.pimgs[i]=u; if(S.pimgPend) delete S.pimgPend[i]; pimgPrev_(); renderPost();
+  return savePimgs_(id).then(()=>{ S.postsSig=''; const pn=(c.products||[])[i]; if(toLib&&pn) return call('prodImgSave',{name:pn,img:u}).catch(()=>{}); }); }
+function prodFromFile_(file,i){ if(!file||!/^image\//.test(file.type||'')) return toast('الملصق ليس صورة. اختر «نسخ الصورة» (Copy image) وليس نسخ الرابط.',true);
+  return resizeProduct(file).then(u=>setProdImg_(i,u,true)).then(()=>toast('✔ أُضيفت صورة المنتج وحُفظت في المكتبة.')).catch(e=>toast(e.message,true)); }
+function prodFromUrl_(url,i){ return loadImgCors_(url).then(im=>{ const u=imgToProd_(im); if(!u) throw new Error('x'); return setProdImg_(i,u,true); }).then(()=>toast('✔ أُضيفت صورة المنتج وحُفظت في المكتبة.')).catch(()=>toast('الموقع يمنع نسخ الصورة عن طريق الرابط. في Google اضغط على الصورة بزر الفأرة الأيمن ← «نسخ الصورة» ثم الصقها هنا.',true)); }
+function pimgPrev_(){ const pend=S.pimgPend||{}; document.querySelectorAll('[data-pimgprev]').forEach(el=>{ const i=+el.dataset.pimgprev; el.innerHTML=S.pimgs[i]?'<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap"><img src="'+S.pimgs[i]+'" alt="" style="height:44px;'+(pend[i]?'outline:2px dashed var(--warn);':'')+'">'+(pend[i]?'<span class="pill p-wait">مقترحة من النت</span><button class="btn primary" type="button" data-pok="'+i+'">✔ اعتماد</button><button class="btn" type="button" data-pfind="'+i+'">🔄 غيرها</button><button class="btn" type="button" data-pno="'+i+'">✖</button>':'')+'</span>':''; }); }
+function savePimgs_(id){ const arr=[]; const pend=S.pimgPend||{}; for(let k=0;k<8;k++) arr.push(pend[k]?'':(S.pimgs[k]||'')); return call('savePostImages',{id,imgs:arr}); }
 async function autoProdImgs(only){
-  const id=S.postId, c=S.cases.get(id); if(!c||!canEditImgs(id)||S.pimgBusy) return; const P=c.products||[];
-  const idx=only!=null?[only]:P.map((p,i)=>i).filter(i=>P[i]&&!S.pimgs[i]); if(!idx.length) return;
+  const id=S.postId, c=S.cases.get(id); if(!c||!canEditImgs(id)||S.pimgBusy) return; const P=c.products||[]; S.pimgPend=S.pimgPend||{};
+  const idx=only!=null?[only]:P.map((p,i)=>i).filter(i=>P[i]&&!S.pimgs[i]); if(!idx.length) return toast('كل المنتجات لها صور. لتغيير صورة استخدم «🔄 غيرها» أو الصق صورة جديدة.');
   S.pimgBusy=true; const btn=$('#btnAutoImgs'); if(btn){ btn.disabled=true; btn.textContent=trStr('جارٍ البحث عن صور المنتجات…'); }
-  let n=0;
+  let fromLib=0, sug=0; const errs={};
   try{
     let lib={}; if(only==null){ try{ lib=await call('prodImgGet',{names:idx.map(i=>P[i])})||{}; }catch(e){} }
     for(const i of idx){
       if(S.postId!==id) break;
-      let u=lib[P[i]]||null, fromWeb=false;
-      if(!u){ S.pfindSkip=S.pfindSkip||{}; const sk=only!=null?(S.pfindSkip[id+'|'+i]||0):0; u=await webProdImg_(P[i],sk); fromWeb=!!u; if(only!=null) S.pfindSkip[id+'|'+i]=sk+1; }
-      if(u){ S.pimgs[i]=u; n++; pimgPrev_(); renderPost(); if(fromWeb) call('prodImgSave',{name:P[i],img:u}).catch(()=>{}); }
+      if(lib[P[i]]){ S.pimgs[i]=lib[P[i]]; delete S.pimgPend[i]; fromLib++; continue; }
+      S.pfindSkip=S.pfindSkip||{}; const kk=id+'|'+i; const sk=only!=null?(S.pfindSkip[kk]||0):0;
+      const r=await webProdImg_(P[i],sk);
+      if(r.u){ S.pimgs[i]=r.u; S.pimgPend[i]=true; S.pfindSkip[kk]=(r.k||0)+1; sug++; } else { errs[r.err]=(errs[r.err]||[]).concat([P[i]]); if(only!=null) S.pfindSkip[kk]=0; }
+      pimgPrev_(); renderPost();
     }
-    if(n){ await savePimgs_(id); S.postsSig=''; toast('✔ تم جلب '+n+' صورة منتج تلقائيًا وحفظها مع البوست.'); }
-    else toast('تعذر العثور على صورة تلقائية لهذا المنتج. يمكنك رفعها يدويًا.',true);
+    if(fromLib) await savePimgs_(id);
+    const msg=[]; if(fromLib) msg.push('✔ '+fromLib+' صورة من مكتبة المنتجات (حُفظت).'); if(sug) msg.push('🔎 '+sug+' صورة مقترحة من النت: راجعها واضغط «✔ اعتماد» أو «🔄 غيرها».');
+    Object.keys(errs).forEach(k=>msg.push('✖ '+errs[k].join('، ')+': '+WEB_ERR[k]));
+    toast(msg.join(' '),!fromLib&&!sug);
   }catch(e){ toast(e.message,true); }
   S.pimgBusy=false; const b2=$('#btnAutoImgs'); if(b2){ b2.disabled=false; b2.textContent=trStr('🔍 جلب صور المنتجات تلقائيًا'); }
 }
@@ -4798,20 +4899,20 @@ function mountPost(){
   $('#main').innerHTML='<div class="bar"><button class="btn" id="btnPostBack">← الحالة</button><b class="mono">'+esc(S.postId)+'</b><span class="sp"></span><button class="btn primary" id="btnPostDl">تحميل الصورة PNG</button></div>'+
    (miss.length?'<div class="banner">ناقص في البوست: '+esc(miss.join('، '))+'. عدّل الحالة (زر إعادة الفتح للمدير) أو اترك هذه الأجزاء.</div>':'')+
    '<div class="ed"><div class="ed-main"><canvas id="postCv" aria-label="معاينة البوست"></canvas></div><aside class="ed-rail"><div class="panel sec"><h3>صور المنتجات</h3><p class="note" style="margin:0 0 10px">'+(canEditImgs(S.postId)?'تُحفظ مع الحالة، وتظهر للمعتمد في صفحة بوستات الشهر.':'الصور محفوظة من المقيّم ولا يمكن تعديلها بعد الاعتماد.')+'</p>'+
-   (d.products.length?(canEditImgs(S.postId)?'<div class="actions" style="margin:0 0 10px"><button class="btn primary" type="button" id="btnAutoImgs">🔍 جلب صور المنتجات تلقائيًا</button></div>':'')+d.products.map((p,i)=>'<label class="f" style="margin-bottom:8px">'+esc(p)+'<span data-pimgprev="'+i+'"></span>'+(canEditImgs(S.postId)?'<span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept="image/*" data-pimg="'+i+'"><button class="btn" type="button" data-pfind="'+i+'">🔍 بحث صورة</button></span>':'')+'</label>').join(''):'<p class="note">لم تُذكر منتجات في الحالة.</p>')+
+   (d.products.length?(canEditImgs(S.postId)?'<div class="actions" style="margin:0 0 6px"><button class="btn primary" type="button" id="btnAutoImgs">🔍 جلب صور المنتجات تلقائيًا</button></div><p class="note" style="margin:0 0 10px">يأخذ أولًا من مكتبة المنتجات، ثم يقترح من النت (تعتمدها أنت). للمنتجات غير الموجودة: «🔎 Google» ← زر الفأرة الأيمن على الصورة ← «نسخ الصورة» ← ارجع واضغط على خانة اللصق ثم Ctrl+V.</p>':'')+d.products.map((p,i)=>'<label class="f" style="margin-bottom:8px">'+esc(p)+'<span data-pimgprev="'+i+'"></span>'+(canEditImgs(S.postId)?'<span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input type="file" accept="image/*" data-pimg="'+i+'"><a class="btn" href="'+esc(googleImgUrl_(p))+'" target="_blank" rel="noopener" title="يفتح بحث صور Google باسم المنتج">🔎 Google</a><button class="btn" type="button" data-pfind="'+i+'" title="بحث في قاعدة صور المنتجات المفتوحة">🔍 بحث صورة</button></span><div class="ppaste" tabindex="0" data-ppaste="'+i+'" style="margin-top:6px;border:1.5px dashed var(--line);border-radius:8px;padding:8px;font-size:12.5px;color:var(--muted);cursor:pointer;text-align:center">📋 اضغط هنا ثم <b>Ctrl+V</b> لِلصق الصورة، أو اسحبها وأفلتها هنا</div>':'')+'</label>').join(''):'<p class="note">لم تُذكر منتجات في الحالة.</p>')+
    '</div>'+postScaleUi()+'<div class="panel sec"><h3>ملاحظة</h3><p class="note" style="margin:0">الشارات ونقاط القوة تُؤخذ من نتيجة الاعتماد تلقائيًا. هذه صورة أولية لفريق التصميم أو للنشر المباشر. إن لم يبدأ التنزيل، اضغط مطولًا على الصورة واحفظها.</p></div></aside></div>';
   renderPost();
 }
-function postScaleOf_(id){ return Object.assign({t:100,i:100},(S.postScaleTmp&&S.postScaleTmp[id])||(S.dec.get(id)||{}).postScale||{}); }
+function postScaleOf_(id){ return Object.assign({t:100,i:100,cut:true},(S.postScaleTmp&&S.postScaleTmp[id])||(S.dec.get(id)||{}).postScale||{}); }
 function postScaleUi(){ const sc=postScaleOf_(S.postId), ok=canEditImgs(S.postId);
   const row=(k,l)=>'<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span style="flex:1">'+l+'</span><button class="btn" type="button" data-pscale="'+k+':-5"'+(ok&&sc[k]>85?'':' disabled')+' aria-label="تصغير">−</button><b class="num" style="min-width:52px;text-align:center">'+sc[k]+'%</b><button class="btn" type="button" data-pscale="'+k+':5"'+(ok&&sc[k]<115?'':' disabled')+' aria-label="تكبير">+</button></div>';
   return '<div class="panel sec" id="postScaleBox"><h3>مقاسات البوست</h3>'+row('t','حجم الخط')+row('i','حجم صور المنتجات والشارات')+
-    '<div class="actions" style="margin-top:6px"><button class="btn" type="button" data-pscale="reset"'+(ok&&(sc.t!==100||sc.i!==100)?'':' disabled')+'>إعادة الضبط (100%)</button></div><p class="note" style="margin:6px 0 0">للنص الطويل صغّر الخط، وللقصير كبّره. يُحفظ لهذه الحالة ويظهر في «بوستات الشهر» وتحميل ZIP.</p></div>'; }
+    '<label class="chip" style="margin:6px 0"><input type="checkbox" data-pcut="1"'+(sc.cut!==false?' checked':'')+(ok?'':' disabled')+'>إزالة الخلفية البيضاء من صور المنتجات</label>'+'<div class="actions" style="margin-top:6px"><button class="btn" type="button" data-pscale="reset"'+(ok&&(sc.t!==100||sc.i!==100)?'':' disabled')+'>إعادة الضبط (100%)</button></div><p class="note" style="margin:6px 0 0">للنص الطويل صغّر الخط، وللقصير كبّره. يُحفظ لهذه الحالة ويظهر في «بوستات الشهر» وتحميل ZIP.</p></div>'; }
 let postScaleT=null;
 function postScaleStep(v){ const id=S.postId; if(!id||!canEditImgs(id)) return; const sc=postScaleOf_(id);
-  if(v==='reset'){ sc.t=100; sc.i=100; } else { const [k,dv]=v.split(':'); sc[k]=Math.max(85,Math.min(115,sc[k]+(+dv))); }
+  if(v==='reset'){ sc.t=100; sc.i=100; } else if(v==='cut'){ sc.cut=!(sc.cut!==false); } else { const [k,dv]=v.split(':'); sc[k]=Math.max(85,Math.min(115,sc[k]+(+dv))); }
   (S.postScaleTmp=S.postScaleTmp||{})[id]=sc; const b=$('#postScaleBox'); if(b) b.outerHTML=postScaleUi(); renderPost();
-  clearTimeout(postScaleT); postScaleT=setTimeout(()=>{ call('setPostScale',{id,t:sc.t,i:sc.i}).then(r=>{ const d=S.dec.get(id); if(d) d.postScale=r.postScale; S.postsSig=''; }).catch(e=>toast(e.message,true)); },600); }
+  clearTimeout(postScaleT); postScaleT=setTimeout(()=>{ call('setPostScale',{id,t:sc.t,i:sc.i,cut:sc.cut!==false}).then(r=>{ const d=S.dec.get(id); if(d) d.postScale=r.postScale; S.postsSig=''; }).catch(e=>toast(e.message,true)); },600); }
 function dlPost(){ const cv=$('#postCv'); if(!cv) return; cv.toBlob(b=>{ if(!b) return; saveFile('USE_Post_'+S.postId+'.png',b).catch(e=>toast(e.message,true)); },'image/png'); }
 function resizeLogo(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [w,type,q] of [[420,'image/png'],[320,'image/png'],[320,'image/webp',.9],[240,'image/webp',.85]]){ const r=Math.min(1,w/im.width); const cw=Math.round(im.width*r),ch=Math.round(im.height*r); const c=document.createElement('canvas'); c.width=cw;c.height=ch; c.getContext('2d').drawImage(im,0,0,cw,ch); const u=c.toDataURL(type,q); if(u.length<58000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('الصورة معقدة جدًا، جرّب صورة أبسط أو أصغر.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
 function resizeIcon(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [sz,type,q] of [[160,'image/png'],[128,'image/png'],[128,'image/webp',.85],[96,'image/webp',.8]]){ const c=document.createElement('canvas'); c.width=c.height=sz; const x=c.getContext('2d'); const r=Math.min(sz/im.width,sz/im.height); x.drawImage(im,(sz-im.width*r)/2,(sz-im.height*r)/2,im.width*r,im.height*r); const u=c.toDataURL(type,q); if(u.length<38000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('الصورة معقدة جدًا، جرّب صورة أبسط.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
@@ -4896,6 +4997,13 @@ document.addEventListener('click',e=>{
   if(t.id==='btnBestCount'){ const v=parseInt(($('#bestCountIn')||{}).value,10); if(S.busy) return; S.busy=true; return call('saveSettings',{bestCount:v}).then(()=>{toast('تم حفظ عدد أفضل المشاركات: '+v); return load();}).catch(e=>toast(e.message,true)).then(()=>{S.busy=false; S.postsSig=''; onData();}); }
   if(t.id==='btnPostDl') return dlPost();
   if(t.id==='btnAutoImgs') return autoProdImgs(null);
+  if(t.dataset&&t.dataset.pok!==undefined){ const i=+t.dataset.pok; return setProdImg_(i,S.pimgs[i],true).then(()=>toast('✔ اعتُمدت الصورة وحُفظت في مكتبة المنتجات.')).catch(e=>toast(e.message,true)); }
+  if(t.dataset&&t.dataset.pno!==undefined){ const i=+t.dataset.pno; S.pimgs[i]=''; if(S.pimgPend) delete S.pimgPend[i]; pimgPrev_(); return renderPost(); }
+  if(t.dataset&&t.dataset.plibdel){ const n=t.dataset.plibdel; if(!confirm('حذف صورة «'+n+'» من المكتبة؟ البوستات المحفوظة لا تتأثر.')) return; return call('prodImgDel',{name:n}).then(()=>{ S.plib.names=S.plib.names.filter(x=>x!==n); delete S.plib.imgs[n]; updatePlib(); }).catch(e=>toast(e.message,true)); }
+  if(t.id==='btnIsAdd'){ S.isubEdit.push({n:'',p:'',k:''}); return updateIsub(); }
+  if(t.dataset&&t.dataset.isdel!==undefined){ S.isubEdit.splice(+t.dataset.isdel,1); return updateIsub(); }
+  if(t.id==='btnIsReset'){ S.isubEdit=JSON.parse(JSON.stringify(IMPORT_SUBCATS_DEFAULT)); return updateIsub(); }
+  if(t.id==='btnIsSave'){ const L=S.isubEdit.filter(c=>c.n.trim()); if(S.busy) return; S.busy=true; return call('saveSettings',{importSubs:L}).then(s=>{ S.settings=Object.assign({},S.settings,s); S.isubEdit=null; impState().cases.forEach(c=>{ delete c.sub; delete c._s; }); toast('حُفظت التصنيفات الدقيقة ('+L.length+') وطُبّقت على الحالات المستخرجة.'); updateIsub(); }).catch(e=>toast(e.message,true)).then(()=>{S.busy=false;}); }
   if(t.dataset&&t.dataset.pfind!==undefined){ e.preventDefault(); return autoProdImgs(+t.dataset.pfind); }
   if(t.dataset.ladd&&S.draft&&!locked()){ S.draft[t.dataset.ladd].push(''); relist(); const ins=document.querySelectorAll('[data-l^="'+t.dataset.ladd+':"]'); if(ins.length) ins[ins.length-1].focus(); return; }
   if(t.dataset.ldel&&S.draft&&!locked()){ const [k,i]=t.dataset.ldel.split(':'); S.draft[k].splice(+i,1); relist(); return touch(); }
@@ -4996,8 +5104,17 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.target.id==='loginPin'||e.target.id==='loginUser')) return doLogin(); if(e.key==='Enter'&&e.target.id==='suPin') return doSetup(); if(e.key==='Enter'&&e.target.matches&&e.target.matches('tr[data-open]')) openCase(e.target.dataset.open); });
 let impQT=null;
+document.addEventListener('click',e=>{ const z=e.target.closest&&e.target.closest('[data-ppaste]'); if(z){ S.pasteSlot=+z.dataset.ppaste; document.querySelectorAll('[data-ppaste]').forEach(x=>{ x.style.borderColor=x===z?'var(--accent,#1f6feb)':''; }); z.focus(); } });
+document.addEventListener('paste',e=>{ if(S.view!=='post'||!S.postId||!canEditImgs(S.postId)) return; const z=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('[data-ppaste]'); const i=z?+z.dataset.ppaste:S.pasteSlot; if(i==null||isNaN(i)) return;
+  const items=[...((e.clipboardData&&e.clipboardData.items)||[])]; const it=items.find(x=>x.kind==='file'&&/^image\//.test(x.type)); if(it){ e.preventDefault(); return prodFromFile_(it.getAsFile(),i); }
+  const txt=(e.clipboardData&&e.clipboardData.getData('text'))||''; if(/^https?:\/\//i.test(txt.trim())){ e.preventDefault(); return prodFromUrl_(txt.trim(),i); }
+  if(z){ e.preventDefault(); toast('الحافظة ما فيها صورة. في Google اضغط بزر الفأرة الأيمن على الصورة ← «نسخ الصورة» ثم الصقها هنا.',true); } });
+document.addEventListener('dragover',e=>{ if(e.target.closest&&e.target.closest('[data-ppaste]')) e.preventDefault(); });
+document.addEventListener('drop',e=>{ const z=e.target.closest&&e.target.closest('[data-ppaste]'); if(!z||!S.postId||!canEditImgs(S.postId)) return; e.preventDefault(); const i=+z.dataset.ppaste; const f=[...((e.dataTransfer&&e.dataTransfer.files)||[])].find(x=>/^image\//.test(x.type)); if(f) return prodFromFile_(f,i);
+  const u=(e.dataTransfer&&(e.dataTransfer.getData('text/uri-list')||e.dataTransfer.getData('text')))||''; if(/^https?:\/\//i.test(u.trim())) return prodFromUrl_(u.trim().split('\n')[0],i); });
 document.addEventListener('input',e=>{
   const el=e.target;
+  if(el.id==='plibQ'){ S.plibQ=el.value; clearTimeout(impQT); impQT=setTimeout(()=>{ const pos=el.selectionStart; updatePlib().then(()=>{ const n=$('#plibQ'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){ } } }); },250); return; }
   if(el.id==='impQ'){ impState().f.q=el.value; clearTimeout(impQT); impQT=setTimeout(()=>{ impRenderRows(); const x=$('#btnImpQX'); if(!!el.value!==!!x){ const pos=el.selectionStart; updateImport(); const n=$('#impQ'); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch(_){ } } } },200); return; }
   if(el.id==='suPin'){ el.value=el.value.replace(/\D/g,'').slice(0,6); return; }
   if(el.id==='loginPin'){ el.value=el.value.replace(/\D/g,'').slice(0,6); return; }
@@ -5006,6 +5123,11 @@ document.addEventListener('input',e=>{
   if(el.dataset&&el.dataset.hmf&&S.hcMan){ const [i,f]=el.dataset.hmf.split(':'); if(S.hcMan[+i]) S.hcMan[+i][f]=el.value; return; }
   if(el.dataset&&el.dataset.scn!==undefined&&S.scEdit){ S.scEdit[+el.dataset.scn].n=el.value; return; }
   if(el.dataset&&el.dataset.sck!==undefined&&S.scEdit){ S.scEdit[+el.dataset.sck].k=el.value; return; }
+  if(el.dataset&&el.dataset.isn!==undefined&&S.isubEdit){ S.isubEdit[+el.dataset.isn].n=el.value; return; }
+  if(el.dataset&&el.dataset.isk!==undefined&&S.isubEdit){ S.isubEdit[+el.dataset.isk].k=el.value; return; }
+  if(el.dataset&&el.dataset.isp!==undefined&&S.isubEdit){ S.isubEdit[+el.dataset.isp].p=el.value; return; }
+  if(el.id==='plibFiles'&&el.files&&el.files.length){ const fs=[...el.files]; el.value=''; return plibUpload(fs); }
+  if(el.dataset&&el.dataset.pcut){ return postScaleStep('cut'); }
   if(el.dataset&&el.dataset.icn!==undefined&&S.icEdit){ S.icEdit[+el.dataset.icn].n=el.value; return; }
   if(el.dataset&&el.dataset.ick!==undefined&&S.icEdit){ S.icEdit[+el.dataset.ick].k=el.value; return; }
   if(el.id==='pickReason'&&S.pick){S.pick.reason=el.value;return;}
