@@ -2210,7 +2210,7 @@ const ACTIONS={
       const l=it.light||{}, d=it.detail||{}; const id=S_(l.id,60); if(!/^wa[a-z0-9]{4,40}$/.test(id)) continue;
       const old=await Store.get('inbox',id); if(old&&old.status!=='new'&&old.status!=='dismissed') continue;
       const light={id,key:S_(l.key,200),group:S_(l.group,10),date:S_(l.date,10),time:S_(l.time,5),sender:S_(l.sender,80),pharmacist:S_(l.pharmacist,120),pharmNo:S_(l.pharmNo,12),branch:S_(l.branch,10),
-        mention:S_(l.mention,60),cats:clean_(l.cats,12,40),preview:S_(l.preview,160),total:num_(l.total,0,1000000,2),units:num_(l.units,0,500,0),attN:+l.attN||0,attMissing:+l.attMissing||0,dup:+l.dup||0,
+        mention:S_(l.mention,60),supervisor:S_(l.supervisor,120),hcFill:l.hcFill?1:0,cats:clean_(l.cats,12,40),preview:S_(l.preview,160),total:num_(l.total,0,1000000,2),units:num_(l.units,0,500,0),attN:+l.attN||0,attMissing:+l.attMissing||0,dup:+l.dup||0,
         hasAI:!!l.hasAI,aiErr:S_(l.aiErr,200),status:p.status==='dismissed'?'dismissed':'new',createdAt:now_(),createdBy:u.name,takenBy:'',takenByName:''};
       const detail={id,text:S_(d.text,8000),invoices:(Array.isArray(d.invoices)?d.invoices:[]).slice(0,6).map(v=>({branch:S_(v.branch,10),invoice:S_(v.invoice,30),date:S_(v.date,30),pharmacist:S_(v.pharmacist,120),pharmNo:S_(v.pharmNo,12),
           total:num_(v.total,0,1000000,2),units:num_(v.units,0,500,0),discount:num_(v.discount,0,1000000,2),items:(Array.isArray(v.items)?v.items:[]).slice(0,40).map(i=>({name:S_(i.name,120),qty:+i.qty||1,disc:+i.disc||0,net:+i.net||0}))})),
@@ -2268,7 +2268,7 @@ const ACTIONS={
       const r=resultsLive_(answers,badges);
       const startPoint=String(ai.startPoint||(summary?summary.split(/[\n.،]/)[0].trim().slice(0,160):'')||'').trim().slice(0,400);
       const outcome=String(ai.outcome||(summary?'تقديم الرعاية الصيدلانية والحل المناسب لاحتياج العميل':'')||'').trim().slice(0,400);
-      const rec={id:'',month,pharmacist,branch:String(x.branch||'').slice(0,120),supervisor:String(x.mention||'').slice(0,120),
+      const rec={id:'',month,pharmacist,branch:String(x.branch||'').slice(0,120),supervisor:String(x.mention||x.supervisor||'').slice(0,120),
         reviewerId:u.id,reviewerName:u.name,summary,startPoint,outcome,
         situation:clean_(ai.situation,6,400),products:clean_(ai.products,8,80),
         invoiceItems,invoiceNote:String(ai.invoiceNote||'').slice(0,400),invoiceTotal:num_(x.total,0,1000000,2),invoiceCount:num_(x.units,0,500,0),
@@ -2331,6 +2331,13 @@ const ACTIONS={
       const x=await Store.get('inbox',id); if(!x||x.status!=='new') continue;
       x.status='taken'; x.takenBy=rv.id; x.takenByName=rv.name; x.takenAt=now_(); x.assignedBy=u.name; await Store.put('inbox',id,x); n++; per[rv.name]=(per[rv.name]||0)+1; }
     await audit_(u,'','inbox_assign','توزيع على المقيّمين: '+Object.keys(per).map(k=>k+' '+per[k]).join('، ')); return {n,per}; }); },
+  // يكمل الحقول الفارغة فقط (المشرف/الفرع/اسم الصيدلي) في حالات صندوق الوارد من قائمة الموظفين
+  inboxFill:(u,p)=>withLock_(async()=>{ const L=(Array.isArray(p.items)?p.items:[]).slice(0,500); let n=0; const S_=(v,m)=>String(v==null?'':v).trim().slice(0,m);
+    for(const it of L){ const x=await Store.get('inbox',String(it&&it.id||'')); if(!x||x.status==='done') continue; if(u.role!=='admin'&&!(x.status==='new'||x.takenBy===u.id)) continue; let ch=false;
+      if(!x.supervisor&&it.supervisor){ x.supervisor=S_(it.supervisor,120); x.hcFill=1; ch=true; } if(!x.branch&&it.branch){ x.branch=S_(it.branch,10); ch=true; }
+      if(it.pharmacist&&(!x.pharmacist||/^[\-\.\s—_•·]{0,2}$/.test(String(x.pharmacist).trim()))){ x.pharmacist=S_(it.pharmacist,120); ch=true; }
+      if(ch){ await Store.put('inbox',x.id,x); n++; } }
+    if(n) await audit_(u,'','inbox_fill','تعبئة من قائمة الموظفين: '+n+' حالة'); return {n}; }),
   inboxSetMany:(u,p)=>{ needAdmin_(u); const ids=(Array.isArray(p.ids)?p.ids:[]).map(String).slice(0,500); const st=p.status==='dismissed'?'dismissed':'new'; return withLock_(async()=>{
     let n=0; for(const id of ids){ const x=await Store.get('inbox',id); if(!x||x.status==='done'||x.status===st) continue; x.status=st; x.takenBy=''; x.takenByName=''; await Store.put('inbox',id,x); n++; }
     await audit_(u,'',st==='dismissed'?'inbox_dismiss':'inbox_back',(st==='dismissed'?'استبعاد جماعي: ':'إرجاع جماعي للصندوق: ')+n+' حالة'); return {n}; }); },
@@ -3098,15 +3105,16 @@ function impPayload(c,ai,aiErr){
       const parsedTotal=c.total||0, parsedUnits=c.units||0;
       const total=Math.round((parsedTotal+(ai&&c.aiFiles.length&&+ai.invoiceTotal||0))*100)/100||null;
       const units=(parsedUnits+(ai&&c.aiFiles.length&&+ai.invoiceCount||0))||null;
-      const inv0=c.invoices[0]||{};
-      const light={id:hashId_(c.key),key:c.key,group:c.group,date:ymd_(c.t),time:hm_(c.t),sender:cleanSender_(c.sender),pharmacist:fixName_(inv0.pharmacist||''),pharmNo:inv0.pharmNo||'',branch:inv0.branch||'',
-        mention:c.mention||'',cats:c.cats.concat(subOf_(c).map(s=>'🎯 '+s)).slice(0,12),preview:(c.text||'').slice(0,160),total,units,attN:c.atts.length,attMissing:c.atts.filter(a=>a.missing).length,dup:c.dupCount||0,hasAI:!!ai,aiErr};
+      const inv0=c.invoices[0]||{}; let hc=null; try{ hc=hcInfo_(c.group,c.sender,inv0.pharmNo||''); }catch(e){}
+      const phName=fixName_(inv0.pharmacist||'');
+      const light={id:hashId_(c.key),key:c.key,group:c.group,date:ymd_(c.t),time:hm_(c.t),sender:cleanSender_(c.sender),pharmacist:!badName_(phName)?phName:(hc&&hc.name)||'',pharmNo:inv0.pharmNo||'',branch:inv0.branch||(hc&&hc.branch)||'',
+        supervisor:(hc&&hc.supervisor)||'',hcFill:hc?1:0,mention:c.mention||'',cats:c.cats.concat(subOf_(c).map(s=>'🎯 '+s)).slice(0,12),preview:(c.text||'').slice(0,160),total,units,attN:c.atts.length,attMissing:c.atts.filter(a=>a.missing).length,dup:c.dupCount||0,hasAI:!!ai,aiErr};
       const detail={id:light.id,text:c.text||'',invoices:c.invoices.map(v=>({branch:v.branch,invoice:v.invoice,date:v.date,pharmacist:fixName_(v.pharmacist),pharmNo:v.pharmNo,total:v.total,units:v.units,discount:v.discount,items:v.items})),
         atts:c.atts.map(a=>({name:a.name,kind:a.kind,missing:!!a.missing,parsed:!!a.parsed})),ai};
   return {light,detail};
 }
 async function impExclude(){
-  const I=impState(); if(I.busy) return; const todo=I.cases.filter(c=>I.sel.has(c.key)&&!(I.done&&I.done[c.key])); if(!todo.length) return;
+  const I=impState(); if(I.busy) return; try{ await hcLoad(); }catch(e){} const todo=I.cases.filter(c=>I.sel.has(c.key)&&!(I.done&&I.done[c.key])); if(!todo.length) return;
   if(!confirm('استبعاد '+todo.length+' حالة؟ لن تظهر في الاستيراد القادم، وتقدر ترجعها من صندوق الوارد.')) return;
   I.busy=true; updateImport(); let n=0;
   try{ for(let k=0;k<todo.length;k+=20){ const r=await call('inboxAdd',{status:'dismissed',items:todo.slice(k,k+20).map(c=>impPayload(c,null,''))}); n+=r.added||0; }
@@ -3115,7 +3123,7 @@ async function impExclude(){
   I.busy=false; updateImport();
 }
 async function impRun(skipAI){
-  const I=impState(); if(I.busy) return; const todo=I.cases.filter(c=>I.sel.has(c.key)&&!(I.done&&I.done[c.key])); if(!todo.length) return;
+  const I=impState(); if(I.busy) return; try{ await hcLoad(); }catch(e){} const todo=I.cases.filter(c=>I.sel.has(c.key)&&!(I.done&&I.done[c.key])); if(!todo.length) return;
   let noImg=false;
   if(!skipAI&&S.settings.aiEnabled){ const nc=todo.filter(c=>c.aiFiles.length&&c.src&&c.src.stub); const need=[...new Set(nc.map(c=>c.group))].sort();
     if(need.length){ if(!confirm(nc.length+' من الحالات المختارة فواتيرها صور أو PDF ممسوح، وملفات ZIP للمجموعات '+need.join('، ')+' غير مرفوعة بعد الاسترجاع.\n\n«موافق»: أرسلها الآن، ويحلل الذكاء الاصطناعي النص والفواتير المقروءة فقط (بدون الصور).\n«إلغاء»: ارفع ملف ZIP الجوال لهذه المجموعات أولًا (من «اختيار ملفات ZIP»، بدون إعادة استخراج) ثم اضغط التحليل من جديد.')) return; noImg=true; } }
@@ -3322,7 +3330,7 @@ function inboxHtml(){
    '<select id="inboxCat" aria-label="التصنيف"><option value="">كل التصنيفات</option>'+cats.map(c=>'<option'+(c===f?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select><span class="note">خذ الحالة لتقييمها؛ تتحول لمسودة باسمك وفيها اقتراحات الذكاء الاصطناعي، ثم راجعها وأرسلها للاعتماد.</span></div>'+
    (admin?'<div class="actions" style="margin:8px 0">'+(stF==='dismissed'?'<button class="btn primary" id="btnInbBulkBack"'+(sel.size?'':' disabled')+'>↩ إرجاع المحدد للصندوق ('+sel.size+')</button>':inbAssignUi_(L,sel)+bulkEvalBtns+'<button class="btn" id="btnInbBulkDis"'+(sel.size?'':' disabled')+'>🚫 استبعاد المحدد ('+sel.size+')</button><button class="btn" id="btnInbBulkBack"'+([...sel].some(id=>(L.find(x=>x.id===id)||{}).status==='taken')?'':' disabled')+'>↩ إرجاع المحدد للصندوق</button>')+'</div>':'<div class="actions" style="margin:8px 0">'+bulkEvalBtns+'</div>')+
    '<div class="tw"><table><thead><tr><th style="width:34px"><input type="checkbox" id="inboxAll" aria-label="تحديد الكل"'+(rows.length&&rows.every(x=>sel.has(x.id))?' checked':'')+'></th><th>المجموعة</th><th>التاريخ</th><th>الصيدلي</th><th>المشرف</th><th>التصنيفات</th><th>النص</th><th>الفاتورة</th><th></th></tr></thead><tbody>'+
-   rows.map(x=>'<tr><td><input type="checkbox" data-inbsel="'+esc(x.id)+'"'+(sel.has(x.id)?' checked':'')+'></td><td>'+esc(x.group)+'</td><td class="mono" style="white-space:nowrap">'+esc(x.date)+'<br>'+esc(x.time)+'</td><td>'+esc(x.pharmacist||x.sender)+(x.branch?'<div class="note" style="margin:0">فرع '+esc(x.branch)+'</div>':'')+'</td><td>'+esc(x.mention||'—')+'</td><td>'+(x.cats||[]).map(c=>'<span class="pill p-na" style="margin:1px">'+esc(c)+'</span>').join(' ')+'</td><td style="max-width:320px;font-size:12.5px">'+(x.preview?esc(x.preview)+'…':'<span class="note">بدون نص</span>')+(x.hasAI?'':'<div class="note" style="margin:0;color:var(--warn)">بدون تحليل AI</div>')+'</td><td class="num">'+(x.total?Number(x.total).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td><td style="white-space:nowrap">'+
+   rows.map(x=>'<tr><td><input type="checkbox" data-inbsel="'+esc(x.id)+'"'+(sel.has(x.id)?' checked':'')+'></td><td>'+esc(x.group)+'</td><td class="mono" style="white-space:nowrap">'+esc(x.date)+'<br>'+esc(x.time)+'</td><td>'+esc(x.pharmacist||x.sender)+(x.branch?'<div class="note" style="margin:0">فرع '+esc(x.branch)+'</div>':'')+'</td><td>'+(x.mention?esc(x.mention):x.supervisor?esc(x.supervisor)+' <span class="pill p-na" style="font-size:10.5px" title="من قائمة الموظفين">HC</span>':'—')+'</td><td>'+(x.cats||[]).map(c=>'<span class="pill p-na" style="margin:1px">'+esc(c)+'</span>').join(' ')+'</td><td style="max-width:320px;font-size:12.5px">'+(x.preview?esc(x.preview)+'…':'<span class="note">بدون نص</span>')+(x.hasAI?'':'<div class="note" style="margin:0;color:var(--warn)">بدون تحليل AI</div>')+'</td><td class="num">'+(x.total?Number(x.total).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td><td style="white-space:nowrap">'+
      (x.status==='dismissed'?'<span class="pill p-no">مستبعدة</span> <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':x.status==='new'?'<button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>'+(admin?' <button class="btn" data-inbdis="'+esc(x.id)+'">استبعاد</button>':''):x.takenBy===S.me.id&&!admin?'<span class="pill p-ok">مُسندة لك</span> <button class="btn primary" data-take="'+esc(x.id)+'"'+(S.me.canWrite?'':' disabled')+'>ابدأ التقييم</button>':'<span class="pill p-wait">مع '+esc(x.takenByName||'—')+'</span>'+(admin&&x.takenBy===S.me.id?' <button class="btn primary" data-take="'+esc(x.id)+'">ابدأ التقييم</button>':'')+(admin?' <button class="btn" data-inbback="'+esc(x.id)+'">إرجاع للصندوق</button>':''))+'</td></tr>').join('')+'</tbody></table></div></details>';
 }
 // إسناد يدوي: المدير يحدد الحالات ويختار المقيّم
@@ -3344,7 +3352,7 @@ function draftFromInbox_(x,dt){
   const existing=Object.values(getDrafts()).find(o=>!o.id&&o.inboxId===x.id);
   const d=existing?JSON.parse(JSON.stringify(existing)):newDraft();
   if(!existing) d.localKey='n'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
-  d.month=(x.date||'').slice(0,7)||d.month; d.pharmacist=x.pharmacist||x.sender||''; d.branch=x.branch||''; d.supervisor=x.mention||''; d.summary=dt.text||'';
+  d.month=(x.date||'').slice(0,7)||d.month; d.pharmacist=!badName_(x.pharmacist)?x.pharmacist:(!badName_(x.sender)?x.sender:(x.pharmacist||x.sender||'')); d.branch=x.branch||''; d.supervisor=x.mention||x.supervisor||''; if(x.hcFill&&!x.mention&&x.supervisor) d.hcFill=1; d.summary=dt.text||'';
   d.inboxId=x.id; d.source='واتساب '+x.group+' · '+x.date+' '+x.time+' · '+x.sender+((dt.atts||[]).some(a=>a.missing)?' · ⚠️ مرفق ناقص في التصدير':'');
   const codeToBadge={}; activeBadges().forEach(b=>(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;})); d.aiCodes=[];
   (ai.suggestions||[]).forEach(s=>{ d.answers[s.code]=s.answer; d.aiCodes.push(s.code); const bk=codeToBadge[s.code]; if(bk&&s.quote&&!d.reasons[bk]) d.reasons[bk]=s.quote; });
@@ -3369,6 +3377,25 @@ async function inboxTake(id){
     const d=draftFromInbox_(r.item,r.detail);
     putDraft(d); S.busy=false; await load().catch(()=>{}); toast('أصبحت الحالة مسودة باسمك. راجع الاقتراحات ثم أرسلها للاعتماد.'); return openDraft(d.localKey);
   }catch(e){ if(e.code==='auth') return logout(true); toast(e.message,true); }
+  S.busy=false;
+}
+async function fillFromHc(){
+  if(S.busy) return; S.busy=true; let nd=0, ni=0, miss=0;
+  try{ await hcLoad(); if(!hcIndex().n){ S.busy=false; return toast('ارفع قائمة الموظفين أولًا من «المستخدمون والإعدادات».',true); }
+    const inb=S.inbox||[]; const byId={}; inb.forEach(x=>{ byId[x.id]=x; });
+    // 1) المسودات على هذا الجهاز
+    const all=getDrafts(); Object.keys(all).forEach(k=>{ const d=all[k]; if(d.id) return; if(d.supervisor&&d.branch&&!badName_(d.pharmacist)) return;
+      const x=d.inboxId&&byId[d.inboxId]; let g=x&&x.group, snd=x&&x.sender, no=x&&x.pharmNo;
+      if(!g){ const m=String(d.source||'').match(/واتساب\s+(\S+)\s+·\s+\S+\s+\S+\s+·\s+([^·]+)/); if(m){ g=m[1]; snd=m[2].trim(); } }
+      const h=g?hcInfo_(g,snd,no):null; if(!h){ miss++; return; } let ch=false;
+      if(!d.supervisor&&h.supervisor){ d.supervisor=h.supervisor; d.hcFill=1; ch=true; } if(!d.branch&&h.branch){ d.branch=h.branch; ch=true; } if(badName_(d.pharmacist)&&h.name){ d.pharmacist=h.name; ch=true; }
+      if(ch){ putDraft(d); nd++; } });
+    // 2) حالات صندوق الوارد
+    const items=inb.filter(x=>x.status!=='done'&&(!x.supervisor||!x.branch||badName_(x.pharmacist))).map(x=>{ const h=hcInfo_(x.group,x.sender,x.pharmNo); return h?{id:x.id,supervisor:h.supervisor,branch:h.branch,pharmacist:badName_(x.pharmacist)?h.name:''}:null; }).filter(Boolean);
+    for(let k=0;k<items.length;k+=100){ const r=await call('inboxFill',{items:items.slice(k,k+100)}); ni+=r.n||0; }
+    await load().catch(()=>{}); onData();
+    toast('✔ اكتملت '+nd+' مسودة و'+ni+' حالة في صندوق الوارد من قائمة الموظفين.'+(miss?' ('+miss+' مسودة صاحبها غير موجود في القائمة أو اسمه لا يطابق)':''));
+  }catch(e){ if(e.code==='auth'){ S.busy=false; return logout(true); } toast(e.message,true); }
   S.busy=false;
 }
 async function inboxTakeMany(){
@@ -3655,6 +3682,15 @@ function anResolver(group,names){
     cache.set(ck,r); return r;
   };
   fn.n2p=n2p; fn.disp=disp; return fn;
+}
+// بيانات الصيدلي من قائمة الموظفين: الاسم الرسمي، الفرع، المشرف (بالجوال ثم رقم الصيدلي ثم الاسم داخل نفس المجموعة)
+const badName_=v=>{ const t=String(v||'').trim(); return !t||t.length<2||/^[\-\.\s—_•·]+$/.test(t); };
+function hcInfo_(group,sender,pharmNo){
+  const idx=hcIndex(); if(!idx.n||!sender&&!pharmNo) return null; const I=impState();
+  S._hcRes=S._hcRes||{}; const key=group+'|'+(S.hcIdx?idx.n:0); if(!S._hcRes[key]) S._hcRes[key]=anResolver(group,((I.groupMsgs||{})[group]||{}).names||{});
+  const r=S._hcRes[key](sender||'',pharmNo||''); const p=r&&r.p; if(!p||p.role!=='pharm') return null;
+  let sup=''; if(p.sup){ const sp=idx.supByName.get(normN_(p.sup)); sup=sp?(sp.alias||sp.en||sp.ar):p.sup; }
+  return {name:p.ar||p.en||'',en:p.en||'',branch:p.branch||'',supervisor:sup};
 }
 function anCompute(){
   const I=impState(), A=anState(), win=AN_WIN; const idx=hcIndex();
@@ -4210,12 +4246,12 @@ function updateCases(){
   $('#legend').innerHTML='<span><i class="dot d-Met">U</i> متحققة</span><span><i class="dot d-NotMet">U</i> غير متحققة</span><span><i class="dot d-NA">U</i> لا تنطبق</span><span><i class="dot d-Incomplete">U</i> غير مكتملة</span><span style="margin-inline-start:auto">'+bs.map(b=>esc(abOf(b))+'='+esc(b.name)).join('، ')+'</span>';
   const rows=filteredCases(); const cols=admin?11:10;
   const allDrafts=Object.entries(getDrafts()).filter(([k,d])=>!d.id);
-  const dbb=$('#draftsBulkBox'); if(dbb) dbb.innerHTML=(!S.preview&&allDrafts.length)?'<button class="btn primary" id="btnSubmitAllDrafts"'+(S.busy?' disabled':'')+'>🚀 إرسال كل المسودات للاعتماد ('+allDrafts.length+')</button>':'';
+  const dbb=$('#draftsBulkBox'); if(dbb) dbb.innerHTML=(!S.preview&&allDrafts.length)?'<button class="btn" id="btnFillHc"'+(S.busy?' disabled':'')+' title="يكمل المشرف والفرع واسم الصيدلي الناقصة فقط">🔄 تعبئة المشرف والفرع من قائمة الموظفين</button><button class="btn primary" id="btnSubmitAllDrafts"'+(S.busy?' disabled':'')+'>🚀 إرسال كل المسودات للاعتماد ('+allDrafts.length+')</button>':'';
   if(!rows.length&&!allDrafts.length){
     $('#tb').innerHTML='<tr><td colspan="'+cols+'"><div class="empty"><b>'+(vis.length?'لا نتائج مطابقة':'لا توجد حالات بعد')+'</b>'+(vis.length?'غيّر الفلاتر أو البحث.':(admin?'تظهر هنا الحالات التي يدخلها المقيّمون.':'ابدأ بإدخال حالتك الأولى.'))+'</div></td></tr>'; return;
   }
   const drafts=(S.filters.status==='all'&&!S.preview)?allDrafts:[];
-  const draftRows=drafts.map(([k,d])=>'<tr class="row" data-draft="'+esc(k)+'" tabindex="0" style="background:var(--row-alt)"><td><span class="pill p-na">مسودة</span></td><td>'+esc(monthLabel(d.month))+'</td><td>'+esc(d.pharmacist||'—')+'</td><td>'+esc(d.branch||'—')+'</td><td>'+esc(d.supervisor||'—')+'</td>'+(admin?'<td>'+esc(S.me.name)+'</td>':'')+'<td class="num">'+(d.invoiceCount?esc(d.invoiceCount):'—')+'</td><td class="num">'+(d.invoiceTotal?esc(Number(d.invoiceTotal).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})):'—')+'</td><td>'+dotsFor('',d)+'</td><td><span class="pill p-na">لم تُرسل</span></td><td class="note"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span>محفوظة كمسودة جاهزة. افتحها للمراجعة أو أرسل المسودات دفعة واحدة.</span>'+(d.inboxId?'<button class="btn" type="button" data-dropdraft="'+esc(k)+'" style="padding:2px 8px;min-height:0">↩ للصندوق</button>':'')+'</div></td></tr>').join('');
+  const draftRows=drafts.map(([k,d])=>'<tr class="row" data-draft="'+esc(k)+'" tabindex="0" style="background:var(--row-alt)"><td><span class="pill p-na">مسودة</span></td><td>'+esc(monthLabel(d.month))+'</td><td>'+esc(d.pharmacist||'—')+'</td><td>'+esc(d.branch||'—')+'</td><td>'+esc(d.supervisor||'—')+(d.hcFill?' <span class="pill p-na" style="font-size:10.5px" title="من قائمة الموظفين">HC</span>':'')+'</td>'+(admin?'<td>'+esc(S.me.name)+'</td>':'')+'<td class="num">'+(d.invoiceCount?esc(d.invoiceCount):'—')+'</td><td class="num">'+(d.invoiceTotal?esc(Number(d.invoiceTotal).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})):'—')+'</td><td>'+dotsFor('',d)+'</td><td><span class="pill p-na">لم تُرسل</span></td><td class="note"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between"><span>محفوظة كمسودة جاهزة. افتحها للمراجعة أو أرسل المسودات دفعة واحدة.</span>'+(d.inboxId?'<button class="btn" type="button" data-dropdraft="'+esc(k)+'" style="padding:2px 8px;min-height:0">↩ للصندوق</button>':'')+'</div></td></tr>').join('');
   $('#tb').innerHTML=draftRows+rows.map(([id,c])=>{ const nomTag='';
     const st=statusOf(id); const stp=STATUS[st]; const dec=S.dec.get(id)||{};
     let last;
@@ -5058,6 +5094,7 @@ document.addEventListener('click',e=>{
   if(t.id==='btnDropDraft'&&S.draft){ dropDraft(S.draft.id||S.draft.localKey); S.openId=null; S.draft=null; toast('حُذفت المسودة.'); return mount(); }
   if(t.dataset&&t.dataset.dropdraft){ dropDraft(t.dataset.dropdraft); S.inboxOpen=true; toast('أُرجعت المسودة إلى صندوق الوارد.'); return updateCases(); }
   if(t.id==='btnSubmitAllDrafts') return submitAllDrafts();
+  if(t.id==='btnFillHc') return fillFromHc();
   if(t.dataset.draft) return openDraft(t.dataset.draft);
   if(t.dataset.q&&S.draft&&!locked()){ const a=S.draft.answers; S.aiCodes.delete(t.dataset.q); if(a[t.dataset.q]===t.dataset.v) delete a[t.dataset.q]; else a[t.dataset.q]=t.dataset.v; refreshEditor(); return touch(); }
   if(t.id==='btnApprove') return decide('approve');
