@@ -800,6 +800,29 @@ const TR_EXACT = {
   "بدون فاتورة": "No invoice",
   "تفاعل/مدح من المشرف": "Supervisor praise/reply",
   "روتين/حل متكامل": "Routine/complete solution",
+  "🎯 معايرة الاختيار: هل تختار المنصة مثل المقيّم؟": "🎯 Selection calibration: does the platform pick like the reviewer?",
+  "حالات اللقطة": "Snapshot cases",
+  "اختيار المقيّم": "Reviewer's picks",
+  "ضمن أول 24": "In top 24",
+  "ضمن أول 40": "In top 40",
+  "ضمن أول 60": "In top 60",
+  "وسيط الترتيب": "Median rank",
+  "التغطية (أول 40)": "Coverage (top 40)",
+  "📤 تصدير المقيّم": "📤 Reviewer export",
+  "المؤشر في نص الحالة": "Signal in case text",
+  "عند اختيار المقيّم": "In reviewer's picks",
+  "عند باقي الحالات": "In other cases",
+  "الوزن الحالي": "Current weight",
+  "المقترح من البيانات": "Suggested by data",
+  "وزن للتجربة": "Trial weight",
+  "استخدام المقترح للتجربة": "Try suggested weights",
+  "💾 حفظ الأوزان": "💾 Save weights",
+  "🔄 تحديث": "🔄 Refresh",
+  "نص 700–999 حرف": "Text 700–999 chars",
+  "نص 1000+ حرف": "Text 1000+ chars",
+  "فاتورة صورة (بدل المقروءة)": "Image invoice (vs parsed)",
+  "الترتيب على كل حالات الشهر بالسكور فقط (قبل التوزيع على المجموعات والفلاتر). الهدف: 70% أو أكثر من حالات المقيّم ضمن أول 40.": "Rank is by score across all cases of the month (before group distribution and filters). Target: 70%+ of the reviewer's picks within the top 40.",
+  "لا توجد حالات معتمدة لهذا الشهر بعد": "No approved cases for this month yet",
   "مكوّن علمي": "Scientific ingredient",
   "حد أدنى 3 لكل مجموعة": "Min 3 per group",
   "بالتساوي بين المجموعات": "Equal per group",
@@ -1575,7 +1598,7 @@ async function bk(op,body,tries){
 const Store=(()=>{
   let kind=null, db=null, mem=new Map(), snap=null, snapAt=0, snapP=null, batch=null;
   // البيانات الثقيلة (صور منتجات البوستات) لا تُحمَّل مع كل فتح، بل عند الحاجة فقط
-  const HEAVY=['postimgs','inboxd','hc']; const heavy={}; let heavyOk=true;
+  const HEAVY=['postimgs','inboxd','hc','calib']; const heavy={}; let heavyOk=true;
   const isHeavy=c=>kind==='remote'&&HEAVY.indexOf(c)>=0;
   async function heavyGet(c,ids){
     heavy[c]=heavy[c]||{}; const need=ids.map(String).filter(id=>!(id in heavy[c]));
@@ -1927,7 +1950,7 @@ const DEFAULT_BADGES=[
 ];
 const DEFAULT_STRENGTH={USE:'كشف الاحتياج الحقيقي',OFFERS:'الاستفادة من العروض',COMPLETE:'تقديم حل متكامل',CROSS:'البيع المتقاطع المناسب',WASFATY:'توظيف وصفتي'};
 const STAGES=['selected','design','final','sent','published'];
-const SET_DEFAULT={importCats:null,importSubs:null,scoreSigs:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
+const SET_DEFAULT={importCats:null,importSubs:null,scoreSigs:null,scoreW:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
 const now_=()=>new Date().toISOString();
 const today_=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const rid=()=>Math.random().toString(36).slice(2,10);
@@ -2208,6 +2231,28 @@ const ACTIONS={
       if(sn){ const key=String(sn.key||'').slice(0,120)||'all'; doc.snaps[key]=JSON.parse(JSON.stringify(Object.assign({},sn,{key,label:String(sn.label||'').slice(0,160),savedAt:now_(),by:u.name}))); }
       doc.savedAt=now_(); doc.savedBy=u.name;
       await Store.put('wastats',id,doc); await audit_(u,'','wa_stats','ملخص تحليل الواتساب '+id+(sn?': '+String(sn.label||''):'')); return {id}; }); },
+  // معايرة الاختيار: لقطة سكور كل حالات الشهر عند الاستخراج (مقسّمة لأجزاء) + مقارنة مع الحالات المعتمدة
+  calibSave:(u,p)=>{ needAdmin_(u); const month=String(p.month||''); if(!/^\d{4}-\d{2}$/.test(month)) throw err('شهر غير صالح.');
+    const rows=(Array.isArray(p.rows)?p.rows:[]).slice(0,5000).map(r=>[String(r[0]||'').slice(0,90),Math.round(Number(r[1])||0),Math.round(Number(r[2])||0),Math.round(Number(r[3])||0),String(r[4]||'').slice(0,10),r[5]?1:0]).filter(r=>r[0]);
+    if(!rows.length) throw err('لا توجد حالات.');
+    return withLock_(async()=>{ const meta=(await Store.get('meta','calib'))||{months:{},manual:{}}; meta.months=meta.months||{}; const old=meta.months[month];
+      if(old&&rows.length<old.n*0.9&&!p.force) return {skipped:true,n:old.n};
+      const CH=350, chunks=Math.ceil(rows.length/CH);
+      for(let i=0;i<chunks;i++) await Store.put('calib',month+':'+i,{id:month+':'+i,rows:rows.slice(i*CH,(i+1)*CH)});
+      for(let i=chunks;i<((old&&old.chunks)||0);i++) await Store.put('calib',month+':'+i,{id:month+':'+i,rows:[]});
+      const w={}; Object.keys(SCORE_W_DEFAULT).forEach(k=>{ w[k]=Math.round(Number((p.w||{})[k])||0); });
+      meta.months[month]={n:rows.length,chunks,w,from:String(p.from||'').slice(0,10),to:String(p.to||'').slice(0,10),at:new Date().toISOString(),by:u.name};
+      await Store.put('meta','calib',meta); return {n:rows.length}; }); },
+  calibGet: async(u)=>{ needAdmin_(u); const meta=(await Store.get('meta','calib'))||{months:{},manual:{}};
+    const dec={}; (await Store.list('decisions')).forEach(d=>{ dec[d.caseId]=d.status; }); const inb={}; (await Store.list('inbox')).forEach(x=>{ inb[x.id]=x; });
+    const approved={}; (await Store.list('cases')).forEach(c=>{ if(c.deleted||dec[c.id]!=='Approved'||!c.inboxId) return; const x=inb[c.inboxId]; if(!x||!x.key) return; const m=String(x.date||c.month||'').slice(0,7); (approved[m]=approved[m]||[]).push(x.key); });
+    return {months:meta.months||{},manual:meta.manual||{},approved}; },
+  calibRows: async(u,p)=>{ needAdmin_(u); const meta=(await Store.get('meta','calib'))||{months:{}}; const m=meta.months&&meta.months[String(p.month||'')]; if(!m) return {rows:[]};
+    const ids=[]; for(let i=0;i<m.chunks;i++) ids.push(p.month+':'+i); const got=await Store.getMany('calib',ids); const rows=[]; ids.forEach(id=>{ ((got[id]||{}).rows||[]).forEach(r=>rows.push(r)); }); return {rows}; },
+  calibManual:(u,p)=>{ needAdmin_(u); const month=String(p.month||''); if(!/^\d{4}-\d{2}$/.test(month)) throw err('شهر غير صالح.');
+    return withLock_(async()=>{ const meta=(await Store.get('meta','calib'))||{months:{},manual:{}}; meta.manual=meta.manual||{};
+      if(p.clear) delete meta.manual[month]; else meta.manual[month]=(Array.isArray(p.keys)?p.keys:[]).map(k=>String(k).slice(0,90)).slice(0,300);
+      await Store.put('meta','calib',meta); await audit_(u,'','calib_manual','اختيار المقيّم من تصدير المحادثة '+month+': '+((meta.manual[month]||[]).length)+' حالة'); return {n:(meta.manual[month]||[]).length}; }); },
   anList: async(u)=>{ needAdmin_(u); return {items:(await Store.list('wastats')).map(d=>({id:d.id,groups:d.groups||{},savedAt:d.savedAt,
     snaps:Object.values(d.snaps||{}).map(s=>({key:s.key,label:s.label,from:s.from,to:s.to,savedAt:s.savedAt,by:s.by,cases:(s.kpi||{}).cases||0,rate:(s.kpi||{}).rate||0,med:(s.kpi||{}).med}))}))}; },
   anGet: async(u,p)=>{ needAdmin_(u); const d=await Store.get('wastats',String(p.id||'')); if(!d) throw err('الملخص غير موجود.'); return d; },
@@ -2476,6 +2521,7 @@ const ACTIONS={
       s.scoreSigs=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
     if('importCats' in p&&p.importCats!=null){ const L=Array.isArray(p.importCats)?p.importCats:null; if(!L||L.length>30) throw err('قائمة التصنيفات غير صالحة.');
       s.importCats=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
+    if('scoreW' in p){ if(p.scoreW==null) s.scoreW=null; else { const o={}; Object.keys(SCORE_W_DEFAULT).forEach(k=>{ const v=Math.round(Number(p.scoreW[k])); if(!isFinite(v)||v<0||v>40) throw err('وزن غير صالح: '+k); o[k]=v; }); s.scoreW=o; } }
     if('importSubs' in p&&p.importSubs!=null){ const L=Array.isArray(p.importSubs)?p.importSubs:null; if(!L||L.length>60) throw err('قائمة التصنيفات الدقيقة غير صالحة.');
       s.importSubs=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),p:String(c&&c.p||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
     if('bestCount' in p){ const n=parseInt(p.bestCount,10); if(!(n>=1&&n<=20)) throw err('عدد أفضل المشاركات بين 1 و20.'); s.bestCount=n; }
@@ -3102,7 +3148,7 @@ async function impExtract(){
     all.sort((a,b)=>a.t-b.t);
     // مفتاح فريد لكل حالة: حالتان لنفس المرسل في نفس الدقيقة تأخذ الثانية لاحقة #2 (الأولى تبقى كما هي لتطابق المستورد سابقًا)
     { const seenK={}; all.forEach(c=>{ if(seenK[c.key]) c.key+='#'+(++seenK[c.key]); else seenK[c.key]=1; }); }
-    all.forEach(c=>impScore(c,(I.groupMsgs[c.group]||{}).msgs)); I.cases=all; const nDup=impDupMark_(all); I.restored=null;
+    all.forEach(c=>impScore(c,(I.groupMsgs[c.group]||{}).msgs)); I.cases=all; calibSnap_(all).catch(()=>{}); const nDup=impDupMark_(all); I.restored=null;
     const inv=all.filter(c=>c.invoices.length).length, noText=all.filter(c=>!c.text).length;
     I.extractMsg='استُخرجت '+all.length+' حالة (مرشحة بقوة: '+all.filter(c=>c.tier===3).length+')، منها '+inv+' بفاتورة مقروءة'+(filled?'، وأُكمل نص '+filled+' رسالة من تصدير الويب':'')+(noText?'. '+noText+' حالة بدون نص':'')+(replies?'. استُبعدت '+replies+' رسالة رد أو تعليق':'')+(nDup?'. ⚠️ '+nDup+' حالة رقم فاتورتها مكرر':'')+'. اختر التصنيفات ثم حدّد الحالات.'
       +' (الفترة '+(I.from||'—')+' → '+(I.to||'—')+' · رسائل الفترة: '+Object.keys(I.diag).sort().map(g=>g+' '+I.diag[g]).join('، ')+')';
@@ -3274,26 +3320,31 @@ function impSigs(){ return (S.settings.scoreSigs&&S.settings.scoreSigs.length)?S
 const PRAISE_RX=/ممتاز|برافو|براڤو|احسنت|أحسنت|الله ينور|تسلم|ما ?شاء الله|رائع|👏|💪/;
 // صيغة كتابة الحالة المعتمدة (United CX): الانطباع الأول / وصف الحالة …
 const CX_RX=/first\s*impression|1st\s*impression|united\s*cx|الانطباع\s*الا?ول|وصف\s*ال?حال|start\s*with/i;
+// أوزان قابلة للتعديل (لوحة المتابعة ← معايرة الاختيار)
+const SCORE_W_DEFAULT={routine:15,sci:8,cx:2,praise:5,l700:4,l1000:8,scan:30};
+const SCORE_W_LABEL={routine:'روتين/حل متكامل',sci:'مكوّن علمي',cx:'صيغة CX',praise:'تفاعل/مدح من المشرف',l700:'نص 700–999 حرف',l1000:'نص 1000+ حرف',scan:'فاتورة صورة (بدل المقروءة)'};
+const CF={routine:1,sci:2,cx:4,praise:8,scan:16,l700:32,l1000:64,parsed:128};
+function scoreW(){ const w=(S.settings&&S.settings.scoreW)||{}; const o={}; Object.keys(SCORE_W_DEFAULT).forEach(k=>{ o[k]=(k in w)?w[k]:SCORE_W_DEFAULT[k]; }); return o; }
 // مؤشرات من اختيارات المقيّم: بناء روتين/حل متكامل، وذكر مكوّن علمي
 const ROUTINE_RX=/روتين|routine|regimen/i;
 const SCI_RX=/niacinamide|نياسيناميد|نياسينامايد|retin|ريتين|رتينول|salicyl|ساليسيل|سالسيليك|hyaluron|هيالورون|هايلورون|azelaic|ازيليك|أزيليك|urea|يوريا|ceramide|سيراميد|vitamin\s*c|فيتامين\s*سي|aha|bha|glycolic|جليكوليك|peptide|ببتيد|zinc|زنك|spf\s*\d+/i;
 function impScore(c,msgs){
-  const why=[]; let s=0;
+  const why=[]; let s=0, cf=0; const W=scoreW();
   const L=(String(c.text||'').match(/[\p{L}\p{N}]/gu)||[]).length;
-  s+=L>=400?20:L>=200?15:L>=80?10:L?5:0; s+=L>=1000?8:L>=700?4:0; why.push(L>=700?'نص مفصّل جدًا':L>=200?'نص مفصّل':L>=80?'نص متوسط':L?'نص قصير':'بدون نص');
-  if(CX_RX.test(c.text||'')){ s+=2; why.push('صيغة CX'); }
-  if(ROUTINE_RX.test(c.text||'')){ s+=15; why.push('روتين/حل متكامل'); }
-  if(SCI_RX.test(c.text||'')){ s+=8; why.push('مكوّن علمي'); }
+  s+=L>=400?20:L>=200?15:L>=80?10:L?5:0; if(L>=1000){ s+=W.l1000; cf|=CF.l1000; } else if(L>=700){ s+=W.l700; cf|=CF.l700; } why.push(L>=700?'نص مفصّل جدًا':L>=200?'نص مفصّل':L>=80?'نص متوسط':L?'نص قصير':'بدون نص');
+  if(CX_RX.test(c.text||'')){ s+=W.cx; cf|=CF.cx; why.push('صيغة CX'); }
+  if(ROUTINE_RX.test(c.text||'')){ s+=W.routine; cf|=CF.routine; why.push('روتين/حل متكامل'); }
+  if(SCI_RX.test(c.text||'')){ s+=W.sci; cf|=CF.sci; why.push('مكوّن علمي'); }
   const k=impAttKinds(c), parsed=k.includes('parsed'), scan=k.includes('scan'), miss=k.includes('missing');
-  s+=parsed?20:scan?20:miss?5:0; why.push(parsed?'فاتورة مقروءة':scan?'فاتورة صورة/ممسوحة':miss?'فاتورة ناقصة':'بدون فاتورة');
+  s+=parsed?20:scan?W.scan:miss?5:0; if(parsed) cf|=CF.parsed; else if(scan) cf|=CF.scan; why.push(parsed?'فاتورة مقروءة':scan?'فاتورة صورة/ممسوحة':miss?'فاتورة ناقصة':'بدون فاتورة');
   const items=new Set([].concat(...c.invoices.map(v=>v.items.map(i=>WA.normA(i.name))))).size;
-  s+=parsed?(items>=3?15:items===2?10:items?4:0):scan?10:0; if(parsed&&items) why.push(items+(items>2?' أصناف':items===2?' صنفان':' صنف'));
+  s+=parsed?(items>=3?15:items===2?10:items?4:0):0; if(parsed&&items) why.push(items+(items>2?' أصناف':items===2?' صنفان':' صنف'));
   const sig=WA.categorize(c.text||'',[],impSigs()); s+=Math.min(35,sig.length*7); if(sig.length) why.push('إشارات: '+sig.join('، '));
   let pr=false;
   if(msgs&&msgs.length){ const t0=c.lastT.getTime(), toks=[fixName_((c.invoices[0]||{}).pharmacist||''),cleanSender_(c.sender)].map(x=>WA.normA(String(x).replace(/^(د|dr)\.?\s*/i,'')).split(/\s+/)[0]).filter(x=>x&&x.length>=3);
     pr=msgs.some(m=>{ const d=m.t.getTime()-t0; if(d<=0||d>6*3600000||m.sender===c.sender||m.body.length>300||!PRAISE_RX.test(m.body)) return false; if(d<=15*60000) return true; const b=WA.normA(m.body); return toks.some(t=>b.includes(t)); }); }
-  if(pr){ s+=5; why.push('تفاعل/مدح من المشرف'); }
-  c.score=Math.min(100,s); c.tlen=L; c.sigs=sig; c.why=why; c.tier=c.score>=70?3:c.score>=45?2:1;
+  if(pr){ s+=W.praise; cf|=CF.praise; why.push('تفاعل/مدح من المشرف'); }
+  c.score=Math.min(100,s); c.raw=s; c.cf=cf; c.tlen=L; c.sigs=sig; c.why=why; c.tier=c.score>=70?3:c.score>=45?2:1;
 }
 const TIER_AR=new Proxy({3:'⭐⭐⭐ قوية',2:'⭐⭐ متوسطة',1:'⭐ ضعيفة'},{get:(t,k)=>isEn()?({3:'⭐⭐⭐ Strong',2:'⭐⭐ Medium',1:'⭐ Weak'}[k]||t[k]):t[k]});
 // توزيع الحالات المحددة على المجموعات، يظهر بجانب زر «تحديد» ويتحدث مع أي تغيير في الاختيار
@@ -3322,6 +3373,15 @@ function impPick_(cand,n,mode){
   Object.keys(byG).forEach(g=>{ impDistinct_(byG[g].filter(c=>c.score>=IMP_MIN_SCORE)).slice(0,IMP_MIN_PER_G).forEach(c=>{ if(L.length<n){ L.push(c); used.add(c.key); } }); });
   for(const c of impDistinct_(cand)){ if(L.length>=n) break; if(!used.has(c.key)){ L.push(c); used.add(c.key); } }
   return L.sort((a,b)=>b.score-a.score||(b.tlen||0)-(a.tlen||0)||a.t-b.t);
+}
+// لقطة سكور كل حالات الشهر (لمعايرة الاختيار في لوحة المتابعة)؛ لا تحتوي نصوصًا ولا أسماء عملاء
+async function calibSnap_(all){
+  if(!adminMode()||!all||!all.length) return; const byM={}; all.forEach(c=>{ if(!c.t) return; const m=ymd_(c.t).slice(0,7); (byM[m]=byM[m]||[]).push(c); });
+  const W=scoreW();
+  for(const m of Object.keys(byM)){ const L=byM[m]; if(L.length<20) continue;
+    const rows=L.map(c=>[c.key,c.raw!=null?c.raw:c.score,c.cf||0,c.tlen||0,c.group||'',(c.cats||[]).includes('العناية بالبشرة')?1:0]);
+    await call('calibSave',{month:m,rows,w:W,from:($('#impFrom')||{}).value||'',to:($('#impTo')||{}).value||''}); }
+  S.calib=null;
 }
 function impTop(){
   const I=impState(), n=Math.max(1,Math.min(200,parseInt(($('#impTopN')||{}).value,10)||20)); I.topN=n;
@@ -4648,7 +4708,67 @@ function updateDash(){
    '</tbody></table></div></div><div><h2 class="sh">Workflow</h2><div class="panel tw"><table><thead><tr><th>اليوم</th><th>المرحلة</th><th>المسؤول</th></tr></thead><tbody>'+
    CYCLE.map((c,i)=>'<tr'+(i===stage?' style="background:var(--brand-soft)"':'')+'><td class="mono">'+c[0]+'</td><td>'+c[1]+(i===stage?' <span class="pill p-ok">الآن</span>':'')+'</td><td>'+c[2]+'</td></tr>').join('')+
    '</tbody></table></div><p class="note">'+(stage<0?'نحن بين دورتين حاليًا. تبدأ مرحلة الاختيار يوم 25. ':'')+'الأرقام أيام من الشهر. الاختيار يمتد من 25 إلى 1 من الشهر التالي.</p></div></div>';
-  $('#dBody').innerHTML=h;
+  if(adminMode()) h+='<div id="calibBox" style="margin-top:18px"></div>';
+  $('#dBody').innerHTML=h; if(adminMode()) calibRender();
+}
+// ---------- معايرة الاختيار: هل تختار المنصة مثل المقيّم؟ ----------
+function calibRank_(rows,w0,w1){ // يعيد حساب السكور بأوزان جديدة ثم الترتيب
+  const d=k=>(w1[k]||0)-(w0[k]||0);
+  const sc=rows.map(r=>{ const f=r[2]; let v=r[1]; if(w1!==w0){ if(f&CF.routine) v+=d('routine'); if(f&CF.sci) v+=d('sci'); if(f&CF.cx) v+=d('cx'); if(f&CF.praise) v+=d('praise'); if(f&CF.l700) v+=d('l700'); if(f&CF.l1000) v+=d('l1000'); if(f&CF.scan) v+=d('scan'); } return {k:r[0],v:Math.min(100,v),l:r[3]}; });
+  sc.sort((a,b)=>b.v-a.v||b.l-a.l); const rk={}; sc.forEach((x,i)=>{ rk[x.k]=i+1; }); return rk;
+}
+function calibStats_(rows,picks,rk){ const R=picks.map(k=>rk[k]).filter(Boolean).sort((a,b)=>a-b);
+  return {n:R.length,miss:picks.length-R.length,t24:R.filter(x=>x<=24).length,t40:R.filter(x=>x<=40).length,t60:R.filter(x=>x<=60).length,med:R.length?R[Math.floor((R.length-1)/2)]:null}; }
+function calibSuggest_(all){ // all = [{rows,picks}] لكل الأشهر
+  const F=[['routine',CF.routine],['sci',CF.sci],['cx',CF.cx],['praise',CF.praise],['l700',CF.l700],['l1000',CF.l1000],['scan',CF.scan]];
+  const out={}; let n1=0,n0=0; const c1={},c0={}; F.forEach(([k])=>{ c1[k]=0; c0[k]=0; });
+  all.forEach(({rows,picks})=>{ const P=new Set(picks); rows.forEach(r=>{ const inP=P.has(r[0]); inP?n1++:n0++; F.forEach(([k,b])=>{ if(r[2]&b){ inP?c1[k]++:c0[k]++; } }); }); });
+  F.forEach(([k])=>{ const p1=n1?c1[k]/n1:0, p0=n0?c0[k]/n0:0; let w=Math.round(6*Math.log2((p1+0.02)/(p0+0.02))); w=Math.max(0,Math.min(k==='scan'?35:25,w)); if(k==='scan') w=Math.max(20,Math.min(35,20+w)); out[k]={p1,p0,w}; });
+  return {f:out,n1,n0};
+}
+async function calibLoad_(force){
+  if(S.calib&&!force) return S.calib; const g=await call('calibGet',{}); const months={};
+  for(const m of Object.keys(g.months||{}).sort().reverse()){ const r=await call('calibRows',{month:m}); months[m]={meta:g.months[m],rows:r.rows||[]}; }
+  S.calib={g,months}; return S.calib;
+}
+async function calibRender(force){
+  const box=$('#calibBox'); if(!box) return;
+  box.innerHTML='<h2 class="sh">🎯 معايرة الاختيار: هل تختار المنصة مثل المقيّم؟</h2><div class="panel"><p class="note">جارٍ التحميل…</p></div>';
+  let C; try{ C=await calibLoad_(force); }catch(e){ box.innerHTML='<h2 class="sh">🎯 معايرة الاختيار</h2><div class="panel"><p class="note">تعذر التحميل: '+esc(e.message)+'</p></div>'; return; }
+  const W=S.calibW||scoreW(); const ms=Object.keys(C.months).sort().reverse(); const all=[];
+  let h='<h2 class="sh">🎯 معايرة الاختيار: هل تختار المنصة مثل المقيّم؟</h2>';
+  if(!ms.length){ box.innerHTML=h+'<div class="panel"><p class="note">لا توجد لقطات بعد. كل مرة تستخرج فيها حالات شهر من «استيراد الواتساب» تُحفظ لقطة سكور الحالات هنا تلقائيًا، وبعد اعتماد حالات ذلك الشهر تظهر المقارنة.</p></div>'; return; }
+  const rowsHtml=ms.map(m=>{ const M=C.months[m], ap=(C.g.approved[m]||[]), man=(C.g.manual[m]||[]); const picks=ap.length?ap:man; const src=ap.length?'المعتمدة ('+ap.length+')':man.length?'تصدير المقيّم ('+man.length+')':'—';
+    if(picks.length) all.push({rows:M.rows,picks});
+    const a=calibStats_(M.rows,picks,calibRank_(M.rows,M.meta.w,M.meta.w)), b=calibStats_(M.rows,picks,calibRank_(M.rows,M.meta.w,W)); const ch=JSON.stringify(W)!==JSON.stringify(M.meta.w);
+    const cell=(x,y,low)=>'<b>'+x+'</b>'+(ch&&y!==x?' <span class="pill '+((low?y<x:y>x)?'p-ok':'p-no')+'" style="font-size:10.5px">← '+y+'</span>':'');
+    return '<tr><td>'+esc(monthLabel(m))+'</td><td class="num">'+M.meta.n+'</td><td>'+src+(a.miss?' <span class="pill p-na" style="font-size:10.5px" title="حالات معتمدة ليست في لقطة الشهر">'+a.miss+' خارج اللقطة</span>':'')+'</td>'+
+      (picks.length?'<td class="num">'+cell(a.t24,b.t24)+'</td><td class="num">'+cell(a.t40,b.t40)+'</td><td class="num">'+cell(a.t60,b.t60)+'</td><td class="num">'+cell(a.med,b.med,1)+'</td><td class="num">'+(a.n?Math.round(a.t40/a.n*100)+'%':'—')+'</td>':'<td colspan="5" class="note">لا توجد حالات معتمدة لهذا الشهر بعد</td>')+
+      '<td><button class="btn" data-calibup="'+m+'" title="للأشهر التي اختيرت حالاتها خارج المنصة: ارفع تصدير محادثة المقيّم (يتطلب جلسة استخراج لنفس الشهر)">📤 تصدير المقيّم</button>'+(man.length?' <button class="btn" data-calibclr="'+m+'">مسح</button>':'')+'</td></tr>'; }).join('');
+  h+='<div class="panel tw"><table><thead><tr><th>الشهر</th><th>حالات اللقطة</th><th>اختيار المقيّم</th><th>ضمن أول 24</th><th>ضمن أول 40</th><th>ضمن أول 60</th><th>وسيط الترتيب</th><th>التغطية (أول 40)</th><th></th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>'+
+     '<p class="note">الترتيب على كل حالات الشهر بالسكور فقط (قبل التوزيع على المجموعات والفلاتر). الهدف: 70% أو أكثر من حالات المقيّم ضمن أول 40.</p>';
+  const sg=calibSuggest_(all);
+  h+='<div class="panel tw" style="margin-top:12px"><table><thead><tr><th>المؤشر في نص الحالة</th><th>عند اختيار المقيّم</th><th>عند باقي الحالات</th><th>الوزن الحالي</th><th>المقترح من البيانات</th><th>وزن للتجربة</th></tr></thead><tbody>'+
+    Object.keys(SCORE_W_DEFAULT).map(k=>{ const f=sg.f[k]; return '<tr><td>'+esc(SCORE_W_LABEL[k])+'</td><td class="num">'+(sg.n1?Math.round(f.p1*100)+'%':'—')+'</td><td class="num">'+(sg.n0?Math.round(f.p0*100)+'%':'—')+'</td><td class="num">'+scoreW()[k]+'</td><td class="num">'+(sg.n1>=10?'<b>'+f.w+'</b>':'—')+'</td><td><input type="number" min="0" max="40" data-calibw="'+k+'" value="'+W[k]+'" style="width:70px"></td></tr>'; }).join('')+'</tbody></table></div>'+
+    '<p class="note">'+(sg.n1>=10?'المقترح محسوب من '+sg.n1+' حالة اختارها المقيّم مقابل '+sg.n0+' حالة لم يخترها. ':'البيانات غير كافية للاقتراح (يلزم 10 حالات مقيّم على الأقل). ')+'غيّر «وزن للتجربة» لترى أثره فورًا على الأرقام أعلاه (السهم ←)، ثم احفظ. الأوزان الجديدة تُطبَّق عند الاستخراج القادم.</p>'+
+    '<div class="actions">'+(sg.n1>=10?'<button class="btn" id="btnCalibSug">استخدام المقترح للتجربة</button>':'')+'<button class="btn primary" id="btnCalibSave"'+(S.busy?' disabled':'')+'>💾 حفظ الأوزان</button><button class="btn" id="btnCalibReset">استعادة الافتراضي</button><button class="btn" id="btnCalibReload">🔄 تحديث</button></div>'+
+    '<input type="file" id="calibFile" accept=".zip,.txt" style="display:none">';
+  box.innerHTML=h; S._calibSug=sg;
+}
+// تصدير محادثة المقيّم → مطابقة نصوص الحالات المحوّلة مع حالات جلسة الاستخراج الحالية
+async function calibUpload_(month,file){
+  const I=impState(); const pool=(I.cases||[]).filter(c=>c.t&&ymd_(c.t).slice(0,7)===month&&c.text);
+  if(!pool.length) return toast('افتح «استيراد الواتساب» واستخرج (أو استرجع) حالات '+monthLabel(month)+' أولًا، ثم ارفع تصدير المقيّم.',true);
+  let txt='';
+  if(/\.zip$/i.test(file.name)){ const zip=await JSZip.loadAsync(file); const n=Object.keys(zip.files).find(n=>/(^|\/)_chat\.txt$/i.test(n))||Object.keys(zip.files).find(n=>/\.txt$/i.test(n)); if(!n) return toast('الملف لا يحتوي على _chat.txt',true); txt=await zip.file(n).async('string'); }
+  else txt=await file.text();
+  const msgs=WA.parseChat(txt).filter(m=>String(m.body||'').replace(/\s/g,'').length>=80);
+  const tok=t=>new Set(WA.normA(String(t||'')).replace(/[^\p{L}\p{N}\s]/gu,' ').split(/\s+/).filter(w=>w.length>=3));
+  const P=pool.map(c=>({k:c.key,t:tok(c.text)})); const keys=new Set();
+  msgs.forEach(m=>{ const mt=tok(m.body); if(mt.size<8) return; let best=0,bk=null; P.forEach(x=>{ if(!x.t.size) return; let i=0; mt.forEach(w=>{ if(x.t.has(w)) i++; }); const v=Math.max(i/(mt.size+x.t.size-i),0.9*i/Math.min(mt.size,x.t.size)); if(v>best){ best=v; bk=x.k; } }); if(best>=0.6) keys.add(bk); });
+  if(!keys.size) return toast('لم تُطابق أي حالة من تصدير المقيّم مع حالات هذا الشهر.',true);
+  if(!confirm('طوبقت '+keys.size+' حالة من تصدير المقيّم مع حالات '+monthLabel(month)+'. حفظها كاختيار المقيّم لهذا الشهر؟\n(تُستخدم فقط إذا لم توجد حالات معتمدة للشهر)')) return;
+  await call('calibManual',{month,keys:[...keys]}); toast('✔ حُفظ اختيار المقيّم: '+keys.size+' حالة.'); return calibRender(true);
 }
 
 /* ---------- Rules ---------- */
@@ -5179,6 +5299,14 @@ document.addEventListener('click',e=>{
   if(t.id==='btnDropDraft'&&S.draft){ dropDraft(S.draft.id||S.draft.localKey); S.openId=null; S.draft=null; toast('حُذفت المسودة.'); return mount(); }
   if(t.dataset&&t.dataset.dropdraft){ dropDraft(t.dataset.dropdraft); S.inboxOpen=true; toast('أُرجعت المسودة إلى صندوق الوارد.'); return updateCases(); }
   if(t.id==='btnSubmitAllDrafts') return submitAllDrafts();
+  if(t.id==='btnCalibReload'){ S.calibW=null; return calibRender(true); }
+  if(t.id==='btnCalibSug'&&S._calibSug){ const w=Object.assign({},S.calibW||scoreW()); Object.keys(SCORE_W_DEFAULT).forEach(k=>{ w[k]=S._calibSug.f[k].w; }); S.calibW=w; return calibRender(); }
+  if(t.id==='btnCalibReset'){ S.calibW=Object.assign({},SCORE_W_DEFAULT); return calibRender(); }
+  if(t.id==='btnCalibSave'){ if(S.busy) return; const w=S.calibW||scoreW(); if(!confirm('حفظ أوزان السكور الجديدة؟ تُطبَّق على الاستخراج القادم وعلى «حدد أفضل».')) return; S.busy=true;
+    return call('saveSettings',{scoreW:JSON.stringify(w)===JSON.stringify(SCORE_W_DEFAULT)?null:w}).then(s=>{ S.settings=Object.assign({},S.settings,s); S.calibW=null; S.busy=false;
+      const I=impState(); if(I.cases&&I.cases.length&&!I.restored){ I.cases.forEach(c=>impScore(c,((I.groupMsgs||{})[c.group]||{}).msgs)); } toast('✔ حُفظت الأوزان.'); calibRender(); }).catch(e=>{ S.busy=false; toast(e.message,true); }); }
+  if(t.dataset&&t.dataset.calibup){ S._calibM=t.dataset.calibup; const f=$('#calibFile'); if(f) f.click(); return; }
+  if(t.dataset&&t.dataset.calibclr){ if(!confirm('مسح اختيار المقيّم المرفوع لهذا الشهر؟')) return; return call('calibManual',{month:t.dataset.calibclr,clear:1}).then(()=>calibRender(true)).catch(e=>toast(e.message,true)); }
   if(t.id==='btnFillHc') return fillFromHc();
   if(t.dataset.draft) return openDraft(t.dataset.draft);
   if(t.dataset.q&&S.draft&&!locked()){ const a=S.draft.answers; S.aiCodes.delete(t.dataset.q); if(a[t.dataset.q]===t.dataset.v) delete a[t.dataset.q]; else a[t.dataset.q]=t.dataset.v; refreshEditor(); return touch(); }
@@ -5309,6 +5437,8 @@ document.addEventListener('click',e=>{ const tr=e.target.closest&&e.target.close
 document.addEventListener('toggle',e=>{ if(e.target&&e.target.classList&&e.target.classList.contains('topcats')) impState().topCatsOpen=e.target.open; if(e.target&&e.target.id==='inboxPanel') S.inboxOpen=e.target.open; },true);
 document.addEventListener('change',e=>{
   const el=e.target;
+  if(el.dataset&&el.dataset.calibw){ const w=Object.assign({},S.calibW||scoreW()); w[el.dataset.calibw]=Math.max(0,Math.min(40,parseInt(el.value,10)||0)); S.calibW=w; return calibRender(); }
+  if(el.id==='calibFile'&&el.files&&el.files[0]){ const f=el.files[0]; el.value=''; return calibUpload_(S._calibM,f).catch(e=>toast(e.message,true)); }
   if(el.id==='impBal'){ try{ localStorage.setItem('use_imp_bal',el.value); }catch(e){} return; }
   if(el.id==='hcFile'&&el.files&&el.files[0]){ const f=el.files[0]; el.value=''; return hcOnFile(f); }
   if(el.dataset&&el.dataset.angrp){ const A=anState(); el.checked?A.groups.add(el.dataset.angrp):A.groups.delete(el.dataset.angrp); return updateAn(); }
