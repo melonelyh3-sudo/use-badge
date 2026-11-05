@@ -791,6 +791,8 @@ const TR_EXACT = {
   "الملف غير موجود في ملف التصدير.": "File not found in the ZIP archive.",
   "تعذر فتح الملف.": "Could not open file.",
   "نص مفصّل": "Detailed text",
+  "نص مفصّل جدًا": "Very detailed text",
+  "صيغة CX": "CX format",
   "نص متوسط": "Medium text",
   "نص قصير": "Short text",
   "فاتورة صورة/ممسوحة": "Image/scanned invoice",
@@ -2872,10 +2874,11 @@ const WA=(()=>{
     const idx=new Map(), all=new Map(); let filled=0; const names={}, votes={};
     helpers.forEach(h=>h.msgs.forEach(w=>{ const k=w.t.getTime(); (all.get(k)||all.set(k,[]).get(k)).push(w); if(/omitted>/.test(w.body)) (idx.get(k)||idx.set(k,[]).get(k)).push(w); }));
     // ربط اسم المرسل في تصدير الجوال برقمه في تصدير الويب (نفس الثانية)
-    msgs.forEach(m=>{ const L=all.get(m.t.getTime()); if(!L||L.length!==1) return; const w=L[0]; const v=votes[m.sender]||(votes[m.sender]={}); v[w.sender]=(v[w.sender]||0)+1; });
+    msgs.forEach(m=>{ let L=all.get(m.t.getTime()); if(!L) L=all.get(m.t.getTime()-1000)||all.get(m.t.getTime()+1000); if(!L||L.length!==1) return; const w=L[0]; const v=votes[m.sender]||(votes[m.sender]={}); v[w.sender]=(v[w.sender]||0)+1; });
     Object.keys(votes).forEach(nm=>{ const v=votes[nm]; const best=Object.keys(v).sort((a,b)=>v[b]-v[a])[0]; if(best) names[best]=nm; });
     const out=msgs.map(m=>{
-      const L=idx.get(m.t.getTime()); if(!L||!L.length) return m;
+      // تصدير الجوال والويب قد يختلفان بثانية أو ثانيتين لنفس الرسالة: نبحث بالثانية نفسها ثم ±1 ثم ±2
+      const tk=m.t.getTime(); let L=null; for(const dt of [0,-1000,1000,-2000,2000]){ const c=idx.get(tk+dt); if(c&&c.length){ L=c; break; } } if(!L) return m;
       const a=attachmentsOf(m.body); if(!a.atts.length) return m;
       const w=L.shift(); const cap=attachmentsOf(w.body).text;
       const plain=stripMentions(a.text), wp=stripMentions(cap);
@@ -2981,7 +2984,7 @@ const IMP_SORT={score:{v:c=>c.score||0,num:1},group:{v:c=>c.group||''},t:{v:c=>+
   st:{v:c=>(S.inboxDis||[]).includes(c.key)?3:(S.inboxKeys||[]).includes(c.key)?2:impState().done&&impState().done[c.key]?1:0,num:1}};
 function impSortState(){ const I=impState(); if(!I.sort||typeof I.sort!=='object') I.sort={k:'score',dir:-1}; return I.sort; }
 function impCmp_(){ const so=impSortState(), d=IMP_SORT[so.k]||IMP_SORT.score;
-  return (a,b)=>{ const x=d.v(a), y=d.v(b); const r=d.num?(x-y):(String(x)||'\uffff').localeCompare(String(y)||'\uffff','ar'); return (r*so.dir)||(b.score-a.score)||(a.t-b.t); }; }
+  return (a,b)=>{ const x=d.v(a), y=d.v(b); const r=d.num?(x-y):(String(x)||'\uffff').localeCompare(String(y)||'\uffff','ar'); return (r*so.dir)||(b.score-a.score)||((b.tlen||0)-(a.tlen||0))||(a.t-b.t); }; }
 // بحث نصي: المرسل، الصيدلي، المشرف، الفرع، رقم الفاتورة، النص، أصناف الفاتورة — كل الكلمات لازم تكون موجودة
 function impSearchHit_(c,words){ if(!c._s){ c._s=WA.normA([c.sender,cleanSender_(c.sender),c.mention,c.group,c.text].concat(subOf_(c)).concat([].concat(...c.invoices.map(v=>[v.pharmacist,fixName_(v.pharmacist),v.pharmNo,v.branch,v.invoice].concat((v.items||[]).map(x=>x.name))))).filter(Boolean).join(' \u0001 ')); }
   return words.every(w=>c._s.includes(w)); }
@@ -3263,20 +3266,23 @@ const SCORE_SIGS_DEFAULT=[
 ];
 function impSigs(){ return (S.settings.scoreSigs&&S.settings.scoreSigs.length)?S.settings.scoreSigs:SCORE_SIGS_DEFAULT; }
 const PRAISE_RX=/ممتاز|برافو|براڤو|احسنت|أحسنت|الله ينور|تسلم|ما ?شاء الله|رائع|👏|💪/;
+// صيغة كتابة الحالة المعتمدة (United CX): الانطباع الأول / وصف الحالة …
+const CX_RX=/first\s*impression|1st\s*impression|united\s*cx|الانطباع\s*الا?ول|وصف\s*ال?حال|start\s*with/i;
 function impScore(c,msgs){
   const why=[]; let s=0;
   const L=(String(c.text||'').match(/[\p{L}\p{N}]/gu)||[]).length;
-  s+=L>=400?20:L>=200?15:L>=80?10:L?5:0; why.push(L>=200?'نص مفصّل':L>=80?'نص متوسط':L?'نص قصير':'بدون نص');
+  s+=L>=400?20:L>=200?15:L>=80?10:L?5:0; s+=L>=1000?8:L>=700?4:0; why.push(L>=700?'نص مفصّل جدًا':L>=200?'نص مفصّل':L>=80?'نص متوسط':L?'نص قصير':'بدون نص');
+  if(CX_RX.test(c.text||'')){ s+=2; why.push('صيغة CX'); }
   const k=impAttKinds(c), parsed=k.includes('parsed'), scan=k.includes('scan'), miss=k.includes('missing');
-  s+=parsed?20:scan?14:miss?5:0; why.push(parsed?'فاتورة مقروءة':scan?'فاتورة صورة/ممسوحة':miss?'فاتورة ناقصة':'بدون فاتورة');
+  s+=parsed?20:scan?20:miss?5:0; why.push(parsed?'فاتورة مقروءة':scan?'فاتورة صورة/ممسوحة':miss?'فاتورة ناقصة':'بدون فاتورة');
   const items=new Set([].concat(...c.invoices.map(v=>v.items.map(i=>WA.normA(i.name))))).size;
-  s+=parsed?(items>=3?15:items===2?10:items?4:0):scan?7:0; if(parsed&&items) why.push(items+(items>2?' أصناف':items===2?' صنفان':' صنف'));
+  s+=parsed?(items>=3?15:items===2?10:items?4:0):scan?10:0; if(parsed&&items) why.push(items+(items>2?' أصناف':items===2?' صنفان':' صنف'));
   const sig=WA.categorize(c.text||'',[],impSigs()); s+=Math.min(35,sig.length*7); if(sig.length) why.push('إشارات: '+sig.join('، '));
   let pr=false;
   if(msgs&&msgs.length){ const t0=c.lastT.getTime(), toks=[fixName_((c.invoices[0]||{}).pharmacist||''),cleanSender_(c.sender)].map(x=>WA.normA(String(x).replace(/^(د|dr)\.?\s*/i,'')).split(/\s+/)[0]).filter(x=>x&&x.length>=3);
     pr=msgs.some(m=>{ const d=m.t.getTime()-t0; if(d<=0||d>6*3600000||m.sender===c.sender||m.body.length>300||!PRAISE_RX.test(m.body)) return false; if(d<=15*60000) return true; const b=WA.normA(m.body); return toks.some(t=>b.includes(t)); }); }
   if(pr){ s+=10; why.push('تفاعل/مدح من المشرف'); }
-  c.score=Math.min(100,s); c.sigs=sig; c.why=why; c.tier=c.score>=70?3:c.score>=45?2:1;
+  c.score=Math.min(100,s); c.tlen=L; c.sigs=sig; c.why=why; c.tier=c.score>=70?3:c.score>=45?2:1;
 }
 const TIER_AR=new Proxy({3:'⭐⭐⭐ قوية',2:'⭐⭐ متوسطة',1:'⭐ ضعيفة'},{get:(t,k)=>isEn()?({3:'⭐⭐⭐ Strong',2:'⭐⭐ Medium',1:'⭐ Weak'}[k]||t[k]):t[k]});
 // توزيع الحالات المحددة على المجموعات، يظهر بجانب زر «تحديد» ويتحدث مع أي تغيير في الاختيار
@@ -3297,7 +3303,7 @@ function impBalanced_(list){ const byG={}; list.forEach(c=>{ (byG[c.group||'—'
 function impTop(){
   const I=impState(), n=Math.max(1,Math.min(200,parseInt(($('#impTopN')||{}).value,10)||20)); I.topN=n;
   // المستبعدة والمستوردة سابقًا تُعامل كالجديدة؛ فقط ما أُضيف في هذه الجلسة لا يُعاد اختياره
-  const cand0=impFiltered().filter(c=>!(I.done&&I.done[c.key])).sort((a,b)=>b.score-a.score||a.t-b.t);
+  const cand0=impFiltered().filter(c=>!(I.done&&I.done[c.key])).sort((a,b)=>b.score-a.score||(b.tlen||0)-(a.tlen||0)||a.t-b.t);
   // رقم الفاتورة المكرر: تُختار الحالة الأعلى ترشيحًا (ثم الأقدم) فقط
   const usedInv=new Set(); let skipped=0; const cand=cand0.filter(c=>{ const ns=c.invoices.map(v=>v.invoice).filter(Boolean); if(ns.some(n=>usedInv.has(n))){ skipped++; return false; } ns.forEach(n=>usedInv.add(n)); return true; });
   const tc=[...(I.topCats||[])]; let L=[];
