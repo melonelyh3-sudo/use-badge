@@ -799,6 +799,12 @@ const TR_EXACT = {
   "فاتورة ناقصة": "Missing invoice file",
   "بدون فاتورة": "No invoice",
   "تفاعل/مدح من المشرف": "Supervisor praise/reply",
+  "روتين/حل متكامل": "Routine/complete solution",
+  "مكوّن علمي": "Scientific ingredient",
+  "حد أدنى 3 لكل مجموعة": "Min 3 per group",
+  "بالتساوي بين المجموعات": "Equal per group",
+  "بدون توزيع (الأعلى سكور)": "No balancing (top score)",
+  "طريقة التوزيع على المجموعات": "Group distribution mode",
   "⭐⭐⭐ قوية": "⭐⭐⭐ Strong",
   "⭐⭐ متوسطة": "⭐⭐ Medium",
   "⭐ ضعيفة": "⭐ Weak",
@@ -992,7 +998,7 @@ const TR_EXACT = {
   "+ تصنيف": "+ Category",
   "حفظ التصنيفات": "Save Categories",
   "استعادة الافتراضي": "Restore Defaults",
-  "كلمات تدل على كل شارة في نص الحالة. كل شارة تظهر إشارتها تضيف 7 نقاط لدرجة ترشيح الحالة (من 35). الدرجة الكاملة: النص 20، الفاتورة 20، عدد الأصناف 15، إشارات الشارات 35، تفاعل المشرف 10.": "Keywords signaling each badge in the case text. Each matched badge adds 7 points to the case readiness score (out of 35). Full score (100): Text 20, Invoice 20, Items count 15, Badge signals 35, Supervisor reply 10.",
+  "كلمات تدل على كل شارة في نص الحالة. كل شارة تظهر إشارتها تضيف 7 نقاط لدرجة ترشيح الحالة (من 35). الدرجة (حدها 100): النص حتى 28، الفاتورة حتى 35، إشارات الشارات 35، روتين/حل متكامل 15، مكوّن علمي 8، صيغة CX 2، تفاعل المشرف 5.": "Keywords signaling each badge in the case text. Each matched badge adds 7 points to the case readiness score (out of 35). Score (max 100): Text up to 28, Invoice up to 35, Badge signals 35, Routine/complete solution 15, Scientific ingredient 8, CX format 2, Supervisor reply 5.",
   "كلمات مفصولة بفواصل": "Comma-separated keywords",
   "+ شارة": "+ Signal",
   "حفظ الإشارات": "Save Signals",
@@ -3038,7 +3044,7 @@ function updateImport(){
     '<div style="margin-top:6px"><b style="font-size:13px">المجموعة:</b> '+Object.keys(gcnt).sort().map(g=>chip('data-impgrp',g,g,gcnt[g],I.f.groups.has(g))).join('')+
     '</div><div style="margin-top:6px"><b style="font-size:13px">الترشيح:</b> '+[3,2,1].map(t=>chip('data-imptier',String(t),TIER_AR[t],I.cases.filter(c=>c.tier===t).length,I.f.tier.has(String(t)))).join('')+
     ' '+
-    '<span style="display:inline-flex;gap:6px;align-items:center">حدد أفضل <input type="number" id="impTopN" min="1" max="200" value="'+(I.topN||20)+'" style="width:70px"> <button class="btn" id="btnImpTop">تحديد</button></span>'+impTopCatsUI(cats)+impSelDist()+
+    '<span style="display:inline-flex;gap:6px;align-items:center">حدد أفضل <input type="number" id="impTopN" min="1" max="200" value="'+(I.topN||20)+'" style="width:70px"> <button class="btn" id="btnImpTop">تحديد</button> <select id="impBal" title="طريقة التوزيع على المجموعات" style="width:auto">'+[['min','حد أدنى 3 لكل مجموعة'],['equal','بالتساوي بين المجموعات'],['none','بدون توزيع (الأعلى سكور)']].map(o=>'<option value="'+o[0]+'"'+(impBalMode()===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></span>'+impTopCatsUI(cats)+impSelDist()+
     '</div><div style="margin-top:6px"><b style="font-size:13px">المرفقات:</b> '+IMP_ATT.map(([k,l])=>chip('data-impatt',k,l,I.cases.filter(c=>impAttKinds(c).includes(k)).length,I.f.att.has(k))).join('')+
     ' <label class="chip"><input type="checkbox" id="impInvOnly"'+(I.f.inv?' checked':'')+'>بفاتورة فقط</label></div>';
   impRenderRows();
@@ -3268,11 +3274,16 @@ function impSigs(){ return (S.settings.scoreSigs&&S.settings.scoreSigs.length)?S
 const PRAISE_RX=/ممتاز|برافو|براڤو|احسنت|أحسنت|الله ينور|تسلم|ما ?شاء الله|رائع|👏|💪/;
 // صيغة كتابة الحالة المعتمدة (United CX): الانطباع الأول / وصف الحالة …
 const CX_RX=/first\s*impression|1st\s*impression|united\s*cx|الانطباع\s*الا?ول|وصف\s*ال?حال|start\s*with/i;
+// مؤشرات من اختيارات المقيّم: بناء روتين/حل متكامل، وذكر مكوّن علمي
+const ROUTINE_RX=/روتين|routine|regimen/i;
+const SCI_RX=/niacinamide|نياسيناميد|نياسينامايد|retin|ريتين|رتينول|salicyl|ساليسيل|سالسيليك|hyaluron|هيالورون|هايلورون|azelaic|ازيليك|أزيليك|urea|يوريا|ceramide|سيراميد|vitamin\s*c|فيتامين\s*سي|aha|bha|glycolic|جليكوليك|peptide|ببتيد|zinc|زنك|spf\s*\d+/i;
 function impScore(c,msgs){
   const why=[]; let s=0;
   const L=(String(c.text||'').match(/[\p{L}\p{N}]/gu)||[]).length;
   s+=L>=400?20:L>=200?15:L>=80?10:L?5:0; s+=L>=1000?8:L>=700?4:0; why.push(L>=700?'نص مفصّل جدًا':L>=200?'نص مفصّل':L>=80?'نص متوسط':L?'نص قصير':'بدون نص');
   if(CX_RX.test(c.text||'')){ s+=2; why.push('صيغة CX'); }
+  if(ROUTINE_RX.test(c.text||'')){ s+=15; why.push('روتين/حل متكامل'); }
+  if(SCI_RX.test(c.text||'')){ s+=8; why.push('مكوّن علمي'); }
   const k=impAttKinds(c), parsed=k.includes('parsed'), scan=k.includes('scan'), miss=k.includes('missing');
   s+=parsed?20:scan?20:miss?5:0; why.push(parsed?'فاتورة مقروءة':scan?'فاتورة صورة/ممسوحة':miss?'فاتورة ناقصة':'بدون فاتورة');
   const items=new Set([].concat(...c.invoices.map(v=>v.items.map(i=>WA.normA(i.name))))).size;
@@ -3281,7 +3292,7 @@ function impScore(c,msgs){
   let pr=false;
   if(msgs&&msgs.length){ const t0=c.lastT.getTime(), toks=[fixName_((c.invoices[0]||{}).pharmacist||''),cleanSender_(c.sender)].map(x=>WA.normA(String(x).replace(/^(د|dr)\.?\s*/i,'')).split(/\s+/)[0]).filter(x=>x&&x.length>=3);
     pr=msgs.some(m=>{ const d=m.t.getTime()-t0; if(d<=0||d>6*3600000||m.sender===c.sender||m.body.length>300||!PRAISE_RX.test(m.body)) return false; if(d<=15*60000) return true; const b=WA.normA(m.body); return toks.some(t=>b.includes(t)); }); }
-  if(pr){ s+=10; why.push('تفاعل/مدح من المشرف'); }
+  if(pr){ s+=5; why.push('تفاعل/مدح من المشرف'); }
   c.score=Math.min(100,s); c.tlen=L; c.sigs=sig; c.why=why; c.tier=c.score>=70?3:c.score>=45?2:1;
 }
 const TIER_AR=new Proxy({3:'⭐⭐⭐ قوية',2:'⭐⭐ متوسطة',1:'⭐ ضعيفة'},{get:(t,k)=>isEn()?({3:'⭐⭐⭐ Strong',2:'⭐⭐ Medium',1:'⭐ Weak'}[k]||t[k]):t[k]});
@@ -3300,6 +3311,18 @@ function impTopCatsUI(cats){ const I=impState(); I.topCats=I.topCats||new Set();
 function impBalanced_(list){ const byG={}; list.forEach(c=>{ (byG[c.group||'—']=byG[c.group||'—']||[]).push(c); });
   Object.keys(byG).forEach(g=>{ const seen=new Set(), first=[], rest=[]; byG[g].forEach(c=>{ const k=WA.normA(cleanSender_(c.sender)); (seen.has(k)?rest:first).push(c); seen.add(k); }); byG[g]=first.concat(rest); });
   const L=[]; for(;;){ const G=Object.keys(byG).filter(g=>byG[g].length).sort((a,b)=>byG[b][0].score-byG[a][0].score); if(!G.length) break; for(const g of G) L.push(byG[g].shift()); } return L; }
+// طريقة التوزيع على المجموعات: min = حد أدنى 3 لكل مجموعة (سكور 45+) والباقي للأعلى سكور، equal = بالتساوي، none = الأعلى سكور مباشرة
+const IMP_MIN_PER_G=3, IMP_MIN_SCORE=45;
+function impBalMode(){ try{ const v=localStorage.getItem('use_imp_bal'); if(v==='min'||v==='equal'||v==='none') return v; }catch(e){} return 'min'; }
+function impDistinct_(list){ const seen=new Set(), first=[], rest=[]; list.forEach(c=>{ const k=c.group+'|'+WA.normA(cleanSender_(c.sender)); (seen.has(k)?rest:first).push(c); seen.add(k); }); return first.concat(rest); }
+function impPick_(cand,n,mode){
+  if(mode==='equal') return impBalanced_(cand).slice(0,n);
+  if(mode==='none') return impDistinct_(cand).slice(0,n);
+  const byG={}; cand.forEach(c=>{ (byG[c.group||'—']=byG[c.group||'—']||[]).push(c); }); const used=new Set(), L=[];
+  Object.keys(byG).forEach(g=>{ impDistinct_(byG[g].filter(c=>c.score>=IMP_MIN_SCORE)).slice(0,IMP_MIN_PER_G).forEach(c=>{ if(L.length<n){ L.push(c); used.add(c.key); } }); });
+  for(const c of impDistinct_(cand)){ if(L.length>=n) break; if(!used.has(c.key)){ L.push(c); used.add(c.key); } }
+  return L.sort((a,b)=>b.score-a.score||(b.tlen||0)-(a.tlen||0)||a.t-b.t);
+}
 function impTop(){
   const I=impState(), n=Math.max(1,Math.min(200,parseInt(($('#impTopN')||{}).value,10)||20)); I.topN=n;
   // المستبعدة والمستوردة سابقًا تُعامل كالجديدة؛ فقط ما أُضيف في هذه الجلسة لا يُعاد اختياره
@@ -3307,7 +3330,9 @@ function impTop(){
   // رقم الفاتورة المكرر: تُختار الحالة الأعلى ترشيحًا (ثم الأقدم) فقط
   const usedInv=new Set(); let skipped=0; const cand=cand0.filter(c=>{ const ns=c.invoices.map(v=>v.invoice).filter(Boolean); if(ns.some(n=>usedInv.has(n))){ skipped++; return false; } ns.forEach(n=>usedInv.add(n)); return true; });
   const tc=[...(I.topCats||[])]; let L=[];
-  if(!tc.length) L=impBalanced_(cand).slice(0,n);
+  const mode=impBalMode();
+  if(!tc.length) L=impPick_(cand,n,mode);
+  else if(mode!=='equal') L=impPick_(cand.filter(c=>tc.some(k=>k==='__none'?!c.cats.length:c.cats.includes(k))),n,mode);
   else{ // بالتناوب على التصنيفات المختارة، وكل تصنيف موزّع بالتناوب على المجموعات؛ الحالة تُختار مرة واحدة
     const lists=tc.map(k=>impBalanced_(cand.filter(c=>k==='__none'?!c.cats.length:c.cats.includes(k)))); const used=new Set();
     while(L.length<n&&lists.some(x=>x.length)){ for(const x of lists){ if(L.length>=n) break; while(x.length&&used.has(x[0].key)) x.shift(); if(x.length){ const c=x.shift(); used.add(c.key); L.push(c); } } } }
@@ -3316,7 +3341,7 @@ function impTop(){
 /* محرر إشارات الشارات (الإعدادات) */
 function updateSc(){
   const box=$('#scBox'); if(!box) return; if(!S.scEdit) S.scEdit=JSON.parse(JSON.stringify(impSigs()));
-  box.innerHTML='<p class="note" style="margin:0 0 10px">كلمات تدل على كل شارة في نص الحالة. كل شارة تظهر إشارتها تضيف 7 نقاط لدرجة ترشيح الحالة (من 35). الدرجة الكاملة: النص 20، الفاتورة 20، عدد الأصناف 15، إشارات الشارات 35، تفاعل المشرف 10.</p>'+
+  box.innerHTML='<p class="note" style="margin:0 0 10px">كلمات تدل على كل شارة في نص الحالة. كل شارة تظهر إشارتها تضيف 7 نقاط لدرجة ترشيح الحالة (من 35). الدرجة (حدها 100): النص حتى 28، الفاتورة حتى 35، إشارات الشارات 35، روتين/حل متكامل 15، مكوّن علمي 8، صيغة CX 2، تفاعل المشرف 5.</p>'+
    S.scEdit.map((c,i)=>'<div class="grid" style="grid-template-columns:200px 1fr auto;align-items:start;margin-bottom:8px"><input type="text" data-scn="'+i+'" value="'+esc(c.n)+'" placeholder="اسم الشارة"><textarea data-sck="'+i+'" rows="2" placeholder="كلمات مفصولة بفواصل">'+esc(c.k)+'</textarea><button class="btn bad" data-scdel="'+i+'" aria-label="حذف">×</button></div>').join('')+
    '<div class="actions"><button class="btn" id="btnScAdd">+ شارة</button><button class="btn primary" id="btnScSave">حفظ الإشارات</button><button class="btn" id="btnScReset">استعادة الافتراضي</button></div>';
 }
@@ -5284,6 +5309,7 @@ document.addEventListener('click',e=>{ const tr=e.target.closest&&e.target.close
 document.addEventListener('toggle',e=>{ if(e.target&&e.target.classList&&e.target.classList.contains('topcats')) impState().topCatsOpen=e.target.open; if(e.target&&e.target.id==='inboxPanel') S.inboxOpen=e.target.open; },true);
 document.addEventListener('change',e=>{
   const el=e.target;
+  if(el.id==='impBal'){ try{ localStorage.setItem('use_imp_bal',el.value); }catch(e){} return; }
   if(el.id==='hcFile'&&el.files&&el.files[0]){ const f=el.files[0]; el.value=''; return hcOnFile(f); }
   if(el.dataset&&el.dataset.angrp){ const A=anState(); el.checked?A.groups.add(el.dataset.angrp):A.groups.delete(el.dataset.angrp); return updateAn(); }
   if(el.id==='impFiles'&&el.files&&el.files.length){ const fs=[...el.files]; el.value=''; return impLoadFiles(fs); }
