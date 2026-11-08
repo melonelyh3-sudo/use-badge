@@ -2617,6 +2617,21 @@ const ACTIONS={
     return {ok:true}; }),
   prodImgList: async(u)=>{ const ix=(await Store.getMany('hc',['pimg_index'])).pimg_index; return {names:(ix&&ix.names)||[]}; },
   prodImgDel:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{ const name=String(p.name||''); const nk=prodKey_(name); await Store.put('hc',nk,{}); const ix=(await Store.get('hc','pimg_index'))||{names:[]}; ix.names=(ix.names||[]).filter(n=>prodKey_(n)!==nk); await Store.put('hc','pimg_index',ix); return {ok:true}; }); },
+  // قراءة سريعة لصورة الفاتورة فقط (الأصناف/الفرع/الصيدلي) لترتيب الحالات — بدون تحليل الشارات
+  aiInvoice: async(u,p)=>{
+    const set=await settings_(); if(!set.aiEnabled) throw err('الذكاء الاصطناعي غير مفعّل.'); aiThrottle_(u,true);
+    const f=p.file||{}; const okType=['image/jpeg','image/png','image/webp','application/pdf'];
+    if(okType.indexOf(f.mediaType)<0||typeof f.data!=='string') throw err('نوع ملف الفاتورة غير مدعوم.'); if(f.data.length>7000000) throw err('ملف الفاتورة كبير جدًا.');
+    const file={kind:f.mediaType==='application/pdf'?'pdf':'image',mediaType:f.mediaType,data:f.data};
+    const schema={type:'object',properties:{invoiceItems:{type:'array',items:{type:'string'}},invoiceBranch:{type:'string'},invoicePharmacist:{type:'string'},invoiceTotal:{type:'number'},invoiceCount:{type:'integer'}},required:['invoiceItems']};
+    const prompt=['مرفق '+(file.kind==='pdf'?'ملف PDF':'صورة')+' لفاتورة/فواتير بيع من صيدلية (قد تحتوي الصورة أكثر من فاتورة مفصولة بخط).',
+      'invoiceItems: أسماء الأصناف المباعة كما هي مطبوعة (مع الكمية إن ظهرت مثل «… × 2»)، واستبعد فاتورة التأمين أو الوصفة المدفوعة من شركة التأمين.',
+      'invoiceBranch: رقم الفرع/الصيدلية المطبوع (أرقام فقط) أو نص فارغ. invoicePharmacist: اسم الصيدلي/البائع المطبوع أو نص فارغ.',
+      'invoiceTotal: صافي المبلغ المدفوع كرقم أو 0. invoiceCount: مجموع الكميات كرقم صحيح أو 0.',
+      'تجاهل اسم العميل ورقم جواله وأي بيانات شخصية أو تأمينية ولا تكتبها إطلاقًا. إن تعذّرت القراءة أعد قائمة فارغة.'].join('\n');
+    const obj=await AI.analyze(prompt,schema,file); if(!obj||typeof obj!=='object') throw err('تعذّر فهم ردّ الذكاء الاصطناعي.');
+    return {invoiceItems:clean_(obj.invoiceItems,20,120),invoiceBranch:String(obj.invoiceBranch||'').replace(/[^0-9]/g,'').slice(0,6),invoicePharmacist:String(obj.invoicePharmacist||'').trim().slice(0,120),invoiceTotal:num_(obj.invoiceTotal,0,1000000,2),invoiceCount:num_(obj.invoiceCount,0,500,0),invOnly:1};
+  },
   aiSuggest: async(u,p)=>{
     const set=await settings_(); if(!set.aiEnabled) throw err('الذكاء الاصطناعي غير مفعّل.');
     aiThrottle_(u,!!p.bulk);
@@ -3214,14 +3229,14 @@ async function impExtract(){
   if(I.cases.length) impAiPre_().catch(()=>{});
 }
 // قراءة صور الفواتير بالذكاء الاصطناعي لأعلى المرشحة (تلقائيًا بعد الاستخراج) لمعرفة أصنافها ومستوى الحل
-const IMP_AIPRE_N=60;
+const IMP_AIPRE_N=40;
 function impAiPrePool_(){ const I=impState(); return I.cases.filter(c=>c.aiFiles&&c.aiFiles.length&&!c.invoices.length&&!c.aiPre&&!c.aiPreErr&&c.src&&!c.src.stub).sort((a,b)=>b.score-a.score||(b.tlen||0)-(a.tlen||0)).slice(0,IMP_AIPRE_N); }
 async function impAiPre_(){
   const I=impState(); if(I.aiPre&&I.aiPre.busy) return; if(!S.settings.aiEnabled) return; const pool=impAiPrePool_(); if(!pool.length) return;
   I.aiPre={busy:true,stop:false,done:0,ok:0,err:0,total:pool.length}; updateImport(); let idx=0;
   const worker=async()=>{ while(idx<pool.length&&!I.aiPre.stop){ const c=pool[idx++];
-    try{ const file=await WA.aiImage(c.src,c); const invText=c.invoices.length?WA.invoiceText(c):'';
-      c.aiPre=await call('aiSuggest',{caseId:'',bulk:true,text:c.text||'',invoiceText:invText,file:file||undefined}); I.aiPre.ok++;
+    try{ const file=await WA.aiImage(c.src,c);
+      if(!file) throw new Error('تعذر تجهيز صورة الفاتورة'); c.aiPre=await call('aiInvoice',{file}); I.aiPre.ok++;
       impScore(c,((I.groupMsgs||{})[c.group]||{}).msgs); }
     catch(e){ if(e.code==='auth'){ I.aiPre.stop=true; return logout(true); } c.aiPreErr=String(e.message||'تعذر').slice(0,160); I.aiPre.err++; if(/تجاوزت الحد|rate/i.test(c.aiPreErr)) I.aiPre.stop=true; }
     I.aiPre.done++; updateImport(); } };
@@ -3299,8 +3314,7 @@ async function impRun(skipAI){
         let ai=null, aiErr=S.settings.aiEnabled?'':'الذكاء الاصطناعي غير مفعّل من الإعدادات';
         const invText=c.invoices.length?WA.invoiceText(c):'';
         const canAI=S.settings.aiEnabled&&(c.text||invText||c.aiFiles.length);
-        if(c.aiPre){ ai=c.aiPre; aiErr=''; }
-        else if(canAI){
+        if(canAI){
           const file=c.aiFiles.length&&!(c.src&&c.src.stub)?await WA.aiImage(c.src,c):null;
           try{ ai=await call('aiSuggest',{caseId:'',bulk:true,text:c.text||'',invoiceText:invText,file:file||undefined}); }catch(e){ if(e.code==='auth') return logout(true); aiErr=e.message||'تعذر التحليل'; }
         }
