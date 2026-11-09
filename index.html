@@ -268,6 +268,18 @@ tr.detrow>td{background:#F8FAFC;padding:0;border-bottom:2px solid var(--line-2)}
 .q.aisug .seg button[aria-pressed="true"]{background:var(--lvl3-soft)!important;color:var(--lvl3-ink)!important;outline:2px dashed var(--lvl3);outline-offset:-2px}
 .edprog{display:inline-flex;align-items:center;gap:10px;flex:1 1 260px;min-width:220px}
 .edprog .track{flex:1;height:10px;background:var(--line);border-radius:999px;overflow:hidden}.edprog .track i{display:block;height:10px;background:var(--good)}
+
+/* لوحة المتابعة */
+.kpis2 .kpi{padding:16px 18px;border-radius:14px}.kpis2 .kpi b{font-size:30px;color:var(--navy)}
+.kd{display:block;font-size:12px;font-weight:700;color:var(--muted);min-height:18px}.kd.up{color:var(--good)}.kd.dn{color:var(--bad)}
+.dsec{padding:18px;margin-bottom:16px}.dsec h3{margin:0 0 12px;font-size:15px;color:var(--navy)}
+.lvrow{display:flex;align-items:center;gap:10px;margin-bottom:10px}.lvg{width:56px;font-weight:700}
+.lvbar{flex:1;display:flex;direction:rtl;height:24px;border-radius:6px;overflow:hidden;background:#EEF1F5}.lvbar i{display:block;height:100%}
+.lvleg{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted)}.lvleg span{display:inline-flex;align-items:center;gap:6px}.lvleg i{display:inline-block;width:12px;height:12px;border-radius:3px}
+.heat{direction:rtl;display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}.heat span{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:default}
+.lead{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #EEF1F5}.lead:last-child{border-bottom:0}
+.medal{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
+.lead-v{font-weight:800;color:var(--good);font-size:16px;white-space:nowrap}.lead-v small{font-weight:600;font-size:11px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -859,6 +871,15 @@ const TR_EXACT = {
   "بدون فاتورة": "No invoice",
   "تفاعل/مدح من المشرف": "Supervisor praise/reply",
   "روتين/حل متكامل": "Routine/complete solution",
+  "نضج «الحل المتكامل»": "«Complete solution» maturity",
+  "حلول متكاملة (أ + ب)": "Complete solutions (A + B)",
+  "مستوى الحل في كل مجموعة": "Solution level per group",
+  "لوحة الشرف": "Leaderboard",
+  "المشرفون · نسبة الحلول المتكاملة": "Supervisors · complete-solution share",
+  "خريطة الفروع · نضج الحل المتكامل": "Branch map · complete-solution maturity",
+  "ب · 3 منتجات+": "B · 3+ products",
+  "ج · من النص": "C · From text",
+  "جارٍ تحميل مستوى الحلول…": "Loading solution levels…",
   "الموضوع الأساسي": "Main topic",
   "غير البشرة والشعر": "Other than skin & hair",
   "حل متكامل": "Complete solution",
@@ -2351,7 +2372,7 @@ const ACTIONS={
       await Store.put('wastats',id,doc); await audit_(u,'','wa_stats','ملخص تحليل الواتساب '+id+(sn?': '+String(sn.label||''):'')); return {id}; }); },
   // معايرة الاختيار: لقطة سكور كل حالات الشهر عند الاستخراج (مقسّمة لأجزاء) + مقارنة مع الحالات المعتمدة
   calibSave:(u,p)=>{ needAdmin_(u); const month=String(p.month||''); if(!/^\d{4}-\d{2}$/.test(month)) throw err('شهر غير صالح.');
-    const nr=(Array.isArray(p.rows)?p.rows:[]).slice(0,5000).map(r=>[String(r[0]||'').slice(0,90),Math.round(Number(r[1])||0),Math.round(Number(r[2])||0),Math.round(Number(r[3])||0),String(r[4]||'').slice(0,10),r[5]?1:0,Math.max(0,Math.min(4,Math.round(Number(r[6])||0))),Math.round(Number(r[7])||0),Math.round(Number(r[8])||0)]).filter(r=>r[0]);
+    const nr=(Array.isArray(p.rows)?p.rows:[]).slice(0,5000).map(r=>[String(r[0]||'').slice(0,90),Math.round(Number(r[1])||0),Math.round(Number(r[2])||0),Math.round(Number(r[3])||0),String(r[4]||'').slice(0,10),r[5]?1:0,Math.max(0,Math.min(4,Math.round(Number(r[6])||0))),Math.round(Number(r[7])||0),Math.round(Number(r[8])||0),String(r[9]||'').slice(0,12),String(r[10]||'').slice(0,80),String(r[11]||'').slice(0,8)]).filter(r=>r[0]);
     if(!nr.length) throw err('لا توجد حالات.');
     return withLock_(async()=>{ const meta=(await Store.get('meta','calib'))||{months:{},manual:{}}; meta.months=meta.months||{}; const old=meta.months[month];
       // دمج: الحالات الموجودة تتحدّث، والجديدة تُضاف (للاستخراج على دفعات خلال الشهر)
@@ -3355,7 +3376,8 @@ function impAiPreLine_(){ const I=impState(), A=I.aiPre; const left=impAiPrePool
   return (read?'🧾 فواتير صور قرأها الذكاء الاصطناعي: <b>'+read+'</b>. ':'')+(left?'<button class="btn" id="btnAiPre" type="button">🧾 قراءة '+left+' فاتورة صورة إضافية (أعلى المرشحة)</button>':'')+(stub?' <span class="note">ارفع ملفات ZIP الجوال لقراءة فواتير الجلسة المسترجعة.</span>':''); }
 // وجهة الحالات بعد الاستخراج: المقيّم ← مسوداته دائمًا؛ المدير ← يختار (صندوق الوارد للتوزيع أو مسوداته)
 function impDest(){ if(!adminMode()) return 'drafts'; try{ return localStorage.getItem('use_imp_dest')==='drafts'?'drafts':'inbox'; }catch(e){ return 'inbox'; } }
-function impAdd_(batch,dest){ return call('inboxAdd',{items:batch,take:dest==='drafts'}).then(r=>{ if(dest==='drafts') batch.forEach(pl=>{ try{ putDraft(draftFromInbox_(pl.light,pl.detail)); }catch(e){} }); return r; }); }
+function impAdd_(batch,dest){ try{ const I=impState(); batch.forEach(pl=>{ const c=I.cases.find(x=>x.key===(pl.light&&pl.light.key)); if(c) invCacheSave_(c); }); }catch(e){}
+  return call('inboxAdd',{items:batch,take:dest==='drafts'}).then(r=>{ if(dest==='drafts') batch.forEach(pl=>{ try{ putDraft(draftFromInbox_(pl.light,pl.detail)); }catch(e){} }); return r; }); }
 function impPayload(c,ai,aiErr){
       const parsedTotal=c.total||0, parsedUnits=c.units||0;
       const total=Math.round((parsedTotal+(ai&&c.aiFiles.length&&+ai.invoiceTotal||0))*100)/100||null;
@@ -3509,8 +3531,21 @@ function impDetHtml_(c){
     '</div></div>';
 }
 // عرض الفاتورة: الصور كما هي، والـPDF (المقروء أو الممسوح) تُرسم صفحته الأولى كصورة
+async function attUrls_(c){ const L=c.atts.map((a,ix)=>({a,ix})).filter(x=>!x.a.missing&&x.a.entry); const R=[];
+  for(const {a,ix} of L.slice(0,4)){ try{ const f=c.src.zip.file(a.entry); if(!f) continue; const data=await f.async('uint8array'); let cv;
+      if(a.kind==='pdf'||/\.pdf$/i.test(a.entry)){ if(!window.pdfjsLib) continue; const doc=await pdfjsLib.getDocument({data:data.slice(),isEvalSupported:false}).promise; const pg=await doc.getPage(1); const v0=pg.getViewport({scale:1}); const vp=pg.getViewport({scale:Math.min(2,1000/v0.width)}); cv=document.createElement('canvas'); cv.width=vp.width; cv.height=vp.height; await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise; }
+      else { const u=URL.createObjectURL(new Blob([data])); const im=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=u; }); const k=Math.min(1,1000/im.width); cv=document.createElement('canvas'); cv.width=Math.round(im.width*k); cv.height=Math.round(im.height*k); cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height); URL.revokeObjectURL(u); }
+      R.push({ix,u:cv.toDataURL('image/jpeg',0.8)}); }catch(e){} }
+  return R; }
+// نسخة محلية من صور الفواتير على هذا الجهاز فقط (لا تُرفع للخادم) لعرضها في شاشة التقييم لاحقًا
+const invCache=(()=>{ const DB='use_inv_imgs', ST='i'; let dbp=null; const db=()=>dbp||(dbp=new Promise((res,rej)=>{ try{ const r=indexedDB.open(DB,1); r.onupgradeneeded=()=>r.result.createObjectStore(ST); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }));
+  const tx=async(m,fn)=>{ const d=await db(); return new Promise((res,rej)=>{ const t=d.transaction(ST,m); const st=t.objectStore(ST); const q=fn(st); t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); }); };
+  return { put:(k,v)=>tx('readwrite',st=>st.put({v,at:Date.now()},k)).catch(()=>{}), get:k=>tx('readonly',st=>st.get(k)).then(r=>{ if(!r) return null; const d=new Date(r.at); if(Date.now()>=new Date(d.getFullYear(),d.getMonth()+3,1).getTime()) return null; return r.v; }).catch(()=>null) }; })();
+const invKey_=c=>String(c.key||'').split('|').slice(0,2).join('|');
+async function invCacheSave_(c){ try{ if(!c||!c.src||c.src.stub||!c.src.zip||!c.atts.some(a=>!a.missing&&a.entry)) return; const R=await attUrls_(c); if(R.length) await invCache.put(invKey_(c),{imgs:R.map(x=>x.u),items:invNames_(c),lvl:c.lvl||0,dom:(c.sol||{}).dom||'skin',sol:c.sol?{roles:c.sol.roles,hr:c.sol.hr,main:c.sol.main,add:c.sol.add,dom:c.sol.dom,invKnown:c.sol.invKnown,est:c.sol.est}:null}); }catch(e){} }
 async function attImgs_(c,box,isCur){
-  if(!box||!c||!c.src||c.src.stub||!c.src.zip) return; const L=c.atts.map((a,ix)=>({a,ix})).filter(x=>!x.a.missing&&x.a.entry); const out=[];
+  if(!box||!c||!c.src||c.src.stub||!c.src.zip) return; const R=await attUrls_(c); const out=R.map(x=>'<img src="'+x.u+'" alt="الفاتورة '+(x.ix+1)+'" data-impview="'+esc(c.key)+'|'+x.ix+'" title="اضغط للتكبير">');
+  if(isCur&&!isCur()) return; box.innerHTML=out.length?out.join(''):'<p class="note">تعذّر عرض الفاتورة.</p>'; return;
   for(const {a,ix} of L.slice(0,4)){ try{ const f=c.src.zip.file(a.entry); if(!f) continue; const data=await f.async('uint8array'); let u;
       if(a.kind==='pdf'||/\.pdf$/i.test(a.entry)){ if(!window.pdfjsLib) continue; const doc=await pdfjsLib.getDocument({data:data.slice(),isEvalSupported:false}).promise; const pg=await doc.getPage(1); const v0=pg.getViewport({scale:1}); const vp=pg.getViewport({scale:Math.min(2,900/v0.width)}); const cv=document.createElement('canvas'); cv.width=vp.width; cv.height=vp.height; await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise; u=cv.toDataURL('image/jpeg',0.85); }
       else u=URL.createObjectURL(new Blob([data],{type:/\.png$/i.test(a.entry)?'image/png':/\.webp$/i.test(a.entry)?'image/webp':'image/jpeg'}));
@@ -3680,7 +3715,8 @@ async function calibSnap_(all){
   if(!adminMode()||!all||!all.length) return; const byM={}; all.forEach(c=>{ if(!c.t) return; const m=ymd_(c.t).slice(0,7); (byM[m]=byM[m]||[]).push(c); });
   const W=scoreW();
   for(const m of Object.keys(byM)){ const L=byM[m]; if(L.length<20) continue;
-    const rows=L.map(c=>[c.key,c.raw!=null?c.raw:c.score,c.cf||0,c.tlen||0,c.group||'',(c.cats||[]).includes('العناية بالبشرة')?1:0,c.lvl||0,(c.sigs||[]).length,c.tp||0]);
+    const rows=L.map(c=>{ const v=c.invoices[0]||{}, ax=c.aiPre||{}; let br=v.branch||ax.invoiceBranch||'', sup=''; try{ const h=hcInfo_(c.group,c.sender,v.pharmNo||'',br); if(h){ sup=h.supervisor||''; br=br||h.branch||''; } }catch(e){}
+      return [c.key,c.raw!=null?c.raw:c.score,c.cf||0,c.tlen||0,c.group||'',(c.cats||[]).includes('العناية بالبشرة')?1:0,c.lvl||0,(c.sigs||[]).length,c.tp||0,String(br||'').replace(/[^0-9A-Za-z]/g,''),sup||c.mention||'',(c.sol||{}).dom||'']; });
     await call('calibSave',{month:m,rows,w:W,from:($('#impFrom')||{}).value||'',to:($('#impTo')||{}).value||''}); }
   S.calib=null;
 }
@@ -4734,17 +4770,23 @@ function mountEditor(){
   $('#main').querySelectorAll('[data-reason]').forEach(t=>{t.value=(d.reasons||{})[t.dataset.reason]||'';});
 }
 // الفاتورة في شاشة التقييم (من جلسة الاستيراد على نفس الجهاز) + شريط التقدم + «حفظ والتالي»
-function edCase_(){ const d=S.draft; if(!d||!d.inboxId) return null; const x=(S.inbox||[]).find(o=>o.id===d.inboxId); const k=(x&&x.key)||d.inboxKey; if(!k) return null; return impState().cases.find(c=>c.key===k)||null; }
+function edKey_(){ const d=S.draft; if(!d) return ''; if(d.inboxKey) return d.inboxKey; const x=(S.inbox||[]).find(o=>o.id===d.inboxId); if(x&&x.key) return x.key;
+  const m=String(d.source||'').match(/واتساب\s+(\S+)\s+·\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})/); return m?m[1]+'|'+m[2]+'T'+m[3]:''; }
+function edCase_(){ const k=edKey_(); if(!k) return null; const p=k.split('|').slice(0,2).join('|'); return impState().cases.find(c=>c.key===k||c.key.startsWith(p+'|'))||null; }
+function edCase0_(){ const d=S.draft; if(!d||!d.inboxId) return null; const x=(S.inbox||[]).find(o=>o.id===d.inboxId); const k=(x&&x.key)||d.inboxKey; if(!k) return null; return impState().cases.find(c=>c.key===k)||null; }
 function edQueue_(){ return Object.keys(getDrafts()).filter(k=>!getDrafts()[k].id).sort(); }
 function edMountExtra_(){
   const d=S.draft; if(!d) return; const box=$('#edInv');
-  if(box){ const c=edCase_();
-    if(c){ box.hidden=false; const items=invNames_(c);
-      box.innerHTML='<h3>الفاتورة</h3><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+lvlBadge_(c,'')+'<span class="pill p-na">'+esc(DOM_LBL[(c.sol||{}).dom||'skin'])+'</span></div>'+rolesHtml_(c)+
-        '<div class="attimgs" id="edInvImgs">'+(c.src&&!c.src.stub?'<p class="note">جارٍ تحميل الفاتورة…</p>':'<p class="note">ارفع ملف ZIP الجوال في «استيراد الواتساب» لعرض صورة الفاتورة هنا.</p>')+'</div>'+
-        (items.length?'<ul style="margin:6px 0 0;padding-inline-start:18px;line-height:1.9">'+items.map(n=>{ const k=prodKind_(c,n); return '<li'+(k.cls?' style="color:#6B7280"':'')+'>'+esc(n)+(k.lbl?' <span class="note" style="margin:0">— '+k.lbl+'</span>':'')+'</li>'; }).join('')+'</ul>':'');
-      const cur=d.localKey||d.id; attImgs_(c,$('#edInvImgs'),()=>S.draft&&(S.draft.localKey||S.draft.id)===cur); }
-    else { box.hidden=true; } }
+  if(box){ const c=edCase_(), key=edKey_(); const cur=d.localKey||d.id;
+    if(!key){ box.hidden=true; }
+    else { box.hidden=false; const head=x=>'<h3>الفاتورة</h3>'+(x?'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+lvlBadge_(x,'')+'<span class="pill p-na">'+esc(DOM_LBL[(x.sol||{}).dom||'skin'])+'</span></div>'+rolesHtml_(x):'');
+      const list=(x,items)=>items&&items.length?'<ul style="margin:6px 0 0;padding-inline-start:18px;line-height:1.9">'+items.map(n=>{ const k=prodKind_(x,n); return '<li'+(k.cls?' style="color:#6B7280"':'')+'>'+esc(n)+(k.lbl?' <span class="note" style="margin:0">— '+k.lbl+'</span>':'')+'</li>'; }).join('')+'</ul>':'';
+      if(c&&c.src&&!c.src.stub){ box.innerHTML=head(c)+'<div class="attimgs" id="edInvImgs"><p class="note">جارٍ تحميل الفاتورة…</p></div>'+list(c,invNames_(c)); attImgs_(c,$('#edInvImgs'),()=>S.draft&&(S.draft.localKey||S.draft.id)===cur); invCacheSave_(c); }
+      else { box.innerHTML=head(c)+'<div class="attimgs" id="edInvImgs"><p class="note">جارٍ البحث عن الفاتورة على هذا الجهاز…</p></div>'+(c?list(c,invNames_(c)):'');
+        invCache.get(key.split('|').slice(0,2).join('|')).then(v=>{ if(!S.draft||(S.draft.localKey||S.draft.id)!==cur) return; const el=$('#edInvImgs'); if(!el) return;
+          if(v&&v.imgs&&v.imgs.length){ const fake={lvl:v.lvl,sol:v.sol||{dom:v.dom}}; el.innerHTML=v.imgs.map((u,i)=>'<a href="'+u+'" target="_blank" rel="noopener"><img src="'+u+'" alt="الفاتورة '+(i+1)+'"></a>').join('');
+            if(!c){ box.innerHTML=head(fake)+el.outerHTML+list(fake,v.items||[]); } }
+          else el.innerHTML='<p class="note">صورة الفاتورة غير محفوظة على هذا الجهاز. لعرضها: افتح «استيراد الواتساب» وارفع ملف ZIP الجوال للمجموعة (أو استرجع الجلسة وارفع الملف)، ثم ارجع لهذه الحالة — وستُحفظ تلقائيًا للمرات القادمة.</p>'; }); } } }
   const bar=$('#main .bar'); if(bar&&!d.id){ const Q=edQueue_(); if(Q.length>1){ const all=getDrafts(); const done=Q.filter(k=>{ try{ return !issuesFor(null,all[k],false).length; }catch(e){ return false; } }).length;
       let pe=$('#edProg'); if(!pe){ pe=document.createElement('span'); pe.id='edProg'; pe.className='edprog'; bar.appendChild(pe); }
       pe.innerHTML='<span class="track"><i style="width:'+Math.round(done/Q.length*100)+'%"></i></span><span class="note" style="margin:0;white-space:nowrap">جاهزة '+done+' من '+Q.length+'</span><button class="btn cta" type="button" id="btnEdNext">حفظ والتالي ←</button>'; } }
@@ -5030,7 +5072,12 @@ function updateDash(){
   const flags=pe.filter(x=>issuesFor(x.id,x.c,false).length).length;
   const avg=ap.length?(ap.reduce((s,x)=>s+metCount(x.r),0)/ap.length).toFixed(1):'—';
   const stage=cycleStage();
-  let h='<div class="kpis">'+[['المقدَّمة',cs.length],['المعتمدة',ap.length],['قيد المراجعة',pe.length],['المرفوضة',rj.length],['متوسط الشارات للمعتمدة',avg],['أدلة غير مكتملة',inc],['ملاحظات حوكمة',flags]].map(k=>'<div class="panel kpi"><span>'+k[0]+'</span><b>'+k[1]+'</b></div>').join('')+'</div>';
+  // مقارنة بالشهر السابق (عند اختيار شهر)
+  const pm=S.dashMonth!=='all'?prevMonth_(S.dashMonth):null; let P=null;
+  if(pm){ const cp=[...S.cases.entries()].filter(([id,c])=>c.month===pm).map(([id,c])=>({id,c,st:statusOf(id),r:resultsOf(id,c)})); if(cp.length){ const a2=cp.filter(x=>x.st==='Approved'); P={n:cp.length,ap:a2.length,pe:cp.filter(x=>x.st==='Pending').length,rj:cp.filter(x=>x.st==='Rejected').length,avg:a2.length?a2.reduce((s,x)=>s+metCount(x.r),0)/a2.length:null,inc:cp.filter(x=>Object.values(x.r).includes('Incomplete')).length}; } }
+  const dl=(cur,prev,lowGood,dec)=>{ if(prev==null||cur==null||cur==='—') return '<span class="kd">&nbsp;</span>'; const d=(+cur)-(+prev); if(!d) return '<span class="kd">= مثل '+esc(monthLabel(pm))+'</span>'; const good=lowGood?d<0:d>0; return '<span class="kd '+(good?'up':'dn')+'">'+(d>0?'▲ ':'▼ ')+(dec?Math.abs(d).toFixed(1):Math.abs(d))+' عن '+esc(monthLabel(pm))+'</span>'; };
+  let h='<div class="kpis kpis2">'+[['المقدَّمة',cs.length,P&&P.n],['المعتمدة',ap.length,P&&P.ap],['قيد المراجعة',pe.length,P&&P.pe,1],['المرفوضة',rj.length,P&&P.rj,1],['متوسط الشارات للمعتمدة',avg,P&&P.avg,0,1],['أدلة غير مكتملة',inc,P&&P.inc,1],['ملاحظات حوكمة',flags,null,1]].map(k=>'<div class="panel kpi"><span>'+k[0]+'</span><b>'+k[1]+'</b>'+dl(k[1],k[2],k[3],k[4])+'</div>').join('')+'</div>';
+  if(adminMode()) h+='<div id="dashLv"></div>';
   h+='<h2 class="sh" style="margin-top:0">مراحل بوست الشهر (للمختارة)</h2><div class="kpis">'+STAGE_KEYS.map(k=>'<div class="panel kpi"><span>'+STAGE_AR[k]+'</span><b>'+ap.filter(x=>(S.dec.get(x.id)||{}).featured&&((S.dec.get(x.id)||{}).postStage||'selected')===k).length+'</b></div>').join('')+'</div>';
   const rowsB=allBadges().filter(b=>b.active!==false||cs.some(x=>b.key in x.r));
   h+='<div class="panel tw"><table><thead><tr><th>الشارة</th><th>المقدَّمة</th><th>المنطبقة</th><th>متحققة</th><th>الانتشار على المنطبقة</th><th>على المعتمدة فقط</th></tr></thead><tbody>'+
@@ -5041,13 +5088,63 @@ function updateDash(){
    }).join(''):'<tr><td colspan="6"><div class="empty">لا توجد شارات</div></td></tr>')+'</tbody></table></div><p class="note">المنطبقة تستبعد النتائج «لا تنطبق» و«غير مكتملة». الانتشار على المنطبقة يقيس السلوك دون أن تظلمه الحالات التي لا يخصها العرض أو وصفتي، أما «على المعتمدة فقط» فيقيس جودة الحالات المختارة للنشر.</p>';
   const ph={}; cs.forEach(x=>{const k=(x.c.pharmacist||'—').trim()||'—'; const o=ph[k]||(ph[k]={n:0,a:0,b:0}); o.n++; if(x.st==='Approved') o.a++; o.b+=metCount(x.r);});
   const phr=Object.entries(ph).sort((a,b)=>b[1].b-a[1].b||b[1].n-a[1].n).slice(0,12);
-  h+='<div class="two"><div><h2 class="sh">الصيادلة</h2><div class="panel tw"><table><thead><tr><th>الصيدلي</th><th>الحالات</th><th>المعتمدة</th><th>الشارات</th></tr></thead><tbody>'+
-   (phr.length?phr.map(([k,o])=>'<tr><td>'+esc(k)+'</td><td class="num">'+o.n+'</td><td class="num">'+o.a+'</td><td class="num">'+o.b+'</td></tr>').join(''):'<tr><td colspan="4"><div class="empty">لا بيانات بعد</div></td></tr>')+
-   '</tbody></table></div></div><div><h2 class="sh">Workflow</h2><div class="panel tw"><table><thead><tr><th>اليوم</th><th>المرحلة</th><th>المسؤول</th></tr></thead><tbody>'+
+  const MED=['#B7791F','#6B7280','#9A5B2E'];
+  h+='<div class="two"><div><h2 class="sh">لوحة الشرف</h2><div class="panel" style="padding:6px 16px 10px">'+
+   (phr.length?phr.map(([k,o],i)=>'<div class="lead"><span class="medal" style="background:'+(i<3?MED[i]:'#C9D3E0')+';color:'+(i<3?'#fff':'#14213D')+'">'+(i+1)+'</span><div style="flex:1;min-width:0"><b>'+esc(k)+'</b><div class="note" style="margin:0">'+o.n+' حالة · '+o.a+' معتمدة</div></div><span class="lead-v">'+o.b+' <small>شارة</small></span></div>').join(''):'<div class="empty">لا بيانات بعد</div>')+
+   '</div></div><div><h2 class="sh">Workflow</h2><div class="panel tw"><table><thead><tr><th>اليوم</th><th>المرحلة</th><th>المسؤول</th></tr></thead><tbody>'+
    CYCLE.map((c,i)=>'<tr'+(i===stage?' style="background:var(--brand-soft)"':'')+'><td class="mono">'+c[0]+'</td><td>'+c[1]+(i===stage?' <span class="pill p-ok">الآن</span>':'')+'</td><td>'+c[2]+'</td></tr>').join('')+
    '</tbody></table></div><p class="note">'+(stage<0?'نحن بين دورتين حاليًا. تبدأ مرحلة الاختيار يوم 25. ':'')+'الأرقام أيام من الشهر. الاختيار يمتد من 25 إلى 1 من الشهر التالي.</p></div></div>';
   if(adminMode()) h+='<div id="calibBox" style="margin-top:18px"></div>';
-  $('#dBody').innerHTML=h; if(adminMode()) calibRender();
+  $('#dBody').innerHTML=h; if(adminMode()){ calibRender(); dashLevels_(); }
+}
+function prevMonth_(m){ const [y,mo]=m.split('-').map(Number); const d=new Date(y,mo-2,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+// ---------- لوحة المتابعة: نضج «الحل المتكامل» من لقطات الاستخراج ----------
+async function dashLevels_(){
+  const box=$('#dashLv'); if(!box) return; box.innerHTML='<p class="note">جارٍ تحميل مستوى الحلول…</p>';
+  let C; try{ C=await calibLoad_(); }catch(e){ box.innerHTML=''; return; }
+  const ms=Object.keys(C.months).sort(); if(!ms.length){ box.innerHTML='<div class="panel empty" style="margin-bottom:16px"><b>لا توجد بيانات مستوى الحل بعد</b>تظهر هنا بعد أول استخراج لحالات شهر من «استيراد الواتساب».</div>'; return; }
+  const m=(S.dashMonth!=='all'&&C.months[S.dashMonth])?S.dashMonth:ms[ms.length-1]; const R=(C.months[m].rows||[]).filter(r=>r.length>6);
+  const pct=(a,b)=>b?Math.round(a/b*100):0, good=r=>(r[6]||0)>=3;
+  const i=ms.indexOf(m), pm=i>0?ms[i-1]:null, PR=pm?(C.months[pm].rows||[]).filter(r=>r.length>6):[];
+  const cur=pct(R.filter(good).length,R.length), prv=PR.length?pct(PR.filter(good).length,PR.length):null;
+  const nA=R.filter(r=>r[6]===4).length, nB=R.filter(r=>r[6]===3).length, nC=R.filter(r=>r[6]===2).length;
+  const kd=(c,p)=>p==null?'<span class="kd">&nbsp;</span>':'<span class="kd '+(c>=p?'up':'dn')+'">'+(c===p?'= ':c>p?'▲ ':'▼ ')+Math.abs(c-p)+' نقطة عن '+esc(monthLabel(pm))+'</span>';
+  let h='<h2 class="sh">نضج «الحل المتكامل» · '+esc(monthLabel(m))+' <span class="note" style="font-weight:400">('+R.length+' حالة مستخرجة)</span></h2>'+
+    '<div class="kpis kpis2"><div class="panel kpi"><span>حلول متكاملة (أ + ب)</span><b>'+cur+'%</b>'+kd(cur,prv)+'</div>'+
+    '<div class="panel kpi"><span>أ · حل متكامل</span><b>'+nA+'</b><span class="kd">'+pct(nA,R.length)+'% من الحالات</span></div>'+
+    '<div class="panel kpi"><span>ب · 3 منتجات+</span><b>'+nB+'</b><span class="kd">'+pct(nB,R.length)+'%</span></div>'+
+    '<div class="panel kpi"><span>ج · من النص</span><b>'+nC+'</b><span class="kd">'+pct(nC,R.length)+'%</span></div></div>';
+  // مستوى الحل لكل مجموعة
+  const G={}; R.forEach(r=>{ const g=r[4]||'—'; const o=G[g]||(G[g]={n:0,4:0,3:0,2:0}); o.n++; if(r[6]>=2) o[r[6]]++; });
+  const bars='<div class="panel dsec"><h3>مستوى الحل في كل مجموعة</h3>'+Object.keys(G).sort().map(g=>{ const o=G[g]; return '<div class="lvrow"><span class="lvg">'+esc(g)+'</span><div class="lvbar"><i style="width:'+pct(o[4],o.n)+'%;background:var(--lvl4)" title="أ '+o[4]+'"></i><i style="width:'+pct(o[3],o.n)+'%;background:var(--lvl3)" title="ب '+o[3]+'"></i><i style="width:'+pct(o[2],o.n)+'%;background:#E3A13B" title="ج '+o[2]+'"></i></div><span class="note" style="margin:0;white-space:nowrap">'+pct(o[4]+o[3],o.n)+'% · '+o.n+' حالة</span></div>'; }).join('')+
+    '<div class="lvleg"><span><i style="background:var(--lvl4)"></i>أ حل متكامل</span><span><i style="background:var(--lvl3)"></i>ب 3 منتجات+</span><span><i style="background:#E3A13B"></i>ج من النص</span></div></div>';
+  // المنحنى الشهري
+  const T=ms.slice(-6).map(k=>{ const rr=(C.months[k].rows||[]).filter(r=>r.length>6); return {k,v:pct(rr.filter(good).length,rr.length)}; });
+  const mx=Math.max(10,...T.map(x=>x.v)); const X=j=>T.length<2?210:40+j*(340/(T.length-1)), Y=v=>170-v/mx*130;
+  const trend=T.length<2?'<div class="panel dsec"><h3>نسبة الحلول المتكاملة شهريًا</h3><p class="note">يظهر المنحنى بعد استخراج شهرين أو أكثر. الشهر الحالي: <b>'+cur+'%</b>.</p></div>':'<div class="panel dsec"><h3>نسبة الحلول المتكاملة شهريًا</h3>'+
+    '<svg viewBox="0 0 420 200" role="img" aria-label="نسبة الحلول المتكاملة شهريًا" style="width:100%;height:auto"><line x1="30" y1="170" x2="410" y2="170" stroke="#E3E8EF"/>'+
+    (T.length>1?'<polyline points="'+T.map((x,j)=>X(j)+','+Y(x.v)).join(' ')+'" fill="none" stroke="#003261" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>':'')+
+    T.map((x,j)=>'<circle cx="'+X(j)+'" cy="'+Y(x.v)+'" r="5" fill="'+(x.k===m?'#C2410C':'#003261')+'"/><text x="'+X(j)+'" y="'+(Y(x.v)-12)+'" text-anchor="middle" font-size="13" font-weight="700" fill="'+(x.k===m?'#C2410C':'#003261')+'">'+x.v+'%</text><text x="'+X(j)+'" y="192" text-anchor="middle" font-size="12" fill="#4A5872">'+esc(monthLabel(x.k))+'</text>').join('')+'</svg></div>';
+  h+='<div class="two">'+bars+trend+'</div>';
+  // خريطة الفروع + جدول المشرفين
+  const hasB=R.some(r=>r.length>9&&r[9]);
+  if(!hasB) h+='<div class="panel dsec"><h3>خريطة الفروع والمشرفين</h3><p class="note">تظهر بعد الاستخراج القادم (اللقطات القديمة لا تحتوي الفرع والمشرف).</p></div>';
+  else{
+    const B={}; R.forEach(r=>{ if(!r[9]) return; const o=B[r[9]]||(B[r[9]]={n:0,g:0,sup:{},grp:r[4]}); o.n++; if(good(r)) o.g++; if(r[10]) o.sup[r[10]]=(o.sup[r[10]]||0)+1; });
+    const BL=Object.entries(B).filter(([k,o])=>o.n>=2).map(([k,o])=>({k,n:o.n,p:pct(o.g,o.n),sup:Object.entries(o.sup).sort((a,b)=>b[1]-a[1])[0]?.[0]||''})).sort((a,b)=>b.p-a.p||b.n-a.n);
+    const shade=p=>p>=40?['#003261','#fff']:p>=20?['#6E96C9','#fff']:p>0?['#BFD3EA','#14213D']:['#EEF1F5','#4A5872'];
+    const heat='<div class="panel dsec"><h3>خريطة الفروع · نضج الحل المتكامل</h3><p class="note" style="margin:0 0 10px">كل مربع فرع (حالتان أو أكثر) · الأغمق = حلول متكاملة أكثر · مرّر المؤشر للتفاصيل</p><div class="heat">'+
+      BL.slice(0,160).map(b=>{ const c=shade(b.p); return '<span style="background:'+c[0]+';color:'+c[1]+'" title="فرع '+esc(b.k)+' · '+b.n+' حالة · '+b.p+'% حل متكامل'+(b.sup?' · '+esc(b.sup):'')+'">'+esc(b.k)+'</span>'; }).join('')+
+      '</div><div class="lvleg" style="margin-top:10px"><span>أقل</span><span><i style="background:#EEF1F5"></i>0%</span><span><i style="background:#BFD3EA"></i>1–19%</span><span><i style="background:#6E96C9"></i>20–39%</span><span><i style="background:#003261"></i>40%+</span><span>أكثر</span></div></div>';
+    const SP={}; R.forEach(r=>{ const k=r[10]||'— غير محدد'; const o=SP[k]||(SP[k]={n:0,g:0,a:0}); o.n++; if(good(r)) o.g++; if(r[6]===4) o.a++; });
+    const SL=Object.entries(SP).sort((a,b)=>pct(b[1].g,b[1].n)-pct(a[1].g,a[1].n)||b[1].n-a[1].n); const SL1=SL.filter(x=>x[1].n>=5), SL2=SL.filter(x=>x[1].n<5);
+    const srow=([k,o])=>'<tr><td>'+esc(k)+'</td><td class="num">'+o.n+'</td><td class="num">'+o.a+'</td><td style="min-width:150px"><div class="meter"><div class="track"><i style="width:'+pct(o.g,o.n)+'%"></i></div><span class="num">'+pct(o.g,o.n)+'%</span></div></td></tr>';
+    const thd='<thead><tr><th>المشرف</th><th>الحالات</th><th>أ</th><th>أ + ب</th></tr></thead>';
+    const supT='<div class="panel dsec"><h3>المشرفون · نسبة الحلول المتكاملة</h3><p class="note" style="margin:0 0 8px">الترتيب للمشرفين الذين لديهم 5 حالات أو أكثر</p><div class="tw"><table>'+thd+'<tbody>'+SL1.map(srow).join('')+'</tbody></table></div>'+
+      (SL2.length?'<details style="margin-top:8px"><summary class="note" style="cursor:pointer">مشرفون بأقل من 5 حالات ('+SL2.length+')</summary><div class="tw"><table>'+thd+'<tbody>'+SL2.map(srow).join('')+'</tbody></table></div></details>':'')+'</div>';
+    h+='<div class="two">'+heat+supT+'</div>';
+  }
+  if(!$('#dashLv')) return; $('#dashLv').innerHTML=h;
 }
 // ---------- معايرة الاختيار: هل تختار المنصة مثل المقيّم؟ ----------
 function calibRank_(rows,w0,w1){ // يعيد حساب السكور بالأوزان المعطاة ثم الترتيب
