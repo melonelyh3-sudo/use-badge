@@ -3239,7 +3239,9 @@ async function impExtract(){
 }
 // قراءة صور الفواتير بالذكاء الاصطناعي لأعلى المرشحة (تلقائيًا بعد الاستخراج) لمعرفة أصنافها ومستوى الحل
 const IMP_AIPRE_N=40;
-function impAiPrePool_(){ const I=impState(); return I.cases.filter(c=>c.aiFiles&&c.aiFiles.length&&!c.invoices.length&&!c.aiPre&&!c.aiPreErr&&c.src&&!c.src.stub).sort((a,b)=>b.score-a.score||(b.tlen||0)-(a.tlen||0)).slice(0,IMP_AIPRE_N); }
+// كل فاتورة صورة مستواها المقدّر «ب» أو أعلى (حتى 120)، ثم تكملة حتى 40 من الأعلى سكورًا
+function impAiPrePool_(){ const I=impState(); const cand=I.cases.filter(c=>c.aiFiles&&c.aiFiles.length&&!c.invoices.length&&!c.aiPre&&!c.aiPreErr&&c.src&&!c.src.stub).sort((a,b)=>b.score-a.score||(b.tlen||0)-(a.tlen||0));
+  const hi=cand.filter(c=>c.lvl>=3).slice(0,120); return hi.concat(cand.filter(c=>c.lvl<3).slice(0,Math.max(0,IMP_AIPRE_N-hi.length))); }
 async function impAiPre_(){
   const I=impState(); if(I.aiPre&&I.aiPre.busy) return; if(!S.settings.aiEnabled) return; const pool=impAiPrePool_(); if(!pool.length) return;
   I.aiPre={busy:true,stop:false,done:0,ok:0,err:0,total:pool.length}; updateImport(); let idx=0;
@@ -3434,11 +3436,20 @@ const ROLE_LBL={clean:'غسول',moist:'مرطب',sun:'واقي',treat:'علاج
 const ROLE_DEFAULT={
   sun:'spf|sun\\s*(secure|fluid|protect|screen|block|gel|cream|milk)|sunfluid|sunscreen|photoderm|anthelios|medisun|uv\\s*(mune|clear|defen|age)|solaire|واقي|صن\\s*بلوك|sunblock',
   clean:'cleans|cleanser|wash|nettoy|moussant|foaming|\\bfoam\\b|micellar|\\bh2o\\b|syndet|lavante|purifiant\\s*bar|shower\\s*(gel|oil)|غسول|منظف|ميسيلار',
-  treat:'serum|سيروم|\\bduo\\b|global\\s*acne|kerato|aklief|differin|adapal|skinoren|azelai|depi\\s*-?white|depiwhite|depigment|pigment|melamedic|retin|vitamin\\s*-?c|niacin|pore\\s*refiner|acne\\s*care|glyox|alpha\\s*plus|dark\\s*spot|urea|ampoule|concentrate|booster|treatment|fusid|fucid|elica|mometa|hydrocort|clindam|erythro|benzoyl|tretin|علاج|تفتيح',
+  treat:'serum|سيروم|\\bduo\\b|global\\s*acne|kerato|aklief|differin|adapal|skinoren|azelai|depi\\s*-?white|depiwhite|depigment|pigment|melamedic|retin|vitamin\\s*-?c|niacin|pore\\s*refiner|acne\\s*care|glyox|alpha\\s*plus|dark\\s*spot|urea|ampoule|concentrate|booster|treatment|sensibio\\s*(forte|ar|defensive)|rosaliac|redness|rougeur|anti-?red|fusid|fucid|elica|mometa|hydrocort|clindam|erythro|benzoyl|tretin|علاج|تفتيح',
   moist:'moistur|hydra|hydrat|cream|\\bcr\\.|crème|creme|lotion|\\blot\\.|baume|balm|emoll|cicaplast|cicabio|lipikar|atoderm|topialyse|glysolid|matif|gel-?cr|مرطب|ترطيب'
 };
 const ORAL_RX=/\b(caps?|capsules?|tabs?|tablets?|softgel|sachets?|syrup|syrp|drops|eff\.?|effervescent|gumm(y|ies)|chew|amp\.|vials?|lozenges?|powder)\b/i;
 const ROLE_EXCL=/regaine|minoxidil|intimate|vaginal|nappy|oint|lubric|\blube\b|deo\b|roll[- ]?on|shampoo|\bsh\.|cond\.|hair|tooth|t\/p|t\/b|m\/wash|mouth|razor|condom|veet|h\/r|h\/rem|lip\s*balm|eye\s*drops|baby\s*(wash|oil)|tan\b|after\s*sun|mosquito|plaster|pants|diaper|pampers/i;
+// ليست منتجات (لا تُحسب ضمن «3 منتجات»)
+const NONPROD_RX=/\b(bags?|carry\s*bag|delivery|service|fees?|gift|sample|tester|voucher|coupon)\b|كيس|أكياس|توصيل|خدمة|رسوم|هدية|عينة|قسيمة/i;
+// «3 منتجات»: تُحسب منتجات العناية (أي منتج موضعي/تجميلي) والمكملات، ولا تُحسب الأدوية (حبوب/كبسولات/شراب/حقن…)
+const SUPP_RX=/vitamin|\bvit\b|vit\.|multivit|omega|fish\s*oil|zinc|biotin|collagen|hyaluron|cystine|magnes|calcium|\biron\b|ferr|folic|\bd3\b|b12|b\s*complex|probiotic|carnitine|q10|glutathion|perfectil|oenobiol|priorin|centrum|solgar|jamieson|marnys|nature'?s|glovit|supradyn|pharmaton|kirkland|فيتامين|مكمل|كولاجين|زنك|بيوتين|أوميغا|اوميجا/i;
+const MED_FORM_RX=/(?<![a-z])(tabs?|tablets?|f\.?c\.?t|caps?|capsules?|softgels?|sachets?|syrup|syrp|susp|suspension|drops?|eff\.?|effervescent|amp\.?|ampoules?|vials?|pens?|pre-?filled|inj|injection|supp\.?|suppositor(y|ies)|inhaler|lozenges?|chewable)(?![a-z])|أقراص|اقراص|كبسول|شراب|حقن|تحاميل|قطرة/i;
+// لا تُحسب أيضًا: حليب الأطفال والتغذية، الحفائض، والكريمات/الجل/المراهم العلاجية الموضعية (أدوية)
+const MILK_DIAPER_RX=/formula|infant\s*milk|baby\s*milk|milk\s*powder|similac|aptamil|\bnan\b|bebelac|\bs-?26\b|enfamil|novalac|nutrilon|\bhipp\b|isomil|neocate|pediasure|\bensure\b|nursie|حليب\s*(أطفال|اطفال|رضع|الأطفال|الاطفال)|diaper|nappy|pampers|huggies|molfix|babyjoy|\bpants\b|حفاض|حفائض|حفاضات/i;
+const TOPMED_RX=/fucid|fusid|fucicort|fucibet|elica|elocon|mometa|betam|betnovate|diprosone|dermovate|clobeta|hydrocort|clotri|canest|daktarin|miconaz|ketocon|nizoral|terbinaf|lamisil|clindam|dalacin|erythro|benzoyl|benzac|panoxyl|tretin|retin-?a|acretin|adapal|differin|aklief|trifarot|epiduo|skinoren|finacea|mupiro|bactroban|flamazine|silver\s*sulf|acyclo|zovirax|tacrolim|protopic|pimecro|elidel|metronid|rozex|soolantra|ivermect|calcipot|daivobet|isotret|mebo|ointment|\boint\.?/i;
+function countsAsProduct_(x,role){ if(!x||NONPROD_RX.test(x)||MILK_DIAPER_RX.test(x)||TOPMED_RX.test(x)) return false; if(role) return true; if(SUPP_RX.test(x)) return true; if(MED_FORM_RX.test(x)) return false; return !ROLE_EXCL.test(x)||/shampoo|\bsh\.|hair|lip/i.test(x); }
 const SKIN_SUPP=/zinc|biotin|collagen|hyaluron|cystine|perfectil|oenobiol|priorin|glopriorin/i;
 function impRoles(){ const r=(S.settings&&S.settings.importRoles)||{}; const o={}; Object.keys(ROLE_DEFAULT).forEach(k=>{ o[k]=(r[k]&&String(r[k]).trim())||ROLE_DEFAULT[k]; }); return o; }
 function roleRx_(){ const R=impRoles(), key=JSON.stringify(R); if(S._roleRx&&S._roleRx.k===key) return S._roleRx.rx; const rx={}; Object.keys(R).forEach(k=>{ try{ rx[k]=new RegExp(R[k],'i'); }catch(e){ rx[k]=new RegExp(ROLE_DEFAULT[k],'i'); } }); S._roleRx={k:key,rx}; return rx; }
@@ -3451,7 +3462,7 @@ const TREAT_TXT_RX=/علاج|سيروم|serum|duo|differin|adapal|azelai|retin|n
 function invNames_(c){ const a=[].concat(...(c.invoices||[]).map(v=>(v.items||[]).map(i=>i.name))); const b=(c.aiPre&&c.aiPre.invoiceItems)||[]; const seen=new Set(), out=[]; a.concat(b).forEach(n=>{ const k=WA.normA(String(n||'').replace(/×\s*\d+/,'')).trim(); if(k&&!seen.has(k)){ seen.add(k); out.push(n); } }); return out; }
 function solOf_(c){
   const names=invNames_(c), roles={clean:0,moist:0,sun:0,treat:0}; let n=0;
-  names.forEach(x=>{ const r=roleOf_(x); if(r){ roles[r]++; n++; } else if(SKIN_SUPP.test(x)&&!ROLE_EXCL.test(x)) n++; });
+  names.forEach(x=>{ const r=roleOf_(x); if(r) roles[r]++; if(countsAsProduct_(x,r)) n++; });
   const t=String(c.text||''); const txtC=COMPLETE_RX.test(t)&&(VERIFY_RX.test(t)||TREAT_TXT_RX.test(t));
   const invKnown=names.length>0, pend=!invKnown&&c.aiFiles&&c.aiFiles.length>0; let lvl=0, est=false;
   if(invKnown){ lvl=(roles.clean&&roles.moist&&roles.sun&&roles.treat)?4:n>=3?3:n>=1?1:0; }
