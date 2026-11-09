@@ -212,16 +212,15 @@ th.sortable{cursor:pointer;user-select:none;white-space:nowrap}th.sortable:hover
 
 /* ===== التصميم الجديد: الهوية البصرية ===== */
 :root{--accent:#C2410C;--accent-2:#9A3412;--ink:#14213D;--muted:#4A5872;--line:#E3E8EF;--line-2:#C9D3E0;--bg:#F5F7FA;--good:#1E7A4C;--good-soft:#E6F4EC;--bad:#B42318;--bad-soft:#FDECEA;--lvl4:#1E7A4C;--lvl4-soft:#E6F4EC;--lvl4-ink:#14532D;--lvl3:#2B5BA8;--lvl3-soft:#E7EFFA;--lvl3-ink:#1E3A6E;--lvl2:#B66A08;--lvl2-soft:#FDF1DC;--lvl2-ink:#6B3E05;--lvl1:#7A8699;--lvl1-soft:#EEF1F5;--lvl1-ink:#3B4658}
-body{font-family:"IBM Plex Sans Arabic","Inter",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+body{background:var(--bg);color:var(--ink)}
 .panel{border-radius:14px;border-color:var(--line)}
-.btn{min-height:40px;border:1px solid var(--line-2);border-radius:10px;font-size:14px;font-weight:600;color:var(--ink);background:#fff;padding:8px 16px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn{min-height:40px;border:1px solid var(--line-2);border-radius:10px;font-weight:700;color:var(--ink);background:#fff;padding:8px 16px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .btn:hover{border-color:var(--navy);background:#F8FAFC}
 .btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
 .btn.primary:hover{background:#00264a;border-color:#00264a}
 .btn.cta{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.cta:hover{background:var(--accent-2);border-color:var(--accent-2)}
-table{font-size:14.5px}
-thead th{background:#F8FAFC;color:var(--muted);text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:600;border-bottom:1px solid var(--line)}
+thead th{background:#F8FAFC;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:700;border-bottom:1px solid var(--line)}
 td{border-bottom:1px solid #EEF1F5}
 .chip{border-radius:999px}
 h2.sh{font-size:17px;border-inline-start-color:var(--accent)}
@@ -244,7 +243,7 @@ h2.sh{font-size:17px;border-inline-start-color:var(--accent)}
 .prog .track{flex:1 1 240px;height:10px;background:var(--line);border-radius:999px;overflow:hidden}
 .prog .track i{display:block;height:10px;background:var(--navy);border-radius:999px;transition:width .3s}
 /* شريط الفلاتر الثابت */
-#impFilters{position:sticky;top:0;z-index:20;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 2px 10px rgba(20,33,61,.06)}
+#impFilters{position:static;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 2px 10px rgba(20,33,61,.06)}
 /* الجدول + اللوحة الجانبية */
 .imp-split{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-top:10px}
 .imp-split>.tw{flex:999 1 640px;min-width:0;background:#fff;border:1px solid var(--line);border-radius:12px}
@@ -255,7 +254,20 @@ h2.sh{font-size:17px;border-inline-start-color:var(--accent)}
 tr.cur td{background:#F1F5FB}
 @media (max-width:1100px){#impSide{position:static;max-height:none;max-width:none}}
 .fmore{margin:2px 0 4px}.fmore>summary{cursor:pointer;font-size:13.5px;font-weight:600;color:var(--navy);padding:4px 0}.fmore[open]>summary{margin-bottom:6px}
-#impFilters{max-height:60vh;overflow:auto}
+
+tr.detrow>td{background:#F8FAFC;padding:0;border-bottom:2px solid var(--line-2)}
+.detbox{display:flex;flex-wrap:wrap;gap:20px;padding:16px 18px}
+.detbox .col{flex:1 1 380px;min-width:0}
+.detbox .txt{white-space:pre-wrap;line-height:1.85;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;max-height:none}
+.attimgs img{display:block;max-width:100%;max-height:640px;margin:0 0 10px;border:1px solid var(--line);border-radius:10px;cursor:zoom-in;background:#fff}
+/* شاشة التقييم: الحالة والفاتورة بجهة، والأسئلة بجهة */
+.ed{grid-template-columns:minmax(0,1fr) 300px}
+.ed2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.ed2-case,.ed2-qs{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1250px){.ed2{grid-template-columns:1fr}}
+.q.aisug .seg button[aria-pressed="true"]{background:var(--lvl3-soft)!important;color:var(--lvl3-ink)!important;outline:2px dashed var(--lvl3);outline-offset:-2px}
+.edprog{display:inline-flex;align-items:center;gap:10px;flex:1 1 260px;min-width:220px}
+.edprog .track{flex:1;height:10px;background:var(--line);border-radius:999px;overflow:hidden}.edprog .track i{display:block;height:10px;background:var(--good)}
 </style>
 </head>
 <body>
@@ -847,6 +859,17 @@ const TR_EXACT = {
   "بدون فاتورة": "No invoice",
   "تفاعل/مدح من المشرف": "Supervisor praise/reply",
   "روتين/حل متكامل": "Routine/complete solution",
+  "الموضوع الأساسي": "Main topic",
+  "غير البشرة والشعر": "Other than skin & hair",
+  "حل متكامل": "Complete solution",
+  "شامبو + علاج + مكمل": "Shampoo + treatment + supplement",
+  "أساسي + إضافي": "Main + add-on",
+  "شامبو": "Shampoo",
+  "مكمل": "Supplement",
+  "حفظ والتالي ←": "Save & next →",
+  "لا توجد فاتورة مرفقة.": "No invoice attached.",
+  "جارٍ تحميل الفاتورة…": "Loading invoice…",
+  "أ · حل متكامل": "A · Complete solution",
   "التصنيفات والحالات الدقيقة": "Categories & detailed conditions",
   "مستوى الحل": "Solution level",
   "إضافة للاختيار": "Add to selection",
@@ -3141,7 +3164,7 @@ function mountImport(){
   '<p class="note" style="margin:0 0 10px">لكل مجموعة: تصدير الجوال مع الوسائط (ZIP، فيه الفواتير) + تصدير الويب (ZIP نصي، فيه الكلام المكتوب مع الفواتير). اختر الملفات كلها معًا؛ تتعرف المنصة على مجموعة كل ملف وتدمج الاثنين بالوقت. تتم القراءة على جهازك ولا يُرفع أي ملف للخادم.</p>'+
   '<div class="actions"><label class="btn primary">📁 اختيار ملفات ZIP<input type="file" id="impFiles" accept=".zip,application/zip" multiple hidden></label><span class="note" id="impLoadMsg"></span></div>'+
   '<div id="impSrcs" style="margin-top:10px"></div></section>'+
-  '<section class="panel sec" id="impStep2" hidden><h3>2) الفلترة والاختيار</h3><div id="impFilters"></div><div class="imp-split"><div class="tw"><table><thead><tr><th style="width:34px"><input type="checkbox" id="impSelAllBox" aria-label="تحديد الكل"></th><th style="width:36px">#</th><th class="sortable" data-impsort="score">مستوى الحل</th><th class="sortable" data-impsort="group">المجموعة</th><th class="sortable" data-impsort="t">التاريخ</th><th class="sortable" data-impsort="ph">الصيدلي</th><th class="sortable" data-impsort="sup">المشرف</th><th class="sortable" data-impsort="cat">التصنيفات</th><th>نص الحالة</th><th class="sortable" data-impsort="att">المرفقات</th><th class="sortable" data-impsort="total">الفاتورة</th><th class="sortable" data-impsort="st">الحالة</th></tr></thead><tbody id="impRows"></tbody></table></div><aside id="impSide" aria-label="تفاصيل الحالة" hidden></aside></div></section>'+
+  '<section class="panel sec" id="impStep2" hidden><h3>2) الفلترة والاختيار</h3><div id="impFilters"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="impSelAllBox" aria-label="تحديد الكل"></th><th style="width:36px">#</th><th class="sortable" data-impsort="score">مستوى الحل</th><th class="sortable" data-impsort="group">المجموعة</th><th class="sortable" data-impsort="t">التاريخ</th><th class="sortable" data-impsort="ph">الصيدلي</th><th class="sortable" data-impsort="sup">المشرف</th><th class="sortable" data-impsort="cat">التصنيفات</th><th>نص الحالة</th><th class="sortable" data-impsort="att">المرفقات</th><th class="sortable" data-impsort="total">الفاتورة</th><th class="sortable" data-impsort="st">الحالة</th></tr></thead><tbody id="impRows"></tbody></table></div></section>'+
   '<section class="panel sec" id="impStep3" hidden><h3>3) التحليل والإضافة لصندوق الوارد</h3><p class="note" style="margin:0 0 10px">لكل حالة مختارة: يقرأ الذكاء الاصطناعي النص والفاتورة، ويقترح إجابات الشارات ومحتوى البوست. تُضاف الحالة لصندوق الوارد، ومنه يأخذها المقيّم ويراجعها ويرسلها للاعتماد كالمعتاد.</p><div class="actions"><select id="impDest" hidden title="وجهة الحالات" style="width:auto"><option value="inbox">إلى صندوق الوارد (للتوزيع على المقيّمين)</option><option value="drafts">إلى مسوداتي (أقيّمها بنفسي)</option></select><button class="btn cta" id="btnImpRun"></button><button class="btn" id="btnImpFast"></button><button class="btn" id="btnImpExclude"></button><button class="btn" id="btnImpStop" hidden>إيقاف</button></div><p class="note" style="margin:6px 0 0">«استبعاد المحدد» يحفظ الحالات كمستبعدة وتظهر بحالة «مستبعدة» في الاستيراد القادم، وتقدر ترجعها من صندوق الوارد ← المستبعدة.</p><div id="impLog" style="margin-top:10px"></div></section></div><div id="anBox"'+(S.impTab==='an'?'':' hidden')+'></div><div id="repBox"'+(S.impTab==='rep'?'':' hidden')+'></div>';
   updateImport(); if(S.impTab==='an') updateAn(); if(S.impTab==='rep') updateRep();
 }
@@ -3316,10 +3339,15 @@ async function impAiPre_(){
   toast('🧾 قُرئت '+I.aiPre.ok+' فاتورة صورة بالذكاء الاصطناعي'+(I.aiPre.err?' (تعذرت '+I.aiPre.err+')':'')+' وأُعيد ترتيب الحالات.');
 }
 const ROLE_SVG={clean:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg>',moist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="6" y="8" width="12" height="13" rx="3"/><path d="M9 8V5h6v3"/></svg>',sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',treat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 2h4M12 2v6M8 8h8l-1 13H9z"/></svg>'};
-const LVL_SHORT={4:'روتين كامل + علاج',3:'3 منتجات+',2:'من النص',1:'منتج/منتجان',0:'بدون حل'};
+const LVL_SHORT={4:'حل متكامل',3:'3 منتجات+',2:'من النص',1:'منتج/منتجان',0:'بدون حل'};
 const LVL_LETTER={4:'أ',3:'ب',2:'ج',1:'–',0:'–'};
-function lvlBadge_(c,attr){ const l=c.lvl||0; return '<button type="button" class="lvl lvl-'+l+'"'+(attr||'')+' title="'+esc(SOL_LBL[l]+((c.sol&&c.sol.est)?' (تقديري قبل قراءة صورة الفاتورة)':''))+'"><i>'+LVL_LETTER[l]+'</i>'+LVL_SHORT[l]+((c.sol&&c.sol.est)?' <small>تقديري</small>':'')+'</button>'; }
-function rolesHtml_(c){ const s=c.sol; if(!s||(!s.invKnown&&!s.est)) return ''; return '<div class="roles">'+['clean','moist','sun','treat'].map(k=>'<span class="rl'+(s.roles[k]?'':' off')+'">'+ROLE_SVG[k]+ROLE_LBL[k]+'</span>').join('')+'</div>'; }
+const LVL4_DOM={skin:'روتين كامل + علاج',hair:'شامبو + علاج + مكمل',other:'أساسي + إضافي'};
+function lvlName_(c){ const l=c.lvl||0; return l===4?LVL4_DOM[(c.sol||{}).dom||'skin']:LVL_SHORT[l]; }
+function lvlBadge_(c,attr){ const l=c.lvl||0; return '<button type="button" class="lvl lvl-'+l+'"'+(attr||'')+' title="'+esc(SOL_LBL[l]+' · '+DOM_LBL[(c.sol||{}).dom||'skin']+((c.sol&&c.sol.est)?' (تقديري قبل قراءة صورة الفاتورة)':''))+'"><i>'+LVL_LETTER[l]+'</i>'+lvlName_(c)+((c.sol&&c.sol.est)?' <small>تقديري</small>':'')+'</button>'; }
+function rolesHtml_(c){ const s=c.sol; if(!s||(!s.invKnown&&!s.est)) return '';
+  if(s.dom==='hair') return '<div class="roles">'+['sham','treat','supp'].map(k=>'<span class="rl'+(s.hr[k]?'':' off')+'">'+HAIR_LBL[k]+'</span>').join('')+'</div>';
+  if(s.dom==='other') return '<div class="roles"><span class="rl'+(s.main?'':' off')+'">أساسي '+s.main+'</span><span class="rl'+(s.add?'':' off')+'">إضافي '+s.add+'</span></div>';
+  return '<div class="roles">'+['clean','moist','sun','treat'].map(k=>'<span class="rl'+(s.roles[k]?'':' off')+'">'+ROLE_SVG[k]+ROLE_LBL[k]+'</span>').join('')+'</div>'; }
 function impAiPreLine_(){ const I=impState(), A=I.aiPre; const left=impAiPrePool_().length; const read=I.cases.filter(c=>c.aiPre).length;
   if(A&&A.busy) return '<div class="prog" role="status"><b style="font-size:14.5px">قراءة صور الفواتير بالذكاء الاصطناعي</b><span class="track"><i style="width:'+Math.round(A.done/Math.max(1,A.total)*100)+'%"></i></span><span style="font-size:14px;color:var(--muted)">'+A.done+' من '+A.total+'</span><button class="btn" id="btnAiPreStop" type="button">إيقاف</button></div>';
   if(!S.settings.aiEnabled) return read?'🧾 فواتير صور مقروءة: '+read:'';
@@ -3436,7 +3464,7 @@ const impSess=(()=>{ const DB='use_imp_session', ST='s'; const expired=t=>{ cons
 // ----- نافذة تفاصيل الحالة: النص الكامل، تفصيل الترشيح، أصناف الفاتورة، المرفقات -----
 function impDetail(key,full){
   const I=impState(), c=I.cases.find(x=>x.key===key); if(!c) return;
-  const side=$('#impSide'); if(!full&&side&&window.innerWidth>=900) return impSide_(c,side);
+  if(!full){ I.cur=I.cur===key?null:key; return impRenderRows(); }
   const inv0=c.invoices[0]||{}; const row=(k,v)=>v?'<tr><td class="note" style="margin:0;white-space:nowrap">'+k+'</td><td>'+v+'</td></tr>':'';
   const money=x=>x==null?'—':Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const invH=c.invoices.length?c.invoices.map((v,i)=>'<div style="margin-top:10px"><b>فاتورة '+(i+1)+'</b> <span class="note" style="margin:0">'+[v.invoice?'رقم '+esc(v.invoice):'',v.branch?'فرع '+esc(v.branch):'',v.date?esc(v.date):'',v.pharmacist?esc(fixName_(v.pharmacist)):''].filter(Boolean).join(' · ')+'</span>'+
@@ -3462,26 +3490,36 @@ function impDetail(key,full){
   m.addEventListener('click',e=>{ if(e.target===m||e.target.id==='impModalX') m.remove(); });
   document.body.appendChild(m);
 }
-// لوحة جانبية لتفاصيل الحالة (بدل النافذة المنبثقة) — الجدول يبقى ظاهرًا
-function impSide_(c,side){
-  const I=impState(); I.cur=c.key; const v=c.invoices[0]||{}, ax=c.aiPre||{}; const s=c.sol||{};
+// تفاصيل الحالة تُفتح تحت الصف نفسه داخل الجدول (لا يوجد أي جزء مثبّت في الصفحة)
+function impDetHtml_(c){
+  const I=impState(), v=c.invoices[0]||{}, ax=c.aiPre||{};
   const items=(c.invoices.length?[].concat(...c.invoices.map(x=>(x.items||[]).map(i=>i.name))):(ax.invoiceItems||[]));
-  const roleTag=n=>{ const r=roleOf_(n); const med=!countsAsProduct_(n,r); return '<li'+(med?' style="color:#6B7280"':'')+'>'+esc(n)+(r?' <span class="note" style="margin:0">— '+ROLE_LBL[r]+'</span>':'')+(med?' <span class="note" style="margin:0">(لا يُحسب)</span>':'')+'</li>'; };
-  const img=c.atts.findIndex(a=>!a.missing&&!a.parsed&&a.kind!=='pdf');
-  side.hidden=false;
-  side.innerHTML='<div style="display:flex;align-items:center;gap:8px"><b style="font-size:18px;flex:1">'+esc(cleanSender_(c.sender))+'</b><button class="btn" type="button" id="impSideX" aria-label="إغلاق" style="min-height:34px;padding:4px 10px">✕</button></div>'+
-    '<div class="note" style="margin:0">'+esc(c.group||'')+' · '+ymd_(c.t)+' '+hm_(c.t)+(v.branch||ax.invoiceBranch?' · فرع '+esc(v.branch||ax.invoiceBranch):'')+'</div>'+
-    '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+lvlBadge_(c,'')+'<span class="lvl-score">'+(c.score||0)+'</span></div>'+rolesHtml_(c)+
-    ((c.dupInv&&c.dupInv.length)?'<div class="banner" style="margin:0;white-space:pre-line">⚠️ '+esc(impDupTitle_(c))+'</div>':'')+
-    '<div class="txt">'+esc(c.text||'(بدون نص — الفاتورة فقط)')+'</div>'+
-    (img>=0?'<img class="invimg" id="impSideImg" alt="صورة الفاتورة" data-impview="'+esc(c.key)+'|'+img+'">':'')+
-    (items.length?'<div><b style="font-size:14px">أصناف الفاتورة'+(c.total!=null?' · '+Number(c.total).toFixed(2)+' ر.س':ax.invoiceTotal?' · '+Number(ax.invoiceTotal).toFixed(2)+' ر.س':'')+'</b><ul style="margin:6px 0 0;padding-inline-start:18px;line-height:1.9;font-size:14px">'+items.map(roleTag).join('')+'</ul></div>':(c.aiFiles.length?'<p class="note" style="margin:0">لم تُقرأ صورة الفاتورة بعد.</p>':''))+
-    ((c.why||[]).length?'<details><summary class="note" style="cursor:pointer">لماذا هذا الترتيب؟</summary><ul style="margin:6px 0 0;padding-inline-start:18px;line-height:1.9;font-size:13.5px">'+c.why.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>':'')+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-impsidesel="'+esc(c.key)+'" style="flex:1">'+(I.sel.has(c.key)?'✓ ضمن الاختيار — إزالة':'إضافة للاختيار')+'</button><button class="btn" type="button" data-impdetailfull="'+esc(c.key)+'">كل التفاصيل</button></div>';
-  impRenderRows();
-  if(img>=0&&c.src&&!c.src.stub){ const a=c.atts[img]; Promise.resolve().then(async()=>{ try{ const ent=a.entry&&c.src.zip&&c.src.zip.file(a.entry); if(!ent) return; const data=await ent.async('uint8array'); const u=URL.createObjectURL(new Blob([data],{type:/\.png$/i.test(a.entry)?'image/png':/\.webp$/i.test(a.entry)?'image/webp':'image/jpeg'})); const im=$('#impSideImg'); if(im&&I.cur===c.key){ im.src=u; } }catch(e){} }); }
-  else { const im=$('#impSideImg'); if(im) im.replaceWith(Object.assign(document.createElement('p'),{className:'note',textContent:'ارفع ملف ZIP الجوال لعرض صورة الفاتورة.'})); }
+  const tag=n=>{ const k=prodKind_(c,n); return '<li'+(k.cls?' style="color:#6B7280"':'')+'>'+esc(n)+(k.lbl?' <span class="note" style="margin:0">— '+k.lbl+'</span>':'')+'</li>'; };
+  const tot=c.total!=null?c.total:(+ax.invoiceTotal||null);
+  return '<div class="detbox"><div class="col">'+
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:17px">'+esc(cleanSender_(c.sender))+'</b><span class="note" style="margin:0">'+esc(c.group||'')+' · '+ymd_(c.t)+' '+hm_(c.t)+(v.branch||ax.invoiceBranch?' · فرع '+esc(v.branch||ax.invoiceBranch):'')+'</span></div>'+
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0">'+lvlBadge_(c,'')+'<span class="lvl-score">'+(c.score||0)+'</span><span class="pill p-na">الموضوع: '+esc(DOM_LBL[(c.sol||{}).dom||'skin'])+'</span></div>'+rolesHtml_(c)+
+      ((c.dupInv&&c.dupInv.length)?'<div class="banner" style="margin:6px 0;white-space:pre-line">⚠️ '+esc(impDupTitle_(c))+'</div>':'')+
+      '<div class="txt">'+esc(c.text||'(بدون نص — الفاتورة فقط)')+'</div>'+
+      ((c.why||[]).length?'<details style="margin-top:8px"><summary class="note" style="cursor:pointer">لماذا هذا الترتيب؟</summary><ul style="margin:6px 0 0;padding-inline-start:18px;line-height:1.9">'+c.why.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>':'')+
+    '</div><div class="col">'+
+      '<div class="attimgs" id="impDetAtts">'+(c.atts.some(a=>!a.missing&&a.entry)?(c.src&&c.src.stub?'<p class="note">ارفع ملف ZIP الجوال لعرض الفاتورة.</p>':'<p class="note">جارٍ تحميل الفاتورة…</p>'):'<p class="note">لا توجد فاتورة مرفقة.</p>')+'</div>'+
+      (items.length?'<b>أصناف الفاتورة'+(tot?' · '+Number(tot).toFixed(2)+' ر.س':'')+'</b><ul style="margin:6px 0 0;padding-inline-start:18px;line-height:1.9">'+items.map(tag).join('')+'</ul>':(c.aiFiles.length&&!c.invoices.length?'<p class="note">لم تُقرأ صورة الفاتورة بعد.</p>':''))+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn primary" type="button" data-impsidesel="'+esc(c.key)+'">'+(I.sel.has(c.key)?'✓ ضمن الاختيار — إزالة':'إضافة للاختيار')+'</button><button class="btn" type="button" data-impdetailfull="'+esc(c.key)+'">كل التفاصيل</button><button class="btn" type="button" id="impSideX">إغلاق</button></div>'+
+    '</div></div>';
 }
+// عرض الفاتورة: الصور كما هي، والـPDF (المقروء أو الممسوح) تُرسم صفحته الأولى كصورة
+async function attImgs_(c,box,isCur){
+  if(!box||!c||!c.src||c.src.stub||!c.src.zip) return; const L=c.atts.map((a,ix)=>({a,ix})).filter(x=>!x.a.missing&&x.a.entry); const out=[];
+  for(const {a,ix} of L.slice(0,4)){ try{ const f=c.src.zip.file(a.entry); if(!f) continue; const data=await f.async('uint8array'); let u;
+      if(a.kind==='pdf'||/\.pdf$/i.test(a.entry)){ if(!window.pdfjsLib) continue; const doc=await pdfjsLib.getDocument({data:data.slice(),isEvalSupported:false}).promise; const pg=await doc.getPage(1); const v0=pg.getViewport({scale:1}); const vp=pg.getViewport({scale:Math.min(2,900/v0.width)}); const cv=document.createElement('canvas'); cv.width=vp.width; cv.height=vp.height; await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise; u=cv.toDataURL('image/jpeg',0.85); }
+      else u=URL.createObjectURL(new Blob([data],{type:/\.png$/i.test(a.entry)?'image/png':/\.webp$/i.test(a.entry)?'image/webp':'image/jpeg'}));
+      out.push('<img src="'+u+'" alt="الفاتورة '+(ix+1)+'" data-impview="'+esc(c.key)+'|'+ix+'" title="اضغط للتكبير">'); }catch(e){} }
+  if(isCur&&!isCur()) return; box.innerHTML=out.length?out.join(''):'<p class="note">تعذّر عرض الفاتورة.</p>';
+}
+const impRenderRows0_=impRenderRows;
+impRenderRows=function(){ impRenderRows0_.apply(this,arguments); const I=impState(); if(!I.cur) return; const tr=document.querySelector('#impRows tr.cur'); const c=I.cases.find(x=>x.key===I.cur); if(!tr||!c) return;
+  const d=document.createElement('tr'); d.className='detrow'; d.innerHTML='<td colspan="20">'+impDetHtml_(c)+'</td>'; tr.after(d); attImgs_(c,$('#impDetAtts'),()=>impState().cur===c.key); };
 async function impView(v){
   const i=v.lastIndexOf('|'), key=v.slice(0,i), ix=+v.slice(i+1); const c=impState().cases.find(x=>x.key===key); const a=c&&c.atts[ix]; if(c&&c.src&&c.src.stub) return toast('هذه جلسة مسترجعة: ارفع ملف ZIP الجوال لمجموعة '+c.group+' لعرض المرفقات (بدون إعادة استخراج).',true); if(!a||!a.entry) return toast('الملف غير موجود في ملف التصدير.',true);
   try{
@@ -3517,7 +3555,7 @@ const ROUTINE_RX=/روتين|routine|regimen/i;
 const SCI_RX=/niacinamide|نياسيناميد|نياسينامايد|retin|ريتين|رتينول|salicyl|ساليسيل|سالسيليك|hyaluron|هيالورون|هايلورون|azelaic|ازيليك|أزيليك|urea|يوريا|ceramide|سيراميد|vitamin\s*c|فيتامين\s*سي|aha|bha|glycolic|جليكوليك|peptide|ببتيد|zinc|زنك|spf\s*\d+/i;
 // ---- مستوى الحل: أ روتين كامل + علاج (من الفاتورة)، ب 3 منتجات+، ج أكمل الروتين مع العلاج (من النص)، ثم منتج/منتجان
 const SOL_BANDS={4:[75,100],3:[55,74],2:[40,54],1:[20,39],0:[0,19]};
-const SOL_LBL={4:'أ · روتين كامل + علاج',3:'ب · 3 منتجات أو أكثر',2:'ج · أكمل الروتين مع العلاج (من النص)',1:'منتج أو منتجان',0:'بدون حل واضح'};
+const SOL_LBL={4:'أ · حل متكامل',3:'ب · 3 منتجات أو أكثر',2:'ج · أكمل الروتين مع العلاج (من النص)',1:'منتج أو منتجان',0:'بدون حل واضح'};
 const ROLE_LBL={clean:'غسول',moist:'مرطب',sun:'واقي',treat:'علاج'};
 const ROLE_DEFAULT={
   sun:'spf|sun\\s*(secure|fluid|protect|screen|block|gel|cream|milk)|sunfluid|sunscreen|photoderm|anthelios|medisun|uv\\s*(mune|clear|defen|age)|solaire|واقي|صن\\s*بلوك|sunblock',
@@ -3546,16 +3584,42 @@ const COMPLETE_RX=/(كمل|كملت|كمّل|كمّلت|أكمل|اكمل|أكم
 const TREAT_TXT_RX=/علاج|سيروم|serum|duo|differin|adapal|azelai|retin|niacin|نياسين|vitamin\s*c|فيتامين\s*سي|تفتيح|treatment|ادابالين|أدابالين/i;
 // أصناف الفاتورة المعروفة: المقروءة آليًا + ما قرأه الذكاء الاصطناعي من صورة الفاتورة
 function invNames_(c){ const a=[].concat(...(c.invoices||[]).map(v=>(v.items||[]).map(i=>i.name))); const b=(c.aiPre&&c.aiPre.invoiceItems)||[]; const seen=new Set(), out=[]; a.concat(b).forEach(n=>{ const k=WA.normA(String(n||'').replace(/×\s*\d+/,'')).trim(); if(k&&!seen.has(k)){ seen.add(k); out.push(n); } }); return out; }
+// الموضوع الأساسي للحالة من شكوى العميل (التصنيف الدقيق الرئيسي): بشرة، شعر، أو غيره (مكملات، وزن، أم وطفل…)
+const DOM_LBL={skin:'العناية بالبشرة',hair:'الشعر',other:'غير البشرة والشعر'};
+const HAIR_SHAM=/shampoo|\bsh\.|شامبو|conditioner|بلسم/i;
+const HAIR_TREAT=/serum|lotion|spray|tonic|ampoule|\bamp\b|foam|regaine|minox|aminexil|neogenic|kerium|anaphase|lipidium|chute|hair\s*(oil|mask|treatment|growth|loss)|سيروم|لوشن|بخاخ|زيت\s*(شعر|للشعر)|أمبولات|امبولات/i;
+function domOf_(c){ const s0=subOf_(c)[0]; const p=s0?subParent_(s0):''; if(p==='العناية بالبشرة') return 'skin'; if(p==='الشعر') return 'hair'; if(p) return 'other';
+  const cs=c.cats||[]; if(cs.includes('العناية بالبشرة')) return 'skin'; if(cs.includes('الشعر')) return 'hair'; return cs.length?'other':'skin'; }
+const notProd_=x=>!x||NONPROD_RX.test(x)||MILK_DIAPER_RX.test(x)||TOPMED_RX.test(x);
+// نوع كل صنف حسب موضوع الحالة (للعرض)
+function prodKind_(c,x){ const dom=(c.sol||{}).dom||'skin'; const r=roleOf_(x);
+  if(notProd_(x)) return {lbl:TOPMED_RX.test(x)?'دواء موضعي (لا يُحسب)'+(dom==='skin'&&r==='treat'?' · علاج':''):'لا يُحسب',cls:1};
+  if(dom==='skin'){ if(!countsAsProduct_(x,r)) return {lbl:'دواء (لا يُحسب)',cls:1}; return {lbl:r?ROLE_LBL[r]:(SUPP_RX.test(x)?'مكمل · إضافي':'منتج')}; }
+  if(dom==='hair'){ const h=hairRole_(x); if(h) return {lbl:HAIR_LBL[h]}; if(!SUPP_RX.test(x)&&MED_FORM_RX.test(x)) return {lbl:'دواء (لا يُحسب)',cls:1}; return {lbl:'إضافي'}; }
+  if(r||HAIR_SHAM.test(x)) return {lbl:'إضافي (موضوع آخر)'}; if(SUPP_RX.test(x)||!MED_FORM_RX.test(x)) return {lbl:'أساسي'}; return {lbl:'دواء (لا يُحسب)',cls:1}; }
+const HAIR_LBL={sham:'شامبو',treat:'علاج',supp:'مكمل'};
+function hairRole_(x){ if(HAIR_SHAM.test(x)) return 'sham'; if(SUPP_RX.test(x)) return 'supp'; if(HAIR_TREAT.test(x)) return 'treat'; return ''; }
 function solOf_(c){
-  const names=invNames_(c), roles={clean:0,moist:0,sun:0,treat:0}; let n=0;
-  names.forEach(x=>{ const r=roleOf_(x); if(r) roles[r]++; if(countsAsProduct_(x,r)) n++; });
-  const t=String(c.text||''); const txtC=COMPLETE_RX.test(t)&&(VERIFY_RX.test(t)||TREAT_TXT_RX.test(t));
-  const invKnown=names.length>0, pend=!invKnown&&c.aiFiles&&c.aiFiles.length>0; let lvl=0, est=false;
-  if(invKnown){ lvl=(roles.clean&&roles.moist&&roles.sun&&roles.treat)?4:n>=3?3:n>=1?1:0; }
-  else if(pend){ // قبل قراءة صورة الفاتورة: تقدير من النص فقط
-    const rx=roleRx_(), tr={}; ['sun','clean','treat','moist'].forEach(k=>{ if(rx[k].test(t)) tr[k]=1; }); const k=Object.keys(tr).length; lvl=k>=3?3:k>=1?1:0; est=true; Object.keys(tr).forEach(r=>{ roles[r]=1; }); }
+  const dom=domOf_(c); const names=invNames_(c); const t=String(c.text||'');
+  const txtC=COMPLETE_RX.test(t)&&(VERIFY_RX.test(t)||TREAT_TXT_RX.test(t));
+  const invKnown=names.length>0, pend=!invKnown&&c.aiFiles&&c.aiFiles.length>0; let lvl=0, est=false, n=0, main=0, add=0;
+  const roles={clean:0,moist:0,sun:0,treat:0}, hr={sham:0,treat:0,supp:0};
+  if(dom==='skin'){
+    names.forEach(x=>{ const r=roleOf_(x); if(r) roles[r]++; if(countsAsProduct_(x,r)) n++; });
+    if(invKnown) lvl=(roles.clean&&roles.moist&&roles.sun&&roles.treat)?4:n>=3?3:n>=1?1:0;
+    else if(pend){ const rx=roleRx_(), tr={}; ['sun','clean','treat','moist'].forEach(k=>{ if(rx[k].test(t)) tr[k]=1; }); const k=Object.keys(tr).length; lvl=k>=3?3:k>=1?1:0; est=true; Object.keys(tr).forEach(r=>{ roles[r]=1; }); }
+  } else if(dom==='hair'){
+    names.forEach(x=>{ if(NONPROD_RX.test(x)||MILK_DIAPER_RX.test(x)) return; const h=hairRole_(x); if(h) hr[h]++; if(TOPMED_RX.test(x)||/regaine|minox/i.test(x)) return; if(h||SUPP_RX.test(x)||!MED_FORM_RX.test(x)) n++; });
+    if(invKnown) lvl=(hr.sham&&hr.treat&&hr.supp)?4:n>=3?3:n>=1?1:0;
+    else if(pend){ if(HAIR_SHAM.test(t)) hr.sham=1; if(HAIR_TREAT.test(t)) hr.treat=1; if(SUPP_RX.test(t)) hr.supp=1; const k=hr.sham+hr.treat+hr.supp; lvl=k>=3?4:k>=2?3:k?1:0; if(lvl===4) lvl=3; est=true; }
+  } else {
+    names.forEach(x=>{ if(notProd_(x)) return; const r=roleOf_(x); if(r||HAIR_SHAM.test(x)){ add++; return; } if(SUPP_RX.test(x)||!MED_FORM_RX.test(x)) main++; });
+    n=main+add;
+    if(invKnown) lvl=(main>=1&&add>=1)?4:n>=3?3:n>=1?1:0;
+    else if(pend){ const rx=roleRx_(); main=SUPP_RX.test(t)?1:0; add=['sun','clean','treat','moist'].some(k=>rx[k].test(t))?1:0; lvl=(main&&add)?3:(main||add)?1:0; est=true; }
+  }
   if(lvl<2&&txtC) lvl=2;
-  return {lvl,roles,n,est,txtC,invKnown};
+  return {lvl,roles,hr,n,main,add,dom,est,txtC,invKnown};
 }
 function scoreFrom_(lvl,cf,tp,sg,W){ const B=SOL_BANDS[lvl]||SOL_BANDS[0]; let q=tp+Math.min(4,sg||0)*2.5; if(cf&CF.l1000) q+=W.l1000; else if(cf&CF.l700) q+=W.l700; if(cf&CF.routine) q+=W.routine; if(cf&CF.sci) q+=W.sci; if(cf&CF.cx) q+=W.cx; if(cf&CF.praise) q+=W.praise;
   const qm=15+W.l1000+10+W.routine+W.sci+W.cx+W.praise; return Math.round(B[0]+(B[1]-B[0])*Math.min(1,qm?q/qm:0)); }
@@ -3563,8 +3627,9 @@ function impScore(c,msgs){
   const why=[]; let cf=0; const W=scoreW(); const t=String(c.text||'');
   const L=(t.match(/[\p{L}\p{N}]/gu)||[]).length;
   const sol=solOf_(c); c.sol=sol; c.lvl=sol.lvl;
-  why.push('مستوى الحل: '+SOL_LBL[sol.lvl]+(sol.est?' (تقديري قبل قراءة صورة الفاتورة)':''));
-  if(sol.invKnown||sol.est) why.push(Object.keys(ROLE_LBL).map(k=>ROLE_LBL[k]+(sol.roles[k]?' ✔':' ✖')).join(' · ')+(sol.invKnown?' · '+sol.n+' منتج':''));
+  why.push('مستوى الحل: '+SOL_LBL[sol.lvl]+(sol.lvl===4?' ('+LVL4_DOM[sol.dom]+')':'')+(sol.est?' (تقديري قبل قراءة صورة الفاتورة)':''));
+  why.push('الموضوع الأساسي: '+DOM_LBL[sol.dom]);
+  if(sol.invKnown||sol.est) why.push(sol.dom==='hair'?Object.keys(HAIR_LBL).map(k=>HAIR_LBL[k]+(sol.hr[k]?' ✔':' ✖')).join(' · '):sol.dom==='other'?'منتجات أساسية '+sol.main+' · إضافية '+sol.add:Object.keys(ROLE_LBL).map(k=>ROLE_LBL[k]+(sol.roles[k]?' ✔':' ✖')).join(' · ')+(sol.invKnown?' · '+sol.n+' منتج':''));
   if(sol.txtC&&sol.lvl===2) why.push('الصيدلي تأكد من روتين العميل وأكمله');
   const tp=L>=400?15:L>=200?10:L>=80?5:L?2:0; if(L>=1000) cf|=CF.l1000; else if(L>=700) cf|=CF.l700;
   why.push(L>=700?'نص مفصّل جدًا':L>=200?'نص مفصّل':L>=80?'نص متوسط':L?'نص قصير':'بدون نص');
@@ -3685,7 +3750,7 @@ function draftFromInbox_(x,dt){
   const d=existing?JSON.parse(JSON.stringify(existing)):newDraft();
   if(!existing) d.localKey='n'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
   d.month=(x.date||'').slice(0,7)||d.month; d.pharmacist=!badName_(x.pharmacist)?x.pharmacist:(!badName_(x.sender)?x.sender:(x.pharmacist||x.sender||'')); d.branch=x.branch||''; d.supervisor=x.supervisor||x.mention||''; if(x.supervisor) d.hcFill=1; d.summary=dt.text||'';
-  d.inboxId=x.id; d.source='واتساب '+x.group+' · '+x.date+' '+x.time+' · '+x.sender+((dt.atts||[]).some(a=>a.missing)?' · ⚠️ مرفق ناقص في التصدير':'');
+  d.inboxId=x.id; d.inboxKey=x.key||''; d.source='واتساب '+x.group+' · '+x.date+' '+x.time+' · '+x.sender+((dt.atts||[]).some(a=>a.missing)?' · ⚠️ مرفق ناقص في التصدير':'');
   const codeToBadge={}; activeBadges().forEach(b=>(b.qs||[]).forEach(q=>{codeToBadge[q.c]=b.key;})); d.aiCodes=[];
   (ai.suggestions||[]).forEach(s=>{ d.answers[s.code]=s.answer; d.aiCodes.push(s.code); const bk=codeToBadge[s.code]; if(bk&&s.quote&&!d.reasons[bk]) d.reasons[bk]=s.quote; });
   if((ai.suggestions||[]).length){
@@ -4653,7 +4718,7 @@ function mountEditor(){
   $('#main').innerHTML=
   '<div class="bar"><button class="btn" id="btnBack">← الحالات</button><span class="mono" style="font-weight:600" id="cid">'+(d.id?esc(d.id):'رقم جديد (يُعطى عند أول حفظ)')+'</span><span class="sp"></span><span class="save" id="saveState"></span></div>'+
   editedBanner(d)+
-  '<div class="ed"><div class="ed-main">'+
+  '<div class="ed"><div class="ed-main"><div class="ed2"><div class="ed2-case">'+
   '<section class="panel sec"><h3>بيانات الحالة</h3><div class="grid">'+
   '<label class="f">الشهر<input type="month" data-f="month" value="'+esc(d.month)+'"></label>'+
   '<label class="f">اسم الصيدلي<input type="text" data-f="pharmacist" value="'+esc(d.pharmacist)+'"></label>'+
@@ -4664,10 +4729,29 @@ function mountEditor(){
   '<label class="f" style="margin-top:12px">ملخص الحالة (كما كتبه الصيدلي)<textarea data-f="summary" rows="4">'+esc(d.summary)+'</textarea></label>'+
   (S.settings.aiEnabled?'<div class="actions" style="margin-top:10px"><button class="btn" id="btnAiSuggest"'+(locked()?' disabled':'')+'>✨ اقترح الإجابات من النص أعلاه</button><label class="btn" id="invPick"'+(locked()?' hidden':'')+'>📎 إرفاق الفاتورة (اختياري)<input type="file" id="invFile" accept="image/jpeg,image/png,image/webp,application/pdf" hidden></label><span class="note" id="invName"></span><span class="note" id="aiStatus" style="margin-inline-start:8px"></span></div><div id="aiErrBox"></div><p class="note" style="margin-top:4px">الفاتورة صورة أو PDF، تُقرأ مع النص عند الضغط على «اقترح» ولا تُحفظ في المنصة. يُرجى قصّ اسم العميل ورقم جواله قبل الرفع.</p><div id="invBox">'+invBoxHtml(d)+'</div><p class="note" style="margin-top:6px">يقترح الذكاء الاصطناعي إجابات الأسئلة، ونقطة البداية والنتيجة ووصف الموقف في محتوى البوست أدناه — كل ذلك من نص ملخص الحالة، ويملأ فقط ما هو فارغ. راجع كل شيء قبل الحفظ.</p>':(adminMode()?'<p class="note" style="margin-top:10px">اقتراح الإجابات بالذكاء الاصطناعي غير متاح حاليًا. راجع تبويب «السجل والإعدادات».</p>':''))+
   (d.source?'<p class="note" style="color:var(--brand)">📥 مستوردة من '+esc(d.source)+'</p>'+(String(d.summary||'').trim()?'':'<p class="note" style="color:var(--warn)">⚠️ نص الحالة غير موجود في ملف التصدير (واتساب الآيفون لا يصدّر النص المكتوب مع ملف PDF). انسخه من المجموعة إلى «ملخص الحالة».</p>'):'')+'<p class="note">المقيّم: <b>'+esc(d.reviewerName||S.me.name)+'</b></p></section>'+
-  '<section class="panel sec"><h3>محتوى البوست</h3><p class="note" style="margin:0 0 10px">يُستخدم لتوليد بوست الشهر بعد الاعتماد. اكتب ما حدث فعلًا كما في نص الحالة.</p><div class="grid"><label class="f">نقطة البداية<textarea data-f="startPoint" rows="2">'+esc(d.startPoint||'')+'</textarea></label><label class="f">النتيجة<textarea data-f="outcome" rows="2">'+esc(d.outcome||'')+'</textarea></label></div><h3 style="margin-top:14px">وصف الموقف (نقاط محددة من الحالة، حتى 6)</h3><div id="lSituation">'+listHtml('situation')+'</div><h3 style="margin-top:14px">المنتجات المذكورة (حتى 8)</h3><div id="lProducts">'+listHtml('products')+'</div></section>'+cards+'</div>'+
+  '<section class="panel sec" id="edInv" hidden></section><section class="panel sec"><h3>محتوى البوست</h3><p class="note" style="margin:0 0 10px">يُستخدم لتوليد بوست الشهر بعد الاعتماد. اكتب ما حدث فعلًا كما في نص الحالة.</p><div class="grid"><label class="f">نقطة البداية<textarea data-f="startPoint" rows="2">'+esc(d.startPoint||'')+'</textarea></label><label class="f">النتيجة<textarea data-f="outcome" rows="2">'+esc(d.outcome||'')+'</textarea></label></div><h3 style="margin-top:14px">وصف الموقف (نقاط محددة من الحالة، حتى 6)</h3><div id="lSituation">'+listHtml('situation')+'</div><h3 style="margin-top:14px">المنتجات المذكورة (حتى 8)</h3><div id="lProducts">'+listHtml('products')+'</div></section></div><div class="ed2-qs">'+cards+'</div></div></div>'+
   '<aside class="ed-rail" id="rail"></aside></div>';
   $('#main').querySelectorAll('[data-reason]').forEach(t=>{t.value=(d.reasons||{})[t.dataset.reason]||'';});
 }
+// الفاتورة في شاشة التقييم (من جلسة الاستيراد على نفس الجهاز) + شريط التقدم + «حفظ والتالي»
+function edCase_(){ const d=S.draft; if(!d||!d.inboxId) return null; const x=(S.inbox||[]).find(o=>o.id===d.inboxId); const k=(x&&x.key)||d.inboxKey; if(!k) return null; return impState().cases.find(c=>c.key===k)||null; }
+function edQueue_(){ return Object.keys(getDrafts()).filter(k=>!getDrafts()[k].id).sort(); }
+function edMountExtra_(){
+  const d=S.draft; if(!d) return; const box=$('#edInv');
+  if(box){ const c=edCase_();
+    if(c){ box.hidden=false; const items=invNames_(c);
+      box.innerHTML='<h3>الفاتورة</h3><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+lvlBadge_(c,'')+'<span class="pill p-na">'+esc(DOM_LBL[(c.sol||{}).dom||'skin'])+'</span></div>'+rolesHtml_(c)+
+        '<div class="attimgs" id="edInvImgs">'+(c.src&&!c.src.stub?'<p class="note">جارٍ تحميل الفاتورة…</p>':'<p class="note">ارفع ملف ZIP الجوال في «استيراد الواتساب» لعرض صورة الفاتورة هنا.</p>')+'</div>'+
+        (items.length?'<ul style="margin:6px 0 0;padding-inline-start:18px;line-height:1.9">'+items.map(n=>{ const k=prodKind_(c,n); return '<li'+(k.cls?' style="color:#6B7280"':'')+'>'+esc(n)+(k.lbl?' <span class="note" style="margin:0">— '+k.lbl+'</span>':'')+'</li>'; }).join('')+'</ul>':'');
+      const cur=d.localKey||d.id; attImgs_(c,$('#edInvImgs'),()=>S.draft&&(S.draft.localKey||S.draft.id)===cur); }
+    else { box.hidden=true; } }
+  const bar=$('#main .bar'); if(bar&&!d.id){ const Q=edQueue_(); if(Q.length>1){ const all=getDrafts(); const done=Q.filter(k=>{ try{ return !issuesFor(null,all[k],false).length; }catch(e){ return false; } }).length;
+      let pe=$('#edProg'); if(!pe){ pe=document.createElement('span'); pe.id='edProg'; pe.className='edprog'; bar.appendChild(pe); }
+      pe.innerHTML='<span class="track"><i style="width:'+Math.round(done/Q.length*100)+'%"></i></span><span class="note" style="margin:0;white-space:nowrap">جاهزة '+done+' من '+Q.length+'</span><button class="btn cta" type="button" id="btnEdNext">حفظ والتالي ←</button>'; } }
+}
+const mountEditor0_=mountEditor; mountEditor=function(){ mountEditor0_.apply(this,arguments); try{ edMountExtra_(); }catch(e){} };
+const refreshEditor0_=refreshEditor; refreshEditor=function(){ refreshEditor0_.apply(this,arguments); document.querySelectorAll('#main [data-row]').forEach(r=>r.classList.toggle('aisug',!!(S.aiCodes&&S.aiCodes.has(r.dataset.row)))); };
+function edNext_(){ const d=S.draft; if(!d) return; if(!locked()) putDraft(d); const Q=edQueue_(); const cur=d.localKey; const i=Q.indexOf(cur); const nx=Q.length?Q[(i+1)%Q.length]:null; if(!nx||nx===cur) return toast('لا توجد مسودة أخرى.'); toast('✔ حُفظت.'); openDraft(nx); }
 function pillFor(v){return v==='Met'?'p-ok':v==='Not Met'?'p-no':v==='Incomplete'?'p-wait':'p-na';}
 function refreshEditor(){
   const d=S.draft; if(!d||!$('#rail')) return;
@@ -5557,8 +5641,9 @@ document.addEventListener('click',e=>{
   if(t.dataset&&t.dataset.dropdraft){ dropDraft(t.dataset.dropdraft); S.inboxOpen=true; toast('أُرجعت المسودة إلى صندوق الوارد.'); return updateCases(); }
   if(t.id==='btnSubmitAllDrafts') return submitAllDrafts();
   if(t.id==='btnAiPre') return impAiPre_();
-  if(t.id==='impSideX'){ const sd=$('#impSide'); if(sd){ sd.hidden=true; sd.innerHTML=''; } impState().cur=null; return impRenderRows(); }
-  if(t.dataset&&t.dataset.impsidesel){ const I=impState(), k=t.dataset.impsidesel; I.sel.has(k)?I.sel.delete(k):I.sel.add(k); updateImport(); const c=I.cases.find(x=>x.key===k); const sd=$('#impSide'); if(c&&sd) impSide_(c,sd); return; }
+  if(t.id==='btnEdNext') return edNext_();
+  if(t.id==='impSideX'){ impState().cur=null; return impRenderRows(); }
+  if(t.dataset&&t.dataset.impsidesel){ const I=impState(), k=t.dataset.impsidesel; I.sel.has(k)?I.sel.delete(k):I.sel.add(k); return updateImport(); }
   if(t.dataset&&t.dataset.impdetailfull) return impDetail(t.dataset.impdetailfull,true);
   if(t.id==='btnAiPreStop'){ const A=impState().aiPre; if(A) A.stop=true; return; }
   if(t.id==='btnRolesReset'){ S.rolesEdit=Object.assign({},ROLE_DEFAULT); return updateRoles(); }
