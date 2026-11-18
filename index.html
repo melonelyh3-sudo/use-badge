@@ -631,6 +631,9 @@ const TR_EXACT = {
   "تصغير": "Decrease",
   "تكبير": "Increase",
   "مقاسات البوست": "Poster Scaling",
+  "+ إضافة رابط": "+ Add link",
+  "حفظ الروابط": "Save links",
+  "الوصف": "Description",
   "🌐 صفحة الشهر للصيادلة": "🌐 Monthly page for pharmacists",
   "حفظ الأسماء": "Save names",
   "🔄 تحديث الزيارات": "🔄 Refresh visits",
@@ -2164,7 +2167,7 @@ const DEFAULT_BADGES=[
 ];
 const DEFAULT_STRENGTH={USE:'كشف الاحتياج الحقيقي',OFFERS:'الاستفادة من العروض',COMPLETE:'تقديم حل متكامل',CROSS:'البيع المتقاطع المناسب',WASFATY:'توظيف وصفتي'};
 const STAGES=['selected','design','final','sent','published'];
-const SET_DEFAULT={importCats:null,importSubs:null,scoreSigs:null,scoreW:null,importRoles:null,themes:null,arNames:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
+const SET_DEFAULT={importCats:null,importSubs:null,scoreSigs:null,scoreW:null,importRoles:null,themes:null,arNames:null,pageLinks:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
 const now_=()=>new Date().toISOString();
 const today_=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const rid=()=>Math.random().toString(36).slice(2,10);
@@ -2755,6 +2758,7 @@ const ACTIONS={
       s.scoreSigs=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
     if('importCats' in p&&p.importCats!=null){ const L=Array.isArray(p.importCats)?p.importCats:null; if(!L||L.length>30) throw err('قائمة التصنيفات غير صالحة.');
       s.importCats=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
+    if('pageLinks' in p){ const seen=new Set(); const L=(Array.isArray(p.pageLinks)?p.pageLinks:[]).slice(0,80).map(x=>({g:String((x||{}).g||'').trim().slice(0,12),label:String((x||{}).label||'').replace(/\s+/g,' ').trim().slice(0,60)})).filter(x=>{ if(!/^[A-Za-z0-9_-]{1,12}$/.test(x.g)||seen.has(x.g.toLowerCase())) return false; seen.add(x.g.toLowerCase()); return true; }); s.pageLinks=L; }
     if('arNames' in p){ const o={}; Object.entries(p.arNames||{}).slice(0,1500).forEach(([k,v])=>{ k=String(k||'').slice(0,80); v=String(v||'').replace(/\s+/g,' ').trim().slice(0,60); if(k&&v&&/[\u0600-\u06FF]/.test(v)) o[k]=v; }); s.arNames=Object.keys(o).length?o:null; }
     if('themes' in p){ const o={}; Object.entries(p.themes||{}).slice(0,36).forEach(([m,v])=>{ if(/^\d{4}-\d{2}$/.test(m)&&/^(sub|cat):.{1,60}$/.test(String(v||''))) o[m]=String(v).slice(0,64); }); s.themes=Object.keys(o).length?o:null; }
     if('importRoles' in p){ if(p.importRoles==null) s.importRoles=null; else { const o={}; ['clean','moist','sun','treat'].forEach(k=>{ const v=String((p.importRoles||{})[k]||'').trim().slice(0,1500); if(v){ try{ new RegExp(v,'i'); }catch(e){ throw err('صيغة كلمات «'+k+'» غير صالحة.'); } o[k]=v; } }); s.importRoles=o; } }
@@ -5571,14 +5575,38 @@ function pNamesSave_(){ const M=Object.assign({},(S.settings||{}).arNames||{}); 
 const PAGE_GROUPS=IMP_GROUPS;
 const pageName_=m=>'posts-'+m+'.html', pageId_=m=>'posts-'+m;
 function pageBase_(){ try{ const u=new URL(location.href); u.search=''; u.hash=''; return u.href.replace(/[^\/]*$/,''); }catch(e){ return ''; } }
+function pLinks_(){ const L=(S.settings||{}).pageLinks; return Array.isArray(L)?L:PAGE_GROUPS.map(g=>({g,label:'مجموعة '+g})); }
+// نسخ مضمون: الطريقة القديمة أولًا (تعمل داخل نقرة المستخدم حتى لو منع المتصفح الحافظة الحديثة)، ثم الحديثة، وإلا يحدَّد الرابط لنسخه يدويًا
+function copyText_(v,sel){ let ok=false; try{ const ta=document.createElement('textarea'); ta.value=v; ta.setAttribute('readonly',''); ta.style.cssText='position:fixed;top:0;left:0;opacity:0;pointer-events:none'; document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0,v.length); ok=document.execCommand('copy'); ta.remove(); }catch(e){}
+  if(ok) return toast('✔ نُسخ الرابط.');
+  const manual=()=>{ if(sel){ try{ const r=document.createRange(); r.selectNodeContents(sel); const w=getSelection(); w.removeAllRanges(); w.addRange(r); }catch(e){} } toast('حُدِّد الرابط — اضغط Ctrl+C لنسخه.',true); };
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(v).then(()=>toast('✔ نُسخ الرابط.')).catch(manual); }catch(e){} manual(); }
+function plCollect_(){ const D=S.pLinksDraft; if(!D) return; document.querySelectorAll('[data-pl-label]').forEach(i=>{ const o=D[+i.dataset.plLabel]; if(o) o.label=i.value; }); document.querySelectorAll('[data-pl-g]').forEach(i=>{ const o=D[+i.dataset.plG]; if(o) o.g=i.value.trim(); }); }
+function plAdd_(){ plCollect_(); const D=S.pLinksDraft; const used=new Set(D.map(x=>String(x.g).toLowerCase())); let k=1; while(used.has('l'+k)) k++; D.push({g:'L'+k,label:''}); S.plVer=(S.plVer||0)+1; pPageRender_(); const ins=document.querySelectorAll('[data-pl-label]'); if(ins.length) ins[ins.length-1].focus(); }
+function plDel_(i){ plCollect_(); const D=S.pLinksDraft, o=D[i]; if(!o) return; if(!confirm('حذف الرابط «'+(o.label||o.g)+'»؟ الزيارات المسجلة له تبقى محفوظة.')) return; D.splice(i,1); S.plVer=(S.plVer||0)+1; pPageRender_(); }
+function plSave_(){ plCollect_(); const D=S.pLinksDraft||[]; const seen=new Set(); for(const o of D){ if(!/^[A-Za-z0-9_-]{1,12}$/.test(o.g)) return toast('الرمز «'+o.g+'» غير صالح: حروف إنجليزية أو أرقام فقط (حتى 12).',true); const k=o.g.toLowerCase(); if(seen.has(k)) return toast('الرمز «'+o.g+'» مكرر.',true); seen.add(k); }
+  if(S.busy) return; S.busy=true; call('saveSettings',{pageLinks:D.map(o=>({g:o.g,label:o.label}))}).then(s2=>{ S.settings=Object.assign({},S.settings,s2); S.busy=false; S.pLinksDraft=null; S.plVer=(S.plVer||0)+1; pPageRender_(); toast('✔ حُفظت الروابط.'); }).catch(e=>{ S.busy=false; toast(e.message,true); }); }
 function pPageRender_(){ const box=$('#pPage'); if(!box) return; if(!adminMode()||!S.postsMonth){ box.innerHTML=''; return; }
-  const m=S.postsMonth; if(box.dataset.m===m&&box.dataset.v===String(S.pViewsAt||'')) return; box.dataset.m=m; box.dataset.v=String(S.pViewsAt||'');
-  const base=pageBase_()+pageName_(m); const V=(S.pViews||[]).filter(x=>x.page===pageId_(m)); const vg=g=>V.find(x=>x.g===g)||{visits:0,unique:0};
-  const tv=V.reduce((a,x)=>a+x.visits,0), tu=V.reduce((a,x)=>a+x.unique,0);
-  box.innerHTML='<details class="panel sec" style="margin:0 0 12px"><summary style="cursor:pointer;font-weight:700">🌐 روابط صفحة '+esc(monthLabel(m))+' وزياراتها'+(S.pViews?' <span class="note" style="margin:0;font-weight:400">('+tv+' زيارة · '+tu+' جهاز)</span>':'')+'</summary>'+
-    '<ol class="note" style="margin:8px 0;line-height:1.9;padding-inline-start:20px"><li>اضغط «🌐 صفحة الشهر للصيادلة» فوق؛ يتنزّل ملف <b dir="ltr">'+esc(pageName_(m))+'</b> (فوق: أفضل المشاركات، وتحت: باقي المعتمدة).</li><li>ارفعه على GitHub في نفس مكان <b>index.html</b> بنفس الاسم.</li><li>أرسل لكل مجموعة رابطها من الجدول؛ الزيارات تُحسب لكل مجموعة.</li></ol>'+
-    '<div class="tw"><table><thead><tr><th>المجموعة</th><th>الرابط</th><th></th><th>زيارات</th><th>أجهزة</th></tr></thead><tbody>'+PAGE_GROUPS.map(g=>{ const u=base+'?g='+g; const v=vg(g); return '<tr><td><b>'+g+'</b></td><td dir="ltr" style="text-align:start;font-size:12px;word-break:break-all">'+esc(u)+'</td><td><button class="btn" type="button" data-copylink="'+esc(u)+'" style="min-height:30px;padding:2px 10px">نسخ</button></td><td class="num">'+(S.pViews?v.visits:'—')+'</td><td class="num">'+(S.pViews?v.unique:'—')+'</td></tr>'; }).join('')+'</tbody></table></div>'+
-    '<div class="actions" style="margin-top:8px"><button class="btn" type="button" id="btnPViews">🔄 تحديث الزيارات</button></div><p class="note" style="margin:6px 0 0">«أجهزة» = عدد الأجهزة المختلفة تقريبًا (الجهاز نفسه لا يُحسب مرتين). تحتاج نسخة Code.gs الجديدة.</p></details>'; }
+  const m=S.postsMonth; const key=m+'|'+(S.pViewsAt||'')+'|'+(S.plVer||0)+'|'+JSON.stringify((S.settings||{}).pageLinks||null); if(box.dataset.k===key) return; box.dataset.k=key;
+  const wasOpen=!!(box.querySelector('details')||{}).open;
+  if(!S.pLinksDraft) S.pLinksDraft=pLinks_().map(o=>({g:o.g,label:o.label}));
+  const D=S.pLinksDraft, base=pageBase_()+pageName_(m); const V=(S.pViews||[]).filter(x=>x.page===pageId_(m)); const vg=g=>V.find(x=>x.g.toLowerCase()===String(g).toLowerCase())||{visits:0,unique:0};
+  const tv=V.reduce((a,x)=>a+x.visits,0), tu=V.reduce((a,x)=>a+x.unique,0); const known=new Set(D.map(o=>String(o.g).toLowerCase())); const other=V.filter(x=>!known.has(x.g.toLowerCase()));
+  const inp='border:1.5px solid var(--line);border-radius:7px;padding:6px 8px';
+  box.innerHTML='<details class="panel sec" style="margin:0 0 12px"'+(wasOpen?' open':'')+'><summary style="cursor:pointer;font-weight:700">🌐 روابط صفحة '+esc(monthLabel(m))+' وزياراتها'+(S.pViews?' <span class="note" style="margin:0;font-weight:400">('+tv+' زيارة · '+tu+' جهاز)</span>':'')+'</summary>'+
+    '<ol class="note" style="margin:8px 0;line-height:1.9;padding-inline-start:20px"><li>اضغط «🌐 صفحة الشهر للصيادلة» فوق؛ يتنزّل ملف <b dir="ltr">'+esc(pageName_(m))+'</b> (فوق: أفضل المشاركات، وتحت: باقي المعتمدة).</li><li>ارفعه على GitHub في نفس مكان <b>index.html</b> بنفس الاسم.</li><li>أرسل كل رابط لجهته (مجموعة، إيميل، واتساب…)؛ الزيارات تُحسب لكل رابط لحاله.</li></ol>'+
+    '<div class="tw"><table><thead><tr><th>الوصف</th><th>الرمز</th><th>الرابط</th><th></th><th>زيارات</th><th>أجهزة</th><th></th></tr></thead><tbody>'+
+    D.map((o,i)=>{ const ok=/^[A-Za-z0-9_-]{1,12}$/.test(o.g); const u=base+'?g='+encodeURIComponent(o.g); const v=vg(o.g);
+      return '<tr><td><input type="text" data-pl-label="'+i+'" value="'+esc(o.label||'')+'" placeholder="مثال: مجموعة D1 / إيميل المشرفين / واتساب" style="width:100%;min-width:170px;'+inp+'"></td>'+
+        '<td><input type="text" dir="ltr" data-pl-g="'+i+'" value="'+esc(o.g)+'" maxlength="12" title="حروف إنجليزية أو أرقام؛ تظهر في آخر الرابط" style="width:78px;'+inp+'"></td>'+
+        '<td dir="ltr" class="pl-url" style="text-align:start;font-size:12px;word-break:break-all">'+(ok?esc(u):'<span style="color:var(--bad)">رمز غير صالح</span>')+'</td>'+
+        '<td><button class="btn" type="button" data-copylink="'+esc(u)+'"'+(ok?'':' disabled')+' style="min-height:30px;padding:2px 10px">نسخ</button></td>'+
+        '<td class="num">'+(S.pViews?v.visits:'—')+'</td><td class="num">'+(S.pViews?v.unique:'—')+'</td>'+
+        '<td><button class="btn" type="button" data-pl-del="'+i+'" title="حذف الرابط" style="min-height:30px;padding:2px 8px">🗑</button></td></tr>'; }).join('')+
+    other.map(x=>'<tr style="opacity:.7"><td class="note" style="margin:0">رابط غير موجود في القائمة</td><td dir="ltr">'+esc(x.g)+'</td><td></td><td></td><td class="num">'+x.visits+'</td><td class="num">'+x.unique+'</td><td></td></tr>').join('')+
+    '</tbody></table></div>'+
+    '<div class="actions" style="margin-top:8px"><button class="btn" type="button" id="btnPlAdd">+ إضافة رابط</button><button class="btn primary" type="button" id="btnPlSave">حفظ الروابط</button><button class="btn" type="button" id="btnPViews">🔄 تحديث الزيارات</button></div>'+
+    '<p class="note" style="margin:6px 0 0">الروابط نفسها تُستخدم لكل الأشهر. بعد تعديل الوصف أو الرمز اضغط «حفظ الروابط». «أجهزة» = عدد الأجهزة المختلفة تقريبًا.</p></details>'; }
 async function pViewsLoad_(){ if(!BACKEND_URL) return toast('الزيارات تعمل على المنصة المنشورة فقط.',true); try{ const r=await bk('views',{}); S.pViews=Array.isArray(r)?r:[]; S.pViewsAt=Date.now(); pPageRender_(); const b=$('#pPage details'); if(b) b.open=true; }catch(e){ toast(/unknown op/.test(e.message||'')?'حدّث Code.gs بالنسخة الجديدة ثم انشره (Deploy) لتظهر الزيارات.':e.message,true); } }
 function pageHtml_(m,top,rest,logo){
   const mEn=(()=>{ const [y,mo]=m.split('-').map(Number); return new Date(y,mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}); })();
@@ -6171,7 +6199,10 @@ document.addEventListener('click',e=>{
   if(t.id==='btnPViews') return pViewsLoad_();
   if(t.id==='btnArSave') return pNamesSave_();
   if(t.id==='btnArAi') return pNamesAi_();
-  if(t.dataset&&t.dataset.copylink){ const v=t.dataset.copylink; (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast('✔ نُسخ الرابط.')).catch(()=>{ prompt('انسخ الرابط:',v); }); return; }
+  if(t.dataset&&t.dataset.copylink){ const tr=t.closest('tr'); return copyText_(t.dataset.copylink,tr&&tr.querySelector('.pl-url')); }
+  if(t.id==='btnPlAdd') return plAdd_();
+  if(t.id==='btnPlSave') return plSave_();
+  if(t.dataset&&t.dataset.plDel!=null) return plDel_(+t.dataset.plDel);
   if(t.dataset&&t.dataset.pview){ S.postsView=t.dataset.pview; S.postsSig=''; return updatePosts(); }
   if(t.dataset&&t.dataset.pposts){ S.postBackTo='posts'; return openPost(t.dataset.pposts); }
   if(t.dataset&&t.dataset.papprove) return postsDecide([t.dataset.papprove],'approve');
