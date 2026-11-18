@@ -3700,7 +3700,7 @@ const impSess=(()=>{ const DB='use_imp_session', ST='s'; const expired=t=>{ cons
     if(S.sessNoRemote) return loc; const r=await remoteLatest();
     if(r&&(!loc||r.savedAt>loc.at+1000)&&!expired(r.savedAt)) return {when:when(r.savedAt),n:r.n,from:r.from,to:r.to,at:r.savedAt,month:r.month,by:r.by,remote:true};
     return loc; }
-  async function load(){ try{ const x=await info(); if(x&&x.remote){ const ok=await pullRemote(x.month); if(!ok&&!(await tx('readonly',st=>st.get('data')))) return false; } }catch(e){ console.warn('session pull',e); }
+  async function load(){ let fromRemote=false; try{ const x=await info(); if(x&&x.remote){ fromRemote=await pullRemote(x.month); if(!fromRemote&&!(await tx('readonly',st=>st.get('data')))) return false; } }catch(e){ console.warn('session pull',e); }
     const d=await tx('readonly',st=>st.get('data')); if(!d||d.user!==uid()) return false; const u=await tx('readonly',st=>st.get('ui'));
     const I=impState(); const gm={}, stubs={}; Object.keys(d.groupMsgs||{}).forEach(g=>{ const msgs=(d.groupMsgs[g].msgs||[]).map(m=>Object.assign({},m,{t:new Date(m.t)})); gm[g]={msgs,names:d.groupMsgs[g].names||{}}; stubs[g]={stub:true,group:g,zip:null,byBase:{},media:false,msgs,names:gm[g].names,file:{name:'(جلسة محفوظة)',size:0}}; });
     I.cases=d.cases.map(o=>{ const c=Object.assign({},o,{t:new Date(o.t),lastT:new Date(o.lastT||o.t)}); c.src=stubs[c.group]||{stub:true,group:c.group,zip:null,byBase:{}}; c.aiFiles=(o.aiIdx||[]).map(i=>c.atts[i]).filter(Boolean); delete c.aiIdx; return c; });
@@ -3708,7 +3708,11 @@ const impSess=(()=>{ const DB='use_imp_session', ST='s'; const expired=t=>{ cons
     I.groupMsgs=d.groupMsgs||{}; I.groupNames=d.groupNames||{}; I.from=d.from; I.to=d.to; I.plat=d.plat||[]; I.ranges=d.ranges||(d.from&&d.to?[[d.from,d.to]]:[]); I.span=d.span; I.extractMsg=d.extractMsg||''; I.dropped=d.dropped||[]; I.diag=d.diag||{}; I.an=null; S._gmemo={};
     impDupMark_(I.cases);
     if(u&&u.user===uid()){ I.f={cats:new Set(u.f.cats),groups:new Set(u.f.groups),att:new Set(u.f.att),tier:new Set(u.f.tier),inv:!!u.f.inv,newOnly:!!u.f.newOnly,q:u.f.q||''}; I.sort=u.sort||I.sort; I.sel=new Set((u.sel||[]).filter(k=>I.cases.some(c=>c.key===k))); I.topN=u.topN; I.topCats=new Set(u.topCats||[]); I.done=u.done||{}; } else I.sel=new Set();
-    I.restored={when:when(d.savedAt),linked:{},note:'',by:d.remote&&d.remote.by}; I.sessInfo=null; I.cloudSess='ok'; I.cloudAt=d.savedAt; return true; }
+    I.restored={when:when(d.savedAt),linked:{},note:'',by:d.remote&&d.remote.by}; I.sessInfo=null;
+    // جلسة موجودة على هذا الجهاز فقط (أو أحدث من نسخة الخادم): تُرفع للخادم مباشرة ليراها الجميع
+    if(fromRemote||(d.remote&&!S.sessNoRemote)){ I.cloudSess='ok'; I.cloudAt=d.savedAt; }
+    else { I.cloudSess=''; remoteLatest().then(r=>{ if(!r||r.month!==monthOf(d)||r.savedAt<d.savedAt-1000){ const raw=Object.assign({},d,{cases:d.cases.map(c=>{ const o=Object.assign({},c); delete o.src; delete o.aiFiles; return o; })}); tx('readonly',st=>st.get('data')).then(orig=>pushRemote(orig||raw,uiOut(I))); } else { I.cloudSess='ok'; I.cloudAt=r.savedAt; updateImportSoft_(); } }).catch(()=>{}); }
+    return true; }
   async function clear(){ try{ await tx('readwrite',st=>{ st.delete('data'); st.delete('ui'); }); }catch(e){} }
   function updateImportSoft_(){ try{ const b=document.querySelector('#impCloudSess'); if(b) b.outerHTML=impCloudBadge_(); }catch(e){} }
   return {save,saveUi,info,load,clear};
