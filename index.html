@@ -631,6 +631,15 @@ const TR_EXACT = {
   "تصغير": "Decrease",
   "تكبير": "Increase",
   "مقاسات البوست": "Poster Scaling",
+  "🌐 صفحة الشهر للصيادلة": "🌐 Monthly page for pharmacists",
+  "حفظ الأسماء": "Save names",
+  "🔄 تحديث الزيارات": "🔄 Refresh visits",
+  "✨ اقتراح الأسماء الفارغة بالذكاء الاصطناعي": "✨ Suggest empty names with AI",
+  "حجم صور المنتجات (الكل)": "Product images size (all)",
+  "حجم الشارات": "Badges size",
+  "ترتيب المنتجات وأحجامها": "Product order & sizes",
+  "إعادة ضبط الكل": "Reset all",
+  "بالترتيب كما تظهر في البوست من اليسار لليمين.": "In the order shown on the post, left to right.",
   "حجم الخط": "Font Size",
   "حجم صور المنتجات والشارات": "Product & Badge Image Size",
   "إعادة الضبط (100%)": "Reset (100%)",
@@ -2155,7 +2164,7 @@ const DEFAULT_BADGES=[
 ];
 const DEFAULT_STRENGTH={USE:'كشف الاحتياج الحقيقي',OFFERS:'الاستفادة من العروض',COMPLETE:'تقديم حل متكامل',CROSS:'البيع المتقاطع المناسب',WASFATY:'توظيف وصفتي'};
 const STAGES=['selected','design','final','sent','published'];
-const SET_DEFAULT={importCats:null,importSubs:null,scoreSigs:null,scoreW:null,importRoles:null,themes:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
+const SET_DEFAULT={importCats:null,importSubs:null,scoreSigs:null,scoreW:null,importRoles:null,themes:null,arNames:null,bestCount:3,sep:true,reqQuote:true,reqBadge:true,aiOn:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'};
 const now_=()=>new Date().toISOString();
 const today_=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const rid=()=>Math.random().toString(36).slice(2,10);
@@ -2717,9 +2726,19 @@ const ACTIONS={
     return {featured:on,postStage:d.postStage};
   }); },
   // مقاس نصوص وصور البوست لكل حالة (85% – 115%)
+  aiArNames: async(u,p)=>{ needAdmin_(u); const names=(Array.isArray(p.names)?p.names:[]).map(v=>String(v||'').slice(0,80)).filter(Boolean).slice(0,80); if(!names.length) return {};
+    const schema={type:'object',properties:{items:{type:'array',items:{type:'object',properties:{en:{type:'string'},ar:{type:'string'}},required:['en','ar']}}},required:['items']};
+    const prompt=['هذه أسماء صيادلة ومشرفين يعملون في صيدلية بالسعودية (أغلبهم مصريون وسعوديون) مكتوبة بحروف إنجليزية.',
+      'اكتب كل اسم بالعربي كما يكتبه صاحبه عادةً (مثال: Mohamed → محمد، Abdelfattah → عبدالفتاح، Elsayed → السيد، Al-Anazi → العنزي).',
+      'لا تضف ألقابًا مثل د. أو دكتور، ولا تترجم المعنى، واحتفظ بعدد الكلمات وترتيبها. أعد en كما هو حرفيًا.',
+      'الأسماء:', names.map((n,i)=>(i+1)+'. '+n).join('\n')].join('\n');
+    const obj=await AI.analyze(prompt,schema,null); const out={}; ((obj&&obj.items)||[]).forEach(x=>{ const en=String((x||{}).en||'').trim(), ar=String((x||{}).ar||'').replace(/\s+/g,' ').trim().slice(0,60); if(en&&ar&&/[\u0600-\u06FF]/.test(ar)) out[en]=ar; }); return out; },
   setPostScale:(u,p)=>withLock_(async()=>{ const d=await decOf_(p.id); if(!d||!(d.status==='Approved'||(u.role==='admin'&&d.status==='Pending'))) throw err('البوست يخص الحالات المعتمدة فقط.');
     const c=await Store.get('cases',p.id); if(u.role!=='admin'&&!(c&&c.reviewerId===u.id)) throw err('غير مسموح.');
-    const cl=v=>Math.max(85,Math.min(115,Math.round((+v||100)/5)*5)); d.postScale={t:cl(p.t),i:cl(p.i),cut:p.cut!==false}; await Store.put('decisions',p.id,d); return {postScale:d.postScale}; }),
+    const cl=(v,lo,hi,st)=>Math.max(lo,Math.min(hi,Math.round((+v||100)/st)*st));
+    const pp=(Array.isArray(p.p)?p.p:[]).slice(0,12).map(o=>({s:cl((o||{}).s,40,180,10),dy:Math.max(-80,Math.min(80,Math.round(+((o||{}).dy)||0)))}));
+    const oo=Array.isArray(p.o)?p.o.slice(0,12).map(v=>Math.max(0,Math.min(11,Math.round(+v)||0))):null;
+    d.postScale={t:cl(p.t,85,115,5),i:cl(p.i,60,150,5),b:cl(p.b!=null?p.b:p.i,60,150,5),cut:p.cut!==false,p:pp,o:(oo&&new Set(oo).size===oo.length)?oo:null}; await Store.put('decisions',p.id,d); return {postScale:d.postScale}; }),
   setPostStage:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
     if(STAGES.indexOf(p.stage)<0) throw err('مرحلة غير معروفة.');
     const d=await decOf_(p.id); if(!d||d.status!=='Approved'||!d.featured) throw err('المراحل تخص الحالات المختارة لبوست الشهر فقط.');
@@ -2736,6 +2755,7 @@ const ACTIONS={
       s.scoreSigs=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
     if('importCats' in p&&p.importCats!=null){ const L=Array.isArray(p.importCats)?p.importCats:null; if(!L||L.length>30) throw err('قائمة التصنيفات غير صالحة.');
       s.importCats=L.map(c=>({n:String(c&&c.n||'').trim().slice(0,40),k:String(c&&c.k||'').trim().slice(0,1500)})).filter(c=>c.n); }
+    if('arNames' in p){ const o={}; Object.entries(p.arNames||{}).slice(0,1500).forEach(([k,v])=>{ k=String(k||'').slice(0,80); v=String(v||'').replace(/\s+/g,' ').trim().slice(0,60); if(k&&v&&/[\u0600-\u06FF]/.test(v)) o[k]=v; }); s.arNames=Object.keys(o).length?o:null; }
     if('themes' in p){ const o={}; Object.entries(p.themes||{}).slice(0,36).forEach(([m,v])=>{ if(/^\d{4}-\d{2}$/.test(m)&&/^(sub|cat):.{1,60}$/.test(String(v||''))) o[m]=String(v).slice(0,64); }); s.themes=Object.keys(o).length?o:null; }
     if('importRoles' in p){ if(p.importRoles==null) s.importRoles=null; else { const o={}; ['clean','moist','sun','treat'].forEach(k=>{ const v=String((p.importRoles||{})[k]||'').trim().slice(0,1500); if(v){ try{ new RegExp(v,'i'); }catch(e){ throw err('صيغة كلمات «'+k+'» غير صالحة.'); } o[k]=v; } }); s.importRoles=o; } }
     if('scoreW' in p){ if(p.scoreW==null) s.scoreW=null; else { const o={}; Object.keys(SCORE_W_DEFAULT).forEach(k=>{ const v=Math.round(Number(p.scoreW[k])); if(!isFinite(v)||v<0||v>15) throw err('وزن غير صالح: '+k); o[k]=v; }); s.scoreW=o; } }
@@ -3079,12 +3099,15 @@ const WA=(()=>{
   }
 
   /* ---------- PDF invoices ---------- */
+  // نص PDF يُقرأ من اليسار لليمين؛ الكلمات العربية المتتالية (كل كلمة عنصر منفصل) تُعاد لترتيبها الصحيح من اليمين لليسار
+  const AR_RX_=/[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF]/, LAT_RX_=/[A-Za-z0-9:]/;
+  function bidiParts_(ps){ const out=[]; let run=[]; const flush=()=>{ if(run.length) out.push(...run.reverse()); run=[]; }; ps.forEach(q=>{ if(AR_RX_.test(q.s)&&!LAT_RX_.test(q.s)) run.push(q); else { flush(); out.push(q); } }); flush(); return out; }
   async function pdfLines(data){
     const doc=await pdfjsLib.getDocument({data, isEvalSupported:false}).promise; const lines=[];
     for(let p=1;p<=Math.min(doc.numPages,4);p++){
       const pg=await doc.getPage(p); const tc=await pg.getTextContent(); const rows=[];
       tc.items.forEach(it=>{ if(!it.str||!it.str.trim()) return; const y=it.transform[5], x=it.transform[4]; let r=rows.find(r=>Math.abs(r.y-y)<2.5); if(!r){ r={y,parts:[]}; rows.push(r); } r.parts.push({x,s:it.str}); });
-      rows.sort((a,b)=>b.y-a.y).forEach(r=>{ const s=r.parts.sort((a,b)=>a.x-b.x).map(p=>p.s).join(' ').replace(INV,'').replace(/\s+/g,' ').trim(); if(s) lines.push(s); });
+      rows.sort((a,b)=>b.y-a.y).forEach(r=>{ const s=bidiParts_(r.parts.sort((a,b)=>a.x-b.x)).map(p=>p.s).join(' ').replace(INV,'').replace(/\s+/g,' ').trim(); if(s) lines.push(s); });
     }
     return {doc, lines};
   }
@@ -5514,13 +5537,93 @@ function updateBest(){
   else pb.innerHTML='';
 }
 /* ---------- Posts of the month (approver) ---------- */
+// اسم البوست: بدون أي لقب مكتوب، ثم بالعربي (من جدول «أسماء البوست بالعربي» إن كان الاسم إنجليزي)، ثم «د.» قبله
+const AR_LET_=/[؀-ۿ]/;
+const stripDr_=v=>String(v||'').replace(/\s+/g,' ').trim().replace(/^(?:(?:dr|doctor|ph|pharm)\.?|د\s*[\.\/]|د(?=\s)|دكتور[ةه]?|الدكتور[ةه]?)\s*/i,'').replace(/^[\.\-\/\s]+/,'').trim();
+function arNameOf_(v){ const n=stripDr_(v); if(!n||AR_LET_.test(n)) return n; const m=((S.settings||{}).arNames||{})[normN_(n)]; return m||n; }
+function postName_(v){ const n=arNameOf_(v); return n?'د. '+n:''; }
 const isBest=id=>statusOf(id)==='Approved'&&!!(S.dec.get(id)||{}).featured;
 function nominatedMonths(){ const adm=adminMode(); return [...new Set([...S.cases.values()].filter(c=>statusOf(c.id)==='Approved'||(adm&&statusOf(c.id)==='Pending')).map(c=>c.month))].sort().reverse(); }
 function mountPosts(){
   if(!adminMode()){ $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>'; S.postsSig=''; return; }
-  $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span><label class="f" style="flex-direction:row;align-items:center;gap:8px">عدد أفضل المشاركات<input type="number" id="bestCountIn" min="1" max="20" value="'+(S.settings.bestCount||3)+'" style="width:70px;border:1.5px solid var(--line);border-radius:7px;padding:6px 8px"></label><button class="btn" id="btnBestCount">حفظ العدد</button><button class="btn" id="btnAllZip">⬇ تحميل كل البوستات المعتمدة (ZIP)</button><button class="btn primary" id="btnBestZip">⬇ تحميل أفضل المشاركات (ZIP)</button></div><div id="pTabs" class="actions" style="margin:0 0 12px"></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>';
+  $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span><label class="f" style="flex-direction:row;align-items:center;gap:8px">عدد أفضل المشاركات<input type="number" id="bestCountIn" min="1" max="20" value="'+(S.settings.bestCount||3)+'" style="width:70px;border:1.5px solid var(--line);border-radius:7px;padding:6px 8px"></label><button class="btn" id="btnBestCount">حفظ العدد</button><button class="btn" id="btnAllZip">⬇ تحميل كل البوستات المعتمدة (ZIP)</button><button class="btn primary" id="btnBestZip">⬇ تحميل أفضل المشاركات (ZIP)</button>'+(adminMode()?'<button class="btn" id="btnMonthPage">🌐 صفحة الشهر للصيادلة</button>':'')+'</div><div id="pTabs" class="actions" style="margin:0 0 12px"></div><div id="pNames"></div><div id="pPage"></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>';
   S.postsSig='';
 }
+// ---------- أسماء البوست بالعربي (للصيدلي والمشرف) ----------
+function pNamesList_(){ const L=new Map(); [...S.cases.values()].filter(c=>c.month===S.postsMonth&&statusOf(c.id)==='Approved').forEach(c=>[[c.pharmacist,'صيدلي'],[c.supervisor,'مشرف']].forEach(([v,r])=>{ const n=stripDr_(v); if(!n||AR_LET_.test(n)) return; const k=normN_(n); if(!k) return; const o=L.get(k)||{k,n,roles:new Set(),cnt:0}; o.roles.add(r); o.cnt++; L.set(k,o); })); return [...L.values()].sort((a,b)=>a.n.localeCompare(b.n)); }
+function pNamesRender_(force){ const box=$('#pNames'); if(!box) return; if(!adminMode()){ box.innerHTML=''; return; }
+  const L=pNamesList_(), M=(S.settings||{}).arNames||{}; const sig=S.postsMonth+'|'+L.map(o=>o.k).join(',')+'|'+JSON.stringify(M);
+  if(!force&&box.dataset.sig===sig) return; box.dataset.sig=sig; if(!L.length){ box.innerHTML=''; return; }
+  const miss=L.filter(o=>!M[o.k]).length;
+  box.innerHTML='<details class="panel sec" style="margin:0 0 12px"'+(miss?' open':'')+'><summary style="cursor:pointer;font-weight:700">🔤 أسماء البوست بالعربي <span class="note" style="margin:0;font-weight:400">('+L.length+' اسم إنجليزي'+(miss?' · <b style="color:var(--bad)">'+miss+' بدون اسم عربي</b>':' · كلها مترجمة ✔')+')</span></summary>'+
+    '<p class="note" style="margin:8px 0">الأسماء المكتوبة بالإنجليزي في الحالات المعتمدة لهذا الشهر. اكتب الاسم العربي مرة وحدة ويُستخدم تلقائيًا في كل البوستات (والصفحة) مع «د.» قبله. الحالة نفسها لا تتغير.</p>'+
+    '<div class="tw"><table><thead><tr><th>الاسم في الحالة</th><th>الدور</th><th>الاسم بالعربي في البوست</th></tr></thead><tbody>'+L.map(o=>'<tr><td dir="ltr" style="text-align:start">'+esc(o.n)+'</td><td>'+[...o.roles].join('، ')+'</td><td><input type="text" data-arname="'+esc(o.k)+'" value="'+esc(M[o.k]||'')+'" placeholder="مثال: محمد صقر" style="width:100%;min-width:180px;border:1.5px solid var(--line);border-radius:7px;padding:6px 8px"></td></tr>').join('')+'</tbody></table></div>'+
+    '<div class="actions" style="margin-top:10px"><button class="btn" type="button" id="btnArAi">✨ اقتراح الأسماء الفارغة بالذكاء الاصطناعي</button><button class="btn primary" type="button" id="btnArSave">حفظ الأسماء</button></div></details>';
+}
+async function pNamesAi_(){ const ins=[...document.querySelectorAll('[data-arname]')].filter(i=>!i.value.trim()); if(!ins.length) return toast('كل الأسماء مكتوبة بالعربي.');
+  const L=pNamesList_(); const byK=new Map(L.map(o=>[o.k,o.n])); const names=ins.map(i=>byK.get(i.dataset.arname)).filter(Boolean); const b=$('#btnArAi'); if(b){ b.disabled=true; b.textContent='جارٍ الاقتراح…'; }
+  try{ const r=await call('aiArNames',{names})||{}; let n=0; ins.forEach(i=>{ const v=r[byK.get(i.dataset.arname)]; if(v){ i.value=v; i.style.background='#FFF7E0'; n++; } }); toast(n?'✔ اقتُرح '+n+' اسم (بالأصفر). راجعها ثم اضغط «حفظ الأسماء».':'لم يُقترح أي اسم.',!n); }
+  catch(e){ toast(e.message,true); } if(b){ b.disabled=false; b.textContent='✨ اقتراح الأسماء الفارغة بالذكاء الاصطناعي'; } }
+function pNamesSave_(){ const M=Object.assign({},(S.settings||{}).arNames||{}); let bad=0; document.querySelectorAll('[data-arname]').forEach(i=>{ const v=i.value.replace(/\s+/g,' ').trim(); const k=i.dataset.arname; if(!v){ delete M[k]; return; } if(!AR_LET_.test(v)){ bad++; return; } M[k]=stripDr_(v); });
+  if(bad) return toast('اكتب الأسماء بالحروف العربية ('+bad+' اسم غير عربي).',true); if(S.busy) return; S.busy=true;
+  call('saveSettings',{arNames:M}).then(s2=>{ S.settings=Object.assign({},S.settings,s2); S.busy=false; S.postsSig=''; toast('✔ حُفظت الأسماء العربية.'); pNamesRender_(true); updatePosts(); }).catch(e=>{ S.busy=false; toast(e.message,true); }); }
+// ---------- صفحة الشهر: صفحة HTML واحدة تُرفع على GitHub، ورابط لكل مجموعة لقياس الزيارات ----------
+const PAGE_GROUPS=IMP_GROUPS;
+const pageName_=m=>'posts-'+m+'.html', pageId_=m=>'posts-'+m;
+function pageBase_(){ try{ const u=new URL(location.href); u.search=''; u.hash=''; return u.href.replace(/[^\/]*$/,''); }catch(e){ return ''; } }
+function pPageRender_(){ const box=$('#pPage'); if(!box) return; if(!adminMode()||!S.postsMonth){ box.innerHTML=''; return; }
+  const m=S.postsMonth; if(box.dataset.m===m&&box.dataset.v===String(S.pViewsAt||'')) return; box.dataset.m=m; box.dataset.v=String(S.pViewsAt||'');
+  const base=pageBase_()+pageName_(m); const V=(S.pViews||[]).filter(x=>x.page===pageId_(m)); const vg=g=>V.find(x=>x.g===g)||{visits:0,unique:0};
+  const tv=V.reduce((a,x)=>a+x.visits,0), tu=V.reduce((a,x)=>a+x.unique,0);
+  box.innerHTML='<details class="panel sec" style="margin:0 0 12px"><summary style="cursor:pointer;font-weight:700">🌐 روابط صفحة '+esc(monthLabel(m))+' وزياراتها'+(S.pViews?' <span class="note" style="margin:0;font-weight:400">('+tv+' زيارة · '+tu+' جهاز)</span>':'')+'</summary>'+
+    '<ol class="note" style="margin:8px 0;line-height:1.9;padding-inline-start:20px"><li>اضغط «🌐 صفحة الشهر للصيادلة» فوق؛ يتنزّل ملف <b dir="ltr">'+esc(pageName_(m))+'</b> (فوق: أفضل المشاركات، وتحت: باقي المعتمدة).</li><li>ارفعه على GitHub في نفس مكان <b>index.html</b> بنفس الاسم.</li><li>أرسل لكل مجموعة رابطها من الجدول؛ الزيارات تُحسب لكل مجموعة.</li></ol>'+
+    '<div class="tw"><table><thead><tr><th>المجموعة</th><th>الرابط</th><th></th><th>زيارات</th><th>أجهزة</th></tr></thead><tbody>'+PAGE_GROUPS.map(g=>{ const u=base+'?g='+g; const v=vg(g); return '<tr><td><b>'+g+'</b></td><td dir="ltr" style="text-align:start;font-size:12px;word-break:break-all">'+esc(u)+'</td><td><button class="btn" type="button" data-copylink="'+esc(u)+'" style="min-height:30px;padding:2px 10px">نسخ</button></td><td class="num">'+(S.pViews?v.visits:'—')+'</td><td class="num">'+(S.pViews?v.unique:'—')+'</td></tr>'; }).join('')+'</tbody></table></div>'+
+    '<div class="actions" style="margin-top:8px"><button class="btn" type="button" id="btnPViews">🔄 تحديث الزيارات</button></div><p class="note" style="margin:6px 0 0">«أجهزة» = عدد الأجهزة المختلفة تقريبًا (الجهاز نفسه لا يُحسب مرتين). تحتاج نسخة Code.gs الجديدة.</p></details>'; }
+async function pViewsLoad_(){ if(!BACKEND_URL) return toast('الزيارات تعمل على المنصة المنشورة فقط.',true); try{ const r=await bk('views',{}); S.pViews=Array.isArray(r)?r:[]; S.pViewsAt=Date.now(); pPageRender_(); const b=$('#pPage details'); if(b) b.open=true; }catch(e){ toast(/unknown op/.test(e.message||'')?'حدّث Code.gs بالنسخة الجديدة ثم انشره (Deploy) لتظهر الزيارات.':e.message,true); } }
+function pageHtml_(m,top,rest,logo){
+  const mEn=(()=>{ const [y,mo]=m.split('-').map(Number); return new Date(y,mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}); })();
+  const car=(id,L)=>'<div class="car" id="'+id+'"><div class="stage">'+L.map((u,i)=>'<img src="'+u+'" alt="بوست '+(i+1)+'" class="sl'+(i?'':' on')+'" decoding="async">').join('')+'</div>'+
+    (L.length>1?'<div class="nav"><button type="button" class="ar prev" aria-label="السابق">&#8249;</button><button type="button" class="ar next" aria-label="التالي">&#8250;</button></div><div class="ctl"><div class="dots">'+L.map((_,i)=>'<i'+(i?'':' class="on"')+'></i>').join('')+'</div><div class="row"><b class="cnt">01 / '+String(L.length).padStart(2,'0')+'</b><span class="sep"></span><label class="ap"><input type="checkbox" checked> <span class="sw"></span> Autoplay: <b class="apv">On</b></label></div></div>':'')+'</div>';
+  const css=':root{--navy:#1F1D5C;--org:#F29A2E;--bg:#F3F5FA;--ink:#1F1D5C;--mut:#6B7280}*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:"DM Sans","IBM Plex Sans Arabic",Tahoma,Arial,sans-serif;color:var(--ink)}'+
+    '.top{background:var(--navy);color:#fff;border-top:4px solid;border-image:linear-gradient(90deg,#2BA7A0,#3B82F6,#F29A2E) 1;padding:18px 20px;display:flex;align-items:center;gap:16px}.top img{height:52px;width:auto;background:#fff;border-radius:10px;padding:4px}.top small{display:flex;align-items:center;gap:8px;letter-spacing:.14em;font-size:11px;color:#8FD3F5;font-weight:700}.top small:before{content:"";width:22px;height:3px;background:var(--org);border-radius:2px}.top h1{margin:4px 0 0;font-size:24px}'+
+    'main{max-width:640px;margin:0 auto;padding:22px 14px 30px}.hd{text-align:center;margin:26px 0 18px}.hd:before{content:"";display:block;width:26px;height:26px;border-radius:50%;background:#CDEFEA;margin:0 auto 14px}.hd h2{margin:0;font-size:21px;line-height:1.4}.hd p{margin:6px 0 0;color:var(--mut);font-size:14px}'+
+    '.card{background:#fff;border-radius:22px;padding:12px;box-shadow:0 10px 30px rgba(31,29,92,.08)}.car{position:relative}.stage{position:relative;touch-action:pan-y}.sl{display:none;width:100%;height:auto;border-radius:14px}.sl.on{display:block;animation:f .35s}@keyframes f{from{opacity:.3}to{opacity:1}}'+
+    '.nav{display:flex;justify-content:center;gap:26px;margin:14px 0}.ar{width:46px;height:46px;border-radius:50%;border:0;background:var(--org);color:#fff;font-size:30px;line-height:1;cursor:pointer;box-shadow:0 6px 14px rgba(242,154,46,.35)}'+
+    '.ctl{border:1px solid #E5E8F0;border-radius:16px;padding:12px;text-align:center}.dots{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}.dots i{width:9px;height:9px;border-radius:9px;background:#CBD2DE;cursor:pointer}.dots i.on{width:22px;background:var(--org)}.row{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px;font-size:13px}.sep{width:1px;height:20px;background:#E5E8F0}'+
+    '.ap{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--mut)}.ap input{display:none}.sw{width:38px;height:22px;border-radius:22px;background:#CBD2DE;position:relative}.sw:after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}.ap input:checked+.sw{background:#2BA7A0}.ap input:checked+.sw:after{inset-inline-start:19px}.apv{color:#2BA7A0}'+
+    '.hint{text-align:center;color:var(--mut);font-size:11.5px;margin:10px 0 0}.div{height:1px;background:#E1E5EE;margin:34px 0 0;position:relative}.div:after{content:"";position:absolute;left:50%;top:-2px;width:44px;height:4px;margin-left:-22px;border-radius:4px;background:var(--org)}'+
+    'footer{background:var(--navy);color:#fff;padding:26px 20px;display:flex;align-items:center;justify-content:center;gap:12px;margin-top:30px}footer img{height:40px;background:#fff;border-radius:8px;padding:3px}footer b{display:block;font-size:14px}footer span{font-size:12px;color:#8FD3F5}';
+  const js='(function(){var G="",u;try{G=(new URL(location.href).searchParams.get("g")||"").replace(/[^A-Za-z0-9_-]/g,"").slice(0,12)}catch(e){}var P='+JSON.stringify(pageId_(m))+',B='+JSON.stringify(BACKEND_URL||'')+',f=0;try{var k="usepv_"+P;if(!localStorage.getItem(k)){localStorage.setItem(k,"1");f=1}}catch(e){}'+
+    'if(B){try{fetch(B+"?hit="+encodeURIComponent(P)+"&g="+encodeURIComponent(G||"-")+"&u="+f,{mode:"no-cors"}).catch(function(){})}catch(e){}}'+
+    'document.querySelectorAll(".car").forEach(function(c){var S=c.querySelectorAll(".sl"),D=c.querySelectorAll(".dots i"),N=S.length,i=0,cnt=c.querySelector(".cnt"),ap=c.querySelector(".ap input"),apv=c.querySelector(".apv"),t=null;if(N<2)return;'+
+    'function go(n){S[i].classList.remove("on");D[i]&&D[i].classList.remove("on");i=(n+N)%N;S[i].classList.add("on");D[i]&&D[i].classList.add("on");cnt.textContent=String(i+1).padStart(2,"0")+" / "+String(N).padStart(2,"0")}'+
+    'function play(){clearInterval(t);if(ap.checked)t=setInterval(function(){go(i+1)},6000);apv.textContent=ap.checked?"On":"Off"}'+
+    'c.querySelector(".next").onclick=function(){go(i+1);play()};c.querySelector(".prev").onclick=function(){go(i-1);play()};D.forEach(function(d,k){d.onclick=function(){go(k);play()}});ap.onchange=play;'+
+    'var x0=null;c.querySelector(".stage").addEventListener("touchstart",function(e){x0=e.touches[0].clientX},{passive:true});c.querySelector(".stage").addEventListener("touchend",function(e){if(x0==null)return;var dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>40){go(i+(dx<0?1:-1));play()}x0=null},{passive:true});'+
+    'c.tabIndex=0;c.addEventListener("keydown",function(e){if(e.key==="ArrowRight"){go(i+1);play()}if(e.key==="ArrowLeft"){go(i-1);play()}});play()})})();';
+  const lg=logo?'<img src="'+logo+'" alt="">':'';
+  return '<!doctype html><html lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>USE Community – '+esc(mEn)+'</title><meta property="og:title" content="USE Community – '+esc(mEn)+'"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@500;700&display=swap" rel="stylesheet"><style>'+css+'</style></head><body>'+
+    '<header class="top">'+lg+'<div><small>TALENT MANAGEMENT DEPARTMENT</small><h1>USE Community Badges</h1></div></header><main>'+
+    '<div class="hd"><h2>Celebrating better customer experience in United Pharmacies</h2>'+(top.length?'<p>Our top '+top.length+' contributions in '+esc(mEn)+'</p><p dir="rtl">★ أفضل المشاركات · '+esc(monthLabelAr(m))+'</p>':'<p dir="rtl">'+esc(monthLabelAr(m))+'</p>')+'</div>'+
+    (top.length?'<div class="card">'+car('c1',top)+'</div><p class="hint">Use the arrow keys or swipe to explore every highlight.</p>':'')+
+    (rest.length?'<div class="div"></div><div class="hd"><h2>Congratulations to all approved contributions in '+esc(mEn)+'</h2><p dir="rtl">باقي المشاركات المعتمدة ('+rest.length+')</p></div><div class="card">'+car('c2',rest)+'</div><p class="hint">Use the arrow keys or swipe to explore every highlight.</p>':'')+
+    '</main><footer>'+lg+'<div><b>United Pharmaceuticals Company</b><span>Talent Management Department</span></div></footer><script>'+js+'<\/script></body></html>';
+}
+async function monthPage_(){ if(!adminMode()) return; const m=S.postsMonth; if(!m) return; if(S.busy) return;
+  const inM=[...S.cases.values()].filter(c=>c.month===m&&statusOf(c.id)==='Approved').map(c=>c.id).sort();
+  if(!inM.length) return toast('لا توجد حالات معتمدة في هذا الشهر.',true);
+  const top=inM.filter(isBest), rest=inM.filter(id=>!isBest(id));
+  if(!top.length&&!confirm('لم تُحدَّد أفضل المشاركات لهذا الشهر بعد. إنشاء الصفحة بالمعتمدة فقط؟')) return;
+  S.busy=true; const b=$('#btnMonthPage'), bt=b?b.textContent:''; if(b){ b.disabled=true; b.textContent='جارٍ تجهيز الصفحة… (قد يأخذ دقيقة)'; }
+  try{ let mm={}; try{ mm=await call('getPostImages',{ids:inM}); }catch(e){} mm=await withLib_(inM,mm||{});
+    const shot=async id=>{ const d=postData(id), imgs=(mm&&mm[id])||[]; await preloadImgs_(imgs.concat(d.badges.map(x=>x.icon),[d.logo])); const cv=document.createElement('canvas'); await drawPost(cv,id,imgs,null);
+      const W=900, H=Math.round(cv.height*W/cv.width); const c2=document.createElement('canvas'); c2.width=W; c2.height=H; const x=c2.getContext('2d'); x.imageSmoothingQuality='high'; x.drawImage(cv,0,0,W,H); return c2.toDataURL('image/jpeg',0.84); };
+    const T=[], R=[]; for(const id of top) T.push(await shot(id)); for(const id of rest) R.push(await shot(id));
+    const html=pageHtml_(m,T,R,S.settings.brandLogo||''); await saveFile(pageName_(m),new Blob([html],{type:'text/html'}));
+    toast('✔ تجهّزت الصفحة ('+(T.length+R.length)+' بوست · '+Math.round(html.length/1024/1024*10)/10+' MB). ارفعها على GitHub ثم أرسل روابط المجموعات.');
+    const d=$('#pPage details'); if(d) d.open=true; }
+  catch(e){ toast(e.message||'تعذر تجهيز الصفحة.',true); }
+  S.busy=false; if(b){ b.disabled=false; b.textContent=bt; } }
 function updatePosts(){
   const sel=$('#pMonth'); if(!sel) return; const ms=nominatedMonths();
   if(!S.postsMonth||!ms.includes(S.postsMonth)) S.postsMonth=ms[0]||'';
@@ -5537,7 +5640,8 @@ function updatePosts(){
   if(ro){ const nb=ids.filter(isBest).length; $('#pSummary').innerHTML=ids.length?'<div class="kpis"><div class="panel kpi"><span>المشاركات المعتمدة</span><b>'+ids.length+'</b></div><div class="panel kpi"><span>★ أفضل المشاركات</span><b>'+nb+'</b></div></div>'+(nb?'':'<div class="note" style="margin-bottom:12px">لم يختر المعتمد أفضل المشاركات لهذا الشهر بعد.</div>'):''; }
   else if(pend){ [...S.pSel].forEach(id=>{ if(!ids.includes(id)) S.pSel.delete(id); }); $('#pSummary').innerHTML=ids.length?'<div class="actions" style="margin:0 0 12px;align-items:center"><label class="chip"><input type="checkbox" id="pSelAll"'+(ids.length&&ids.every(id=>S.pSel.has(id))?' checked':'')+'>تحديد الكل</label><button class="btn primary" type="button" id="btnPApproveSel"'+(S.pSel.size&&!S.busy?'':' disabled')+'>✔ اعتماد المحدد ('+S.pSel.size+')</button><span class="note" style="margin:0">راجع البوست والشارات ثم اعتمد. الصور تُضاف بعد الاعتماد (أو الآن من «🖼 صور المنتجات»).</span></div>':''; }
   else $('#pSummary').innerHTML=ids.length?'<div class="kpis"><div class="panel kpi"><span>معتمدة</span><b>'+ids.length+'</b></div><div class="panel kpi"><span>أفضل المشاركات المختارة</span><b>'+picked+' / '+N+'</b></div></div>'+(picked>=N?'<div class="ok-msg" style="margin-bottom:12px">اكتمل العدد المحدد. لإضافة حالة أخرى ألغِ اختيار واحدة أو ارفع العدد.</div>':''):'';
-  const sig=(ro?'ro|':'')+PV+'|'+[...S.pSel].join(',')+'|'+S.postsMonth+'|'+N+'|'+ids.map(id=>{const c=S.cases.get(id),d=S.dec.get(id)||{}; return id+':'+statusOf(id)+':'+(d.featured?1:0)+':'+(d.postStage||'')+':'+(c.updatedAt||'')+':'+JSON.stringify(d.postScale||'');}).join(',');
+  try{ pNamesRender_(); pPageRender_(); }catch(e){}
+  const sig=(ro?'ro|':'')+PV+'|'+[...S.pSel].join(',')+'|'+S.postsMonth+'|'+N+'|'+JSON.stringify((S.settings||{}).arNames||{}).length+'|'+ids.map(id=>{const c=S.cases.get(id),d=S.dec.get(id)||{}; return id+':'+statusOf(id)+':'+(d.featured?1:0)+':'+(d.postStage||'')+':'+(c.updatedAt||'')+':'+JSON.stringify(d.postScale||'');}).join(',');
   if(sig===S.postsSig) return; S.postsSig=sig;
   const box=$('#pList');
   if(!ids.length&&pend){ box.innerHTML='<div class="panel empty"><b>لا توجد حالات بانتظار الاعتماد في هذا الشهر</b>كل حالة يرسلها المقيّم للاعتماد تظهر هنا كبوست جاهز، وتعتمدها من هنا.</div>'; return; }
@@ -5562,14 +5666,16 @@ function updatePosts(){
       (!ro&&d.featured?'<div class="ok-msg">★ ضمن أفضل المشاركات</div><label class="f">مرحلة البوست<select data-stage="'+esc(id)+'" style="width:100%">'+STAGE_KEYS.map(k=>'<option value="'+k+'"'+((d.postStage||'selected')===k?' selected':'')+'>'+STAGE_AR[k]+'</option>').join('')+'</select></label>':'')+
       '<div class="actions">'+(ro?'':d.featured?'<button class="btn bad" data-unpick="'+esc(id)+'">إلغاء الاختيار</button>':'<button class="btn primary" data-pick="'+esc(id)+'"'+(picked>=N?' disabled':'')+'>★ اختيار كأفضل مشاركة</button>')+'<button class="btn" data-dlpost="'+esc(id)+'">تحميل PNG</button>'+(canEditImgs(id)?'<button class="btn" type="button" data-pposts="'+esc(id)+'">🖼 صور المنتجات</button>':'')+(!ro||c.reviewerId===S.me.id?'<button class="btn" data-open="'+esc(id)+'">فتح الحالة</button>':'')+'</div></div></section>';
   }).join('');
-  call('getPostImages',{ids}).then(m=>withLib_(ids,m||{})).then(m=>{ ids.forEach(id=>{ const cv=document.querySelector('canvas[data-cv="'+id+'"]'); const imgs=(m&&m[id])||[]; const again=()=>{ const c2=document.querySelector('canvas[data-cv="'+id+'"]'); if(c2) drawPost(c2,id,imgs,null); }; drawPost(cv,id,imgs,again); }); }).catch(()=>{ ids.forEach(id=>drawPost(document.querySelector('canvas[data-cv="'+id+'"]'),id,[],null)); });
+  call('getPostImages',{ids}).then(m=>withLib_(ids,m||{})).then(m=>{ ids.forEach(id=>{ const cv=document.querySelector('canvas[data-cv="'+id+'"]'); const imgs=(m&&m[id])||[]; const again=()=>{ const c2=document.querySelector('canvas[data-cv="'+id+'"]'); if(c2) drawPost(c2,id,imgs,null); }; drawPost(cv,id,imgs,again); }); }).catch(()=>{ ids.forEach(id=>{ const again=()=>{ const c2=document.querySelector('canvas[data-cv="'+id+'"]'); if(c2) drawPost(c2,id,[],null); }; drawPost(document.querySelector('canvas[data-cv="'+id+'"]'),id,[],again); }); });
 }
 /* ---------- Post generator ---------- */
 // خط البوست الثابت
 const POST_FONT='Noto Sans Arabic';
 const pfont=()=>'"'+POST_FONT+'","Segoe UI",Tahoma,Arial,sans-serif';
 const imgCache=new Map();
-function getImg(src,cb){ if(!src) return null; let e=imgCache.get(src); if(!e){ e={im:new Image(),ok:false}; e.im.onload=()=>{e.ok=true; cb&&cb();}; e.im.src=src; imgCache.set(src,e); } return e.ok?e.im:null; }
+function getImg(src,cb){ if(!src) return null; let e=imgCache.get(src);
+  if(!e){ e={im:new Image(),ok:false,cbs:new Set()}; e.im.onload=()=>{ e.ok=true; const L=[...(e.cbs||[])]; if(e.cbs) e.cbs.clear(); L.forEach(f=>{ try{ f(); }catch(_){} }); }; imgCache.set(src,e); if(cb) e.cbs.add(cb); e.im.src=src; return null; }
+  if(!e.ok&&cb){ (e.cbs=e.cbs||new Set()).add(cb); } return e.ok?e.im:null; }
 // يقصّ الهوامش البيضاء/الشفافة حول الصورة حتى تظهر المنتجات والشارات بأحجام متساوية فعليًا
 const trimCache=new Map();
 function trimmed(im){
@@ -5634,7 +5740,7 @@ function postData(id){
   const c=S.cases.get(id); const r=resultsOf(id,c);
   const met=allBadges().filter(b=>r[b.key]==='Met');
   const sc=(S.postScaleTmp&&S.postScaleTmp[id])||(S.dec.get(id)||{}).postScale||{t:100,i:100};
-  return {cut:sc.cut!==false,ts:(sc.t||100)/100,is:(sc.i||100)/100,month:monthLabelAr(c.month),pharmacist:c.pharmacist||'',supervisor:c.supervisor||'',start:c.startPoint||'',outcome:c.outcome||'',situation:c.situation||[],products:c.products||[],badges:met,brand:S.settings.brandPrimary||'#1f4e78',accent:S.settings.brandAccent||'#c9a86a',logo:S.settings.brandLogo||''};
+  return {cut:sc.cut!==false,ts:(sc.t||100)/100,is:(sc.i||100)/100,bs:((sc.b!=null?sc.b:sc.i)||100)/100,pp:Array.isArray(sc.p)?sc.p:[],po:Array.isArray(sc.o)?sc.o:null,month:monthLabelAr(c.month),pharmacist:postName_(c.pharmacist),supervisor:postName_(c.supervisor),start:c.startPoint||'',outcome:c.outcome||'',situation:c.situation||[],products:c.products||[],badges:met,brand:S.settings.brandPrimary||'#1f4e78',accent:S.settings.brandAccent||'#c9a86a',logo:S.settings.brandLogo||''};
 }
 function layoutPost(cv,d,dry,redraw){
   const W=1080, x=cv.getContext('2d'); const H0=dry?4000:cv.height;
@@ -5662,23 +5768,25 @@ function layoutPost(cv,d,dry,redraw){
     // الاسم كاملًا في سطر واحد: يصغر الخط حتى يتسع، ثم «…» إذا بقي طويلًا
     let nfs=z(32); F('500',nfs); while(x.measureText(p[1]).width>250&&nfs>20){ nfs--; F('500',nfs); } let nm=String(p[1]); if(x.measureText(nm).width>250){ while(nm.length>1&&x.measureText(nm+'…').width>250) nm=nm.slice(0,-1); nm+='…'; } T(nm,W-300-30,py+44,'#fff','500',nfs);
   });
-  P.forEach((name,i)=>{
-    const col=i%perRow, row=Math.floor(i/perRow); const inRow=Math.min(perRow,n-row*perRow); const rowW=inRow*slotW+(inRow-1)*gapX;
-    // RTL: أول منتج على اليمين في الصف الكامل
+  const PS=d.pp||[], ORD=(Array.isArray(d.po)&&d.po.length===n&&d.po.slice().sort((p1,p2)=>p1-p2).every((v,k)=>v===k))?d.po:P.map((_,k)=>k);
+  const pos=ORD.map((pi,i)=>{ const col=i%perRow, row=Math.floor(i/perRow); const inRow=Math.min(perRow,n-row*perRow); const rowW=inRow*slotW+(inRow-1)*gapX;
     const sx=full?(areaX+(areaW-rowW)/2+(inRow-1-col)*(slotW+gapX)):(areaX+(areaW-rowW)/2+col*(slotW+gapX)); const sy=prodTop+row*(slotH+labH);
-    if(dry) return;
-    // منصة عرض (قرص فضي) تحت كل منتج، والمنتج واقف عليها — بدون أسماء
-    const cx=sx+slotW/2, pw=Math.min(slotW*0.92,slotH*0.95), rx=pw/2, ry=Math.max(6,pw*0.11), th=Math.max(5,pw*0.06), cy=sy+slotH;
+    const cx=sx+slotW/2, pw=Math.min(slotW*0.92,slotH*0.95), rx=pw/2, ry=Math.max(6,pw*0.11), th=Math.max(5,pw*0.06), cy=sy+slotH; return {pi,cx,rx,ry,th,cy}; });
+  // منصات العرض أولًا، ثم المنتجات فوقها (المنتج العريض قد يتجاوز منصته قليلًا)
+  if(!dry) pos.forEach(({cx,rx,ry,th,cy})=>{
     const glow=x.createRadialGradient(cx,cy+th+ry*0.6,1,cx,cy+th+ry*0.6,rx*1.1); glow.addColorStop(0,'rgba(140,190,255,.35)'); glow.addColorStop(1,'rgba(140,190,255,0)'); x.fillStyle=glow; x.beginPath(); x.ellipse(cx,cy+th+ry*0.6,rx*1.1,ry*1.6,0,0,Math.PI*2); x.fill();
     const side=x.createLinearGradient(cx-rx,0,cx+rx,0); side.addColorStop(0,'#6f7f95'); side.addColorStop(0.5,'#c9d3df'); side.addColorStop(1,'#6f7f95');
     x.fillStyle=side; x.beginPath(); x.ellipse(cx,cy+th,rx,ry,0,0,Math.PI); x.lineTo(cx-rx,cy); x.ellipse(cx,cy,rx,ry,0,Math.PI,0,true); x.closePath(); x.fill();
     const topG=x.createLinearGradient(0,cy-ry,0,cy+ry); topG.addColorStop(0,'#ffffff'); topG.addColorStop(1,'#d7dee8'); x.fillStyle=topG; x.beginPath(); x.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); x.fill();
     x.strokeStyle='rgba(255,255,255,.9)'; x.lineWidth=1.5; x.beginPath(); x.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); x.stroke();
-    const im=getImg(d.pimgs&&d.pimgs[i],redraw);
-    if(im){ const t=trimmed(im); const r=Math.min((slotW-10)/t.width,(slotH-4)/t.height); const w=t.width*r,h=t.height*r;
-      // ظل خفيف تحت المنتج على المنصة
+  });
+  if(!dry) pos.forEach(({pi,cx,rx,ry,cy})=>{
+    const im=getImg(d.pimgs&&d.pimgs[pi],redraw); const ps=PS[pi]||{}; const k=(ps.s||100)/100, dy=(+ps.dy||0);
+    if(im){ const t=trimmed(im); const bw=slotW-10, bh=slotH-4;
+      // نفس المساحة الظاهرة تقريبًا لكل منتج: العلب المسطحة تكبر والطويلة لا تطغى
+      const ra=Math.sqrt(bw*bh*0.5/(t.width*t.height)); const r=Math.min(ra,bh/t.height,(slotW*1.35)/t.width)*k; const w=t.width*r,h=t.height*r;
       x.fillStyle='rgba(20,40,70,.18)'; x.beginPath(); x.ellipse(cx,cy+ry*0.15,Math.min(w*0.55,rx*0.85),ry*0.45,0,0,Math.PI*2); x.fill();
-      x.drawImage(t,cx-w/2,cy+ry*0.15-h,w,h); }
+      const ix=Math.max(12,Math.min(W-12-w,cx-w/2)); x.drawImage(t,ix,cy+ry*0.15-dy-h,w,h); }
     else { rrect(x,0,cx-slotW*0.28,cy-slotH*0.7,slotW*0.56,slotH*0.7,12); x.fillStyle='rgba(255,255,255,.10)'; x.fill(); }
   });
   y=top+topH+30;
@@ -5710,7 +5818,7 @@ function layoutPost(cv,d,dry,redraw){
   const B=d.badges;
   let bottomH=0;
   if(B.length){
-    const maxSize=Math.round((B.length<=2?300:B.length===3?260:230)*ik), gap=B.length<=2?70:34, avail=W-80;
+    const maxSize=Math.round((B.length<=2?300:B.length===3?260:230)*(d.bs||ik)), gap=B.length<=2?70:34, avail=W-80;
     let size=Math.min(maxSize,Math.floor((avail-gap*(B.length-1))/B.length));
     const totalW=size*B.length+gap*(B.length-1); const startX=(W-totalW)/2;
     const labelH=size>=110?Math.round(Math.min(30,size*0.12))+34:0;
@@ -5851,15 +5959,34 @@ function mountPost(){
   renderPost();
 }
 function postScaleOf_(id){ return Object.assign({t:100,i:100,cut:true},(S.postScaleTmp&&S.postScaleTmp[id])||(S.dec.get(id)||{}).postScale||{}); }
-function postScaleUi(){ const sc=postScaleOf_(S.postId), ok=canEditImgs(S.postId);
-  const row=(k,l)=>'<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span style="flex:1">'+l+'</span><button class="btn" type="button" data-pscale="'+k+':-5"'+(ok&&sc[k]>85?'':' disabled')+' aria-label="تصغير">−</button><b class="num" style="min-width:52px;text-align:center">'+sc[k]+'%</b><button class="btn" type="button" data-pscale="'+k+':5"'+(ok&&sc[k]<115?'':' disabled')+' aria-label="تكبير">+</button></div>';
-  return '<div class="panel sec" id="postScaleBox"><h3>مقاسات البوست</h3>'+row('t','حجم الخط')+row('i','حجم صور المنتجات والشارات')+
-    '<div class="actions" style="margin-top:6px"><button class="btn" type="button" data-pscale="reset"'+(ok&&(sc.t!==100||sc.i!==100)?'':' disabled')+'>إعادة الضبط (100%)</button></div><p class="note" style="margin:6px 0 0">للنص الطويل صغّر الخط، وللقصير كبّره. يُحفظ لهذه الحالة ويظهر في «بوستات الشهر» وتحميل ZIP.</p></div>'; }
+const PSC_LIM={t:[85,115],i:[60,150],b:[60,150]};
+function postScaleUi(){ const sc=postScaleOf_(S.postId), ok=canEditImgs(S.postId); if(sc.b==null) sc.b=sc.i;
+  const row=(k,l)=>'<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><span style="flex:1">'+l+'</span><button class="btn" type="button" data-pscale="'+k+':-5"'+(ok&&sc[k]>PSC_LIM[k][0]?'':' disabled')+' aria-label="تصغير">−</button><b class="num" style="min-width:52px;text-align:center">'+sc[k]+'%</b><button class="btn" type="button" data-pscale="'+k+':5"'+(ok&&sc[k]<PSC_LIM[k][1]?'':' disabled')+' aria-label="تكبير">+</button></div>';
+  const c=S.cases.get(S.postId)||{}, P=c.products||[], n=P.length; const PS=sc.p||[];
+  const ord=(Array.isArray(sc.o)&&sc.o.length===n&&sc.o.slice().sort((a,b)=>a-b).every((v,k)=>v===k))?sc.o:P.map((_,k)=>k);
+  const bt=(v,l,dis,tt)=>'<button class="btn" type="button" data-pp="'+v+'"'+(ok&&!dis?'':' disabled')+' title="'+tt+'" style="min-height:30px;padding:2px 8px">'+l+'</button>';
+  const prod=n?'<h3 style="margin-top:14px">ترتيب المنتجات وأحجامها</h3><p class="note" style="margin:0 0 6px">بالترتيب كما تظهر في البوست من اليسار لليمين.</p>'+ord.map((pi,j)=>{ const o=PS[pi]||{}, sz=o.s||100, dy=o.dy||0;
+      return '<div style="border-top:1px solid var(--line,#E3E8EF);padding:6px 0"><div style="font-size:12.5px;font-weight:600;margin-bottom:4px">'+(j+1)+'. '+esc(String(P[pi]).slice(0,40))+'</div><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">'+
+        bt(pi+':s:-10','−',sz<=40,'تصغير')+'<b class="num" style="min-width:44px;text-align:center;font-size:12.5px">'+sz+'%</b>'+bt(pi+':s:10','+',sz>=180,'تكبير')+
+        '<span style="width:6px"></span>'+bt(pi+':dy:8','⬆',dy>=80,'رفع')+bt(pi+':dy:-8','⬇',dy<=-80,'تنزيل')+
+        '<span style="width:6px"></span>'+bt(pi+':mv:-1','◀',j===0,'نقل لليسار')+bt(pi+':mv:1','▶',j===n-1,'نقل لليمين')+
+        ((sz!==100||dy)?bt(pi+':reset','↺',false,'إعادة ضبط هذا المنتج'):'')+'</div></div>'; }).join(''):'';
+  const any=sc.t!==100||sc.i!==100||sc.b!==100||(sc.p||[]).some(o=>o&&((o.s||100)!==100||o.dy))||(Array.isArray(sc.o)&&sc.o.some((v,k)=>v!==k));
+  return '<div class="panel sec" id="postScaleBox"><h3>مقاسات البوست</h3>'+row('t','حجم الخط')+row('i','حجم صور المنتجات (الكل)')+row('b','حجم الشارات')+prod+
+    '<div class="actions" style="margin-top:8px"><button class="btn" type="button" data-pscale="reset"'+(ok&&any?'':' disabled')+'>إعادة ضبط الكل</button></div><p class="note" style="margin:6px 0 0">للنص الطويل صغّر الخط، وللقصير كبّره. يُحفظ لهذه الحالة ويظهر في «بوستات الشهر» وتحميل ZIP.</p></div>'; }
 let postScaleT=null;
 function postScaleStep(v){ const id=S.postId; if(!id||!canEditImgs(id)) return; const sc=postScaleOf_(id);
-  if(v==='reset'){ sc.t=100; sc.i=100; } else if(v==='cut'){ sc.cut=!(sc.cut!==false); } else { const [k,dv]=v.split(':'); sc[k]=Math.max(85,Math.min(115,sc[k]+(+dv))); }
+  if(sc.b==null) sc.b=sc.i;
+  if(v==='reset'){ sc.t=100; sc.i=100; sc.b=100; sc.p=[]; sc.o=null; } else if(v==='cut'){ sc.cut=!(sc.cut!==false); } else { const [k,dv]=v.split(':'); const L=PSC_LIM[k]||[85,115]; sc[k]=Math.max(L[0],Math.min(L[1],(sc[k]||100)+(+dv))); }
+  postScaleApply_(id,sc); }
+function prodAdj_(v){ const id=S.postId; if(!id||!canEditImgs(id)) return; const sc=postScaleOf_(id); if(sc.b==null) sc.b=sc.i; const c=S.cases.get(id)||{}, n=(c.products||[]).length;
+  const [pi0,k,dv]=v.split(':'); const pi=+pi0; const P=(sc.p||[]).slice(); while(P.length<n) P.push({s:100,dy:0}); const o=Object.assign({s:100,dy:0},P[pi]||{});
+  if(k==='s') o.s=Math.max(40,Math.min(180,o.s+(+dv))); else if(k==='dy') o.dy=Math.max(-80,Math.min(80,o.dy+(+dv))); else if(k==='reset'){ o.s=100; o.dy=0; }
+  else if(k==='mv'){ let ord=(Array.isArray(sc.o)&&sc.o.length===n&&sc.o.slice().sort((a,b)=>a-b).every((x,j)=>x===j))?sc.o.slice():[...Array(n).keys()]; const j=ord.indexOf(pi), j2=j+(+dv); if(j2>=0&&j2<n){ [ord[j],ord[j2]]=[ord[j2],ord[j]]; sc.o=ord; } }
+  P[pi]=o; sc.p=P; postScaleApply_(id,sc); }
+function postScaleApply_(id,sc){
   (S.postScaleTmp=S.postScaleTmp||{})[id]=sc; const b=$('#postScaleBox'); if(b) b.outerHTML=postScaleUi(); renderPost();
-  clearTimeout(postScaleT); postScaleT=setTimeout(()=>{ call('setPostScale',{id,t:sc.t,i:sc.i,cut:sc.cut!==false}).then(r=>{ const d=S.dec.get(id); if(d) d.postScale=r.postScale; S.postsSig=''; }).catch(e=>toast(e.message,true)); },600); }
+  clearTimeout(postScaleT); postScaleT=setTimeout(()=>{ call('setPostScale',{id,t:sc.t,i:sc.i,b:sc.b,cut:sc.cut!==false,p:sc.p||[],o:sc.o||null}).then(r=>{ const d=S.dec.get(id); if(d) d.postScale=r.postScale; S.postsSig=''; }).catch(e=>toast(e.message,true)); },600); }
 function dlPost(){ const cv=$('#postCv'); if(!cv) return; cv.toBlob(b=>{ if(!b) return; saveFile('USE_Post_'+S.postId+'.png',b).catch(e=>toast(e.message,true)); },'image/png'); }
 function resizeLogo(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [w,type,q] of [[420,'image/png'],[320,'image/png'],[320,'image/webp',.9],[240,'image/webp',.85]]){ const r=Math.min(1,w/im.width); const cw=Math.round(im.width*r),ch=Math.round(im.height*r); const c=document.createElement('canvas'); c.width=cw;c.height=ch; c.getContext('2d').drawImage(im,0,0,cw,ch); const u=c.toDataURL(type,q); if(u.length<58000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('الصورة معقدة جدًا، جرّب صورة أبسط أو أصغر.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
 function resizeIcon(file){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ for(const [sz,type,q] of [[160,'image/png'],[128,'image/png'],[128,'image/webp',.85],[96,'image/webp',.8]]){ const c=document.createElement('canvas'); c.width=c.height=sz; const x=c.getContext('2d'); const r=Math.min(sz/im.width,sz/im.height); x.drawImage(im,(sz-im.width*r)/2,(sz-im.height*r)/2,im.width*r,im.height*r); const u=c.toDataURL(type,q); if(u.length<38000&&u.indexOf('data:image/')===0) return res(u); } rej(new Error('الصورة معقدة جدًا، جرّب صورة أبسط.')); }; im.onerror=()=>rej(new Error('تعذر قراءة الصورة.')); im.src=fr.result; }; fr.onerror=()=>rej(new Error('تعذر قراءة الملف.')); fr.readAsDataURL(file); }); }
@@ -6037,8 +6164,14 @@ document.addEventListener('click',e=>{
   if(t.id==='btnInbTakeMany') return inboxTakeMany();
   if(t.id==='btnInbSubmitMany') return inboxSubmitMany();
   if(t.dataset&&t.dataset.pscale) return postScaleStep(t.dataset.pscale);
+  if(t.dataset&&t.dataset.pp) return prodAdj_(t.dataset.pp);
   if(t.id==='btnBestZip') return bestZip(false);
   if(t.id==='btnAllZip') return bestZip(true);
+  if(t.id==='btnMonthPage') return monthPage_();
+  if(t.id==='btnPViews') return pViewsLoad_();
+  if(t.id==='btnArSave') return pNamesSave_();
+  if(t.id==='btnArAi') return pNamesAi_();
+  if(t.dataset&&t.dataset.copylink){ const v=t.dataset.copylink; (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast('✔ نُسخ الرابط.')).catch(()=>{ prompt('انسخ الرابط:',v); }); return; }
   if(t.dataset&&t.dataset.pview){ S.postsView=t.dataset.pview; S.postsSig=''; return updatePosts(); }
   if(t.dataset&&t.dataset.pposts){ S.postBackTo='posts'; return openPost(t.dataset.pposts); }
   if(t.dataset&&t.dataset.papprove) return postsDecide([t.dataset.papprove],'approve');
