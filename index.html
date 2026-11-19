@@ -396,6 +396,13 @@ button.kpi[aria-pressed="true"][data-st=Approved]{background:var(--good)}button.
 .lbody{padding:22px 24px 24px}
 .panel.login .lbody>h2{color:var(--navy);font-size:20px;font-weight:800;margin:0 0 4px}
 .capsw{display:none;margin-top:6px;font-size:12px;font-weight:700;color:var(--warn)}.capsw.on{display:block}
+
+/* لوحة المتابعة: قسم واحد ظاهر حسب التبويب */
+#dBody [data-dsec]{display:none}
+#dBody[data-tab=ov] [data-dsec=ov],#dBody[data-tab=lv] [data-dsec=lv],#dBody[data-tab=tna] [data-dsec=tna],#dBody[data-tab=part] [data-dsec=part],#dBody[data-tab=ph] [data-dsec=ph],#dBody[data-tab=cal] [data-dsec=cal]{display:block}
+#dBody[data-tab=ov] #dashLv>.panel.empty,#dBody[data-tab=ov] #dashLv>p.note{display:none}
+#dTabs .chip{padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer}
+tr[data-gap]{cursor:pointer}tr[data-gap]:hover td{background:#eaf3fb}
 </style>
 </head>
 <body>
@@ -1839,6 +1846,8 @@ const S={lang:'en',token:'',me:{id:null,name:'',role:'',canEdit:false,canWrite:t
  badges:[],cases:new Map(),dec:new Map(),audit:[],users:[],settings:{sep:true,reqQuote:true,reqBadge:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'},code:null,busy:false,
  view:'cases',openId:null,filters:{month:'all',status:'all',q:''},dashMonth:'all',draft:null,isNew:false,rail:{reason:'',mode:''},railErr:'',saveState:'',saveErr:'',bd:null,aiCodes:new Set(),aiBusy:false,aiErr:'',aiKeyMsg:''};
 const adminMode=()=>S.me.canEdit&&!S.preview;
+const canDo=k=>!S.preview&&(S.me.role==='admin'||!!(S.me.perms||{})[k]);
+const isAdminRole=()=>S.me.role==='admin'&&!S.preview;
 function lsGet(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
 function lsSet(k,v){try{if(v) localStorage.setItem(k,v); else localStorage.removeItem(k);}catch(e){}}
 S.lang=lsGet('use_lang')||'en';
@@ -2425,6 +2434,24 @@ async function audit_(u,caseId,action,note){
 async function decOf_(id){ return Store.get('decisions',id); }
 function decOut_(d){ return {changedBy:d.changedBy||'',changedAt:d.changedAt||'',changeReason:d.changeReason||'',changedFrom:d.changedFrom||'',returnReason:d.returnReason||'',returnedBy:d.returnedBy||'',postStage:d.postStage||'',featured:d.featured===true,postScale:d.postScale||null,featuredNote:d.featuredNote||'',status:d.status,approverId:d.approverId,approverName:d.approverName,approvedAt:d.approvedAt,rejectReason:d.rejectReason,results:d.results||null,metCount:d.metCount}; }
 function needAdmin_(u){ if(u.role!=='admin') throw err('هذه العملية للمدير فقط.'); }
+// صلاحيات قابلة للتعديل لكل مستخدم: الدور يعطي قيمًا افتراضية، والمدير يضيف أو يسحب لكل شخص
+const PERM_GROUPS=[
+  ['الحالات',[['cases.review','تقييم حالات وإرسالها للاعتماد'],['cases.editAny','تعديل حالات المقيّمين الآخرين'],['cases.delete','حذف حالة أو استرجاعها']]],
+  ['الاعتماد',[['approve.decide','اعتماد / رفض / إعادة للتصحيح'],['approve.change','تغيير قرار سابق أو إعادة فتح حالة'],['approve.featured','اختيار أفضل المشاركات ومراحل البوست']]],
+  ['البوستات',[['posts.edit','تعديل صور البوست ومقاساته لكل الحالات'],['posts.names','الأسماء العربية في البوست'],['posts.page','صفحة الشهر وروابطها وزياراتها']]],
+  ['الاستيراد',[['imp.use','رفع ملفات الواتساب والاستخراج'],['imp.ai','قراءة الفواتير بالذكاء الاصطناعي (لها تكلفة)'],['imp.inbox','إضافة للوارد واستبعاد حالات'],['imp.assign','توزيع صندوق الوارد على المقيّمين']]],
+  ['المتابعة',[['dash.view','لوحة المتابعة والفجوات والمشاركة وتحليل المجموعات'],['dash.reports','تقارير المشرفين والشهادات'],['dash.calib','المعايرة وأوزان السكور']]],
+  ['الإعدادات',[['set.badges','الشارات'],['set.cats','التصنيفات ومحور الشهر وأدوار المنتجات وإشارات الترشيح'],['set.hc','قائمة الموظفين ومكتبة صور المنتجات']]]];
+const PERM_KEYS=PERM_GROUPS.flatMap(g=>g[1].map(x=>x[0]));
+const ROLE_PERMS={
+  approver:{'cases.review':1,'cases.editAny':1,'approve.decide':1,'approve.change':1,'approve.featured':1,'posts.edit':1,'posts.names':1,'posts.page':1,'imp.use':1,'imp.ai':1,'imp.inbox':1,'imp.assign':1,'dash.view':1,'dash.reports':1},
+  reviewer:{'cases.review':1,'imp.use':1,'imp.inbox':1}};
+const ROLE_NAMES={admin:'مدير',approver:'معتمد',reviewer:'مقيّم'};
+function permsOf_(u){ const o={}; if(!u) return o; if(u.role==='admin'){ PERM_KEYS.forEach(k=>o[k]=true); return o; } const base=ROLE_PERMS[u.role]||ROLE_PERMS.reviewer; PERM_KEYS.forEach(k=>{ o[k]=!!base[k]; }); Object.entries(u.perms||{}).forEach(([k,v])=>{ if(PERM_KEYS.includes(k)) o[k]=!!v; }); return o; }
+const can_=(u,k)=>!!u&&(u.role==='admin'||!!permsOf_(u)[k]);
+function needPerm_(u,k){ if(!can_(u,k)) throw err('ليس لديك صلاحية لهذه العملية.'); }
+const fullView_=u=>u.role==='admin'||can_(u,'approve.decide')||can_(u,'dash.view');
+try{ Object.assign(window,{PERM_GROUPS,PERM_KEYS,ROLE_PERMS,ROLE_NAMES}); }catch(e){}
 
 /* عمليات بدون تسجيل دخول: حالة التهيئة والإعداد الأول */
 const PUBLIC={
@@ -2445,21 +2472,21 @@ const PUBLIC={
 
 const ACTIONS={
   bootstrap: async(u)=>{
-    const admin=u.role==='admin';
+    const admin=fullView_(u), isAdm=u.role==='admin';
     const allDec=await Store.list('decisions'); const appr={}; allDec.forEach(d=>{ if(d.status==='Approved') appr[d.caseId]=1; });
     const allCases=await Store.list('cases');
     const cases=allCases.filter(c=>!c.deleted&&(admin||c.reviewerId===u.id||appr[c.id]));
     const ids={}; cases.forEach(c=>{ids[c.id]=1;});
     const decisions={}; allDec.forEach(d=>{ if(ids[d.caseId]) decisions[d.caseId]=decOut_(d); });
-    const out={user:{id:u.id,name:u.name,role:u.role},badges:await allBadges_(),cases,decisions,settings:await settings_()};
+    const out={user:{id:u.id,name:u.name,role:u.role,perms:permsOf_(u)},badges:await allBadges_(),cases,decisions,settings:await settings_()};
     const inb=await Store.list('inbox');
-    out.inbox=inb.filter(x=>x.status==='new'||(admin&&(x.status==='taken'||x.status==='dismissed'))||(x.status==='taken'&&x.takenBy===u.id)).map(x=>Object.assign({},x,{key:undefined}));
+    out.inbox=inb.filter(x=>x.status==='new'||((admin||can_(u,'imp.assign'))&&(x.status==='taken'||x.status==='dismissed'))||(x.status==='taken'&&x.takenBy===u.id)).map(x=>Object.assign({},x,{key:undefined}));
     out.inboxKeys=inb.map(x=>x.key); out.inboxDis=inb.filter(x=>x.status==='dismissed').map(x=>x.key);
     if(admin){
-      const au=[]; (await Store.list('audit')).sort((a,b)=>a.month<b.month?-1:1).forEach(d=>au.push(...(d.items||[])));
+      const au=[]; if(!isAdm) out.users=(await Store.list('users')).filter(x=>x.active).map(x=>({id:x.id,name:x.name,role:x.role,active:x.active})); (await Store.list('audit')).sort((a,b)=>a.month<b.month?-1:1).forEach(d=>au.push(...(d.items||[])));
       out.audit=au.slice(-150).reverse();
       out.deleted=allCases.filter(c=>c.deleted).map(c=>({id:c.id,pharmacist:c.pharmacist,branch:c.branch,reviewerName:c.reviewerName,deletedBy:c.deletedBy||'',deletedAt:c.deletedAt||'',deleteReason:c.deleteReason||''})).sort((a,b)=>a.deletedAt<b.deletedAt?1:-1);
-      out.users=(await Store.list('users')).map(x=>({id:x.id,username:x.username,name:x.name,role:x.role,active:x.active,createdAt:x.createdAt}));
+      if(isAdm) out.users=(await Store.list('users')).map(x=>({id:x.id,username:x.username,name:x.name,role:x.role,active:x.active,createdAt:x.createdAt,perms:x.perms||null}));
     }
     return out;
   },
@@ -2491,7 +2518,7 @@ const ACTIONS={
     await audit_(u,id,old?'resubmitted':'submitted','');
     return {id,results:r,metCount:rec.metCount,updatedAt:rec.updatedAt,status:'Pending'};
   }),
-  decide:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+  decide:(u,p)=>{ needPerm_(u,'approve.decide'); return withLock_(async()=>{
     const badges=await activeBadges_(), set=await settings_(); const c=await Store.get('cases',p.id);
     if(!c||c.deleted) throw err('الحالة غير موجودة.');
     const d0=await decOf_(c.id); if(d0&&d0.status!=='Pending') throw err(d0.status==='Returned'?'الحالة معادة للمقيّم للتصحيح ولم تُرسل من جديد بعد.':'تم اتخاذ قرار في هذه الحالة مسبقًا.');
@@ -2506,10 +2533,10 @@ const ACTIONS={
   hcGet: async(u)=>{ const g0=await Store.getMany('hc',['meta','manual']); const meta=g0.meta, manual=(g0.manual&&g0.manual.items)||[]; if(!meta||!meta.parts) return {meta:null,people:[],manual};
     const ids=[]; for(let i=0;i<meta.parts;i++) ids.push('p'+i); const got=await Store.getMany('hc',ids); let people=[]; ids.forEach(id=>{ people=people.concat((got[id]&&got[id].items)||[]); });
     return {meta:{at:meta.at,by:meta.by,count:meta.count},people,manual}; },
-  hcManSave:(u,p)=>{ needAdmin_(u); const L=(Array.isArray(p.items)?p.items:[]).slice(0,300); const S_=(v,m)=>String(v==null?'':v).trim().slice(0,m);
-    const items=L.map(x=>({name:S_(x.name,80),phone:S_(x.phone,20),role:['talent','sup','am'].indexOf(x.role)>=0?x.role:'talent',group:S_(x.group,40),wa:S_(x.wa,80)})).filter(x=>x.name);
+  hcManSave:(u,p)=>{ needPerm_(u,'set.hc'); const L=(Array.isArray(p.items)?p.items:[]).slice(0,300); const S_=(v,m)=>String(v==null?'':v).trim().slice(0,m);
+    const items=L.map(x=>({name:S_(x.name,80),phone:S_(x.phone,20),role:['pharm','talent','sup','am'].indexOf(x.role)>=0?x.role:'talent',group:S_(x.group,40),wa:S_(x.wa,80),branch:S_(x.branch,20),sup:S_(x.sup,80)})).filter(x=>x.name);
     return withLock_(async()=>{ await Store.put('hc','manual',{items,at:now_(),by:u.name}); await audit_(u,'','headcount','الأعضاء المضافون يدويًا: '+items.length); return {items}; }); },
-  hcSave:(u,p)=>{ needAdmin_(u); const L=Array.isArray(p.people)?p.people:[]; if(!L.length) throw err('القائمة فارغة.'); if(L.length>6000) throw err('القائمة أكبر من الحد (6000 شخص).');
+  hcSave:(u,p)=>{ needPerm_(u,'set.hc'); const L=Array.isArray(p.people)?p.people:[]; if(!L.length) throw err('القائمة فارغة.'); if(L.length>6000) throw err('القائمة أكبر من الحد (6000 شخص).');
     const S_=(v,m)=>String(v==null?'':v).trim().slice(0,m); const roles=['pharm','sup','talent','am'], sts=['active','left','leave'];
     const clean=L.map(x=>({emp:S_(x.emp,20),ar:S_(x.ar,80),en:S_(x.en,80),phone:S_(x.phone,16).replace(/\D/g,''),branch:S_(x.branch,10),group:S_(x.group,40),role:roles.indexOf(x.role)>=0?x.role:'pharm',
       sup:S_(x.sup,80),alias:S_(x.alias,80),region:S_(x.region,60),am:S_(x.am,80),status:sts.indexOf(x.status)>=0?x.status:'active',join:S_(x.join,10)})).filter(x=>x.ar||x.en);
@@ -2526,7 +2553,7 @@ const ACTIONS={
     await audit_(u,'','wa_stats','مزامنة تحليل الواتساب ('+(meta.from||'—')+' → '+(meta.to||'—')+' · '+meta.cases+' حالة)');
     return {ok:true,meta};
   }),
-  impShareGet: async(u)=>{ needAdmin_(u); Store.clearHeavy('hc','imp_'); const g0=await Store.getMany('hc',['imp_meta']); const meta=g0.imp_meta; if(!meta||!meta.parts) return {meta:null};
+  impShareGet: async(u)=>{ needPerm_(u,'dash.view'); Store.clearHeavy('hc','imp_'); const g0=await Store.getMany('hc',['imp_meta']); const meta=g0.imp_meta; if(!meta||!meta.parts) return {meta:null};
     const ids=[]; for(let i=0;i<meta.parts;i++) ids.push('imp_'+i); const got=await Store.getMany('hc',ids);
     let raw=''; for(const id of ids) raw+=(got[id]&&got[id].d)||'';
     return {meta,data:raw}; },
@@ -2557,19 +2584,19 @@ const ACTIONS={
     const plat=K(p.plat), sent=K(p.sent); if(!plat.length&&!sent.length) return {n:0}; const meta=(await Store.get('meta','calib'))||{months:{},manual:{}}; meta.picks=meta.picks||{};
     const add=(k,f)=>{ const m=k.split('|')[1].slice(0,7); const o=meta.picks[m]||(meta.picks[m]={plat:[],sent:[]}); if(o[f].indexOf(k)<0&&o[f].length<3000) o[f].push(k); };
     plat.forEach(k=>add(k,'plat')); sent.forEach(k=>add(k,'sent')); await Store.put('meta','calib',meta); return {n:sent.length}; }),
-  calibGet: async(u)=>{ needAdmin_(u); const meta=(await Store.get('meta','calib'))||{months:{},manual:{}};
+  calibGet: async(u)=>{ needPerm_(u,'dash.view'); const meta=(await Store.get('meta','calib'))||{months:{},manual:{}};
     const dec={}; (await Store.list('decisions')).forEach(d=>{ dec[d.caseId]=d.status; }); const inb={}; (await Store.list('inbox')).forEach(x=>{ inb[x.id]=x; });
     const approved={}; (await Store.list('cases')).forEach(c=>{ if(c.deleted||dec[c.id]!=='Approved'||!c.inboxId) return; const x=inb[c.inboxId]; if(!x||!x.key) return; const m=String(x.date||c.month||'').slice(0,7); (approved[m]=approved[m]||[]).push(x.key); });
     return {months:meta.months||{},manual:meta.manual||{},picks:meta.picks||{},approved}; },
-  calibRows: async(u,p)=>{ needAdmin_(u); const meta=(await Store.get('meta','calib'))||{months:{}}; const m=meta.months&&meta.months[String(p.month||'')]; if(!m) return {rows:[]};
+  calibRows: async(u,p)=>{ needPerm_(u,'dash.view'); const meta=(await Store.get('meta','calib'))||{months:{}}; const m=meta.months&&meta.months[String(p.month||'')]; if(!m) return {rows:[]};
     const ids=[]; for(let i=0;i<m.chunks;i++) ids.push(p.month+':'+i); const got=await Store.getMany('calib',ids); const rows=[]; ids.forEach(id=>{ ((got[id]||{}).rows||[]).forEach(r=>rows.push(r)); }); return {rows}; },
-  calibManual:(u,p)=>{ needAdmin_(u); const month=String(p.month||''); if(!/^\d{4}-\d{2}$/.test(month)) throw err('شهر غير صالح.');
+  calibManual:(u,p)=>{ needPerm_(u,'dash.calib'); const month=String(p.month||''); if(!/^\d{4}-\d{2}$/.test(month)) throw err('شهر غير صالح.');
     return withLock_(async()=>{ const meta=(await Store.get('meta','calib'))||{months:{},manual:{}}; meta.manual=meta.manual||{};
       if(p.clear) delete meta.manual[month]; else meta.manual[month]=(Array.isArray(p.keys)?p.keys:[]).map(k=>String(k).slice(0,90)).slice(0,300);
       await Store.put('meta','calib',meta); await audit_(u,'','calib_manual','اختيار المقيّم من تصدير المحادثة '+month+': '+((meta.manual[month]||[]).length)+' حالة'); return {n:(meta.manual[month]||[]).length}; }); },
-  anList: async(u)=>{ needAdmin_(u); return {items:(await Store.list('wastats')).map(d=>({id:d.id,groups:d.groups||{},savedAt:d.savedAt,
+  anList: async(u)=>{ needPerm_(u,'dash.view'); return {items:(await Store.list('wastats')).map(d=>({id:d.id,groups:d.groups||{},savedAt:d.savedAt,
     snaps:Object.values(d.snaps||{}).map(s=>({key:s.key,label:s.label,from:s.from,to:s.to,savedAt:s.savedAt,by:s.by,cases:(s.kpi||{}).cases||0,rate:(s.kpi||{}).rate||0,med:(s.kpi||{}).med}))}))}; },
-  anGet: async(u,p)=>{ needAdmin_(u); const d=await Store.get('wastats',String(p.id||'')); if(!d) throw err('الملخص غير موجود.'); return d; },
+  anGet: async(u,p)=>{ needPerm_(u,'dash.view'); const d=await Store.get('wastats',String(p.id||'')); if(!d) throw err('الملخص غير موجود.'); return d; },
   anDel:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{ const id=String(p.id||''), key=String(p.key||''); const d=await Store.get('wastats',id); if(!d||!d.snaps||!d.snaps[key]) throw err('الملخص غير موجود.');
     const sn=d.snaps[key]; delete d.snaps[key];
     // أرقام المجموعات للمقارنة الشهرية: تُحذف إن كانت من هذا الملخص ولا يغطيها ملخص آخر
@@ -2595,7 +2622,7 @@ const ACTIONS={
   }); },
   inboxTake:(u,p)=>withLock_(async()=>{
     const id=String(p.id||''); const x=await Store.get('inbox',id); if(!x) throw err('الحالة غير موجودة في صندوق الوارد.');
-    if(x.status==='taken'&&x.takenBy!==u.id&&u.role!=='admin') throw err('أخذ هذه الحالة '+(x.takenByName||'مقيّم آخر')+'.');
+    if(x.status==='taken'&&x.takenBy!==u.id&&!can_(u,'imp.assign')) throw err('أخذ هذه الحالة '+(x.takenByName||'مقيّم آخر')+'.');
     if(x.status==='done'||x.status==='dismissed') throw err('هذه الحالة لم تعد في صندوق الوارد.');
     x.status='taken'; x.takenBy=u.id; x.takenByName=u.name; x.takenAt=now_(); await Store.put('inbox',id,x);
     const detail=await Store.get('inboxd',id); await audit_(u,'','inbox_take',x.group+' '+x.date+' '+x.time+' · '+x.sender);
@@ -2607,7 +2634,7 @@ const ACTIONS={
     const items=[];
     for(const id of ids){
       const x=await Store.get('inbox',id); if(!x||x.status==='done'||x.status==='dismissed') continue;
-      if(x.status==='taken'&&x.takenBy!==u.id&&u.role!=='admin') continue;
+      if(x.status==='taken'&&x.takenBy!==u.id&&!can_(u,'imp.assign')) continue;
       if(x.status!=='taken'||!x.takenBy){ x.status='taken'; x.takenBy=u.id; x.takenByName=u.name; x.takenAt=now_(); await Store.put('inbox',id,x); }
       items.push({item:Object.assign({},x,{key:undefined}),detail:details[id]||{}});
     }
@@ -2624,7 +2651,7 @@ const ACTIONS={
     const submitted=[], drafts=[];
     for(const inbId of ids){
       const x=await Store.get('inbox',inbId); if(!x||x.status==='done'||x.status==='dismissed') continue;
-      if(x.status==='taken'&&x.takenBy!==u.id&&u.role!=='admin') continue;
+      if(x.status==='taken'&&x.takenBy!==u.id&&!can_(u,'imp.assign')) continue;
       const dt=details[inbId]||{}, ai=dt.ai||{};
       const month=/^\d{4}-\d{2}$/.test(String(x.date||'').slice(0,7))?x.date.slice(0,7):today_().slice(0,7);
       const parsedItems=[].concat(...(dt.invoices||[]).map(v=>(v.items||[]).map(i=>i.name+(i.qty>1?' × '+i.qty:''))));
@@ -2698,7 +2725,7 @@ const ACTIONS={
     return {submitted,failed};
   }),
   // إسناد حالات الصندوق للمقيّمين (توزيع متوازن يحسبه المتصفح؛ الخادم يتحقق من كل مقيّم وحالة)
-  inboxAssign:(u,p)=>{ needAdmin_(u); const items=(Array.isArray(p.items)?p.items:[]).slice(0,500); return withLock_(async()=>{
+  inboxAssign:(u,p)=>{ needPerm_(u,'imp.assign'); const items=(Array.isArray(p.items)?p.items:[]).slice(0,500); return withLock_(async()=>{
     const users={}; (await Store.list('users')).forEach(x=>{ users[x.id]=x; }); let n=0; const per={};
     for(const it of items){ const id=String(it&&it.id||''), to=String(it&&it.to||''); const rv=users[to]; if(!rv||!rv.active||rv.role!=='reviewer') continue;
       const x=await Store.get('inbox',id); if(!x||x.status!=='new') continue;
@@ -2706,21 +2733,21 @@ const ACTIONS={
     await audit_(u,'','inbox_assign','توزيع على المقيّمين: '+Object.keys(per).map(k=>k+' '+per[k]).join('، ')); return {n,per}; }); },
   // يكمل الحقول الفارغة فقط (المشرف/الفرع/اسم الصيدلي) في حالات صندوق الوارد من قائمة الموظفين
   inboxFill:(u,p)=>withLock_(async()=>{ const L=(Array.isArray(p.items)?p.items:[]).slice(0,500); let n=0; const S_=(v,m)=>String(v==null?'':v).trim().slice(0,m);
-    for(const it of L){ const x=await Store.get('inbox',String(it&&it.id||'')); if(!x||x.status==='done') continue; if(u.role!=='admin'&&!(x.status==='new'||x.takenBy===u.id)) continue; let ch=false;
+    for(const it of L){ const x=await Store.get('inbox',String(it&&it.id||'')); if(!x||x.status==='done') continue; if(!can_(u,'imp.assign')&&!(x.status==='new'||x.takenBy===u.id)) continue; let ch=false;
       if(!x.supervisor&&it.supervisor){ x.supervisor=S_(it.supervisor,120); x.hcFill=1; ch=true; } if(!x.branch&&it.branch){ x.branch=S_(it.branch,10); ch=true; }
       if(it.pharmacist&&(!x.pharmacist||/^[\-\.\s—_•·]{0,2}$/.test(String(x.pharmacist).trim()))){ x.pharmacist=S_(it.pharmacist,120); ch=true; }
       if(ch){ await Store.put('inbox',x.id,x); n++; } }
     if(n) await audit_(u,'','inbox_fill','تعبئة من قائمة الموظفين: '+n+' حالة'); return {n}; }),
-  inboxSetMany:(u,p)=>{ needAdmin_(u); const ids=(Array.isArray(p.ids)?p.ids:[]).map(String).slice(0,500); const st=p.status==='dismissed'?'dismissed':'new'; return withLock_(async()=>{
+  inboxSetMany:(u,p)=>{ needPerm_(u,'imp.inbox'); const ids=(Array.isArray(p.ids)?p.ids:[]).map(String).slice(0,500); const st=p.status==='dismissed'?'dismissed':'new'; return withLock_(async()=>{
     let n=0; for(const id of ids){ const x=await Store.get('inbox',id); if(!x||x.status==='done'||x.status===st) continue; x.status=st; x.takenBy=''; x.takenByName=''; await Store.put('inbox',id,x); n++; }
     await audit_(u,'',st==='dismissed'?'inbox_dismiss':'inbox_back',(st==='dismissed'?'استبعاد جماعي: ':'إرجاع جماعي للصندوق: ')+n+' حالة'); return {n}; }); },
-  inboxSet:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+  inboxSet:(u,p)=>{ needPerm_(u,'imp.inbox'); return withLock_(async()=>{
     const id=String(p.id||''); const x=await Store.get('inbox',id); if(!x) throw err('الحالة غير موجودة.');
     const st=p.status==='dismissed'?'dismissed':'new'; x.status=st; x.takenBy=''; x.takenByName=''; await Store.put('inbox',id,x);
     await audit_(u,'',st==='dismissed'?'inbox_dismiss':'inbox_back',x.group+' '+x.date+' '+x.time+' · '+x.sender); return {ok:true};
   }); },
   // تعديل المعتمد لحالة مُرسلة (أي وضع): تُحفظ التعديلات ويُسجَّل من عدّل ومتى وما الحقول التي تغيّرت.
-  adminEditCase:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+  adminEditCase:(u,p)=>{ needPerm_(u,'cases.editAny'); return withLock_(async()=>{
     const c=await Store.get('cases',String(p.id||'')); if(!c||c.deleted) throw err('الحالة غير موجودة.');
     const badges=await activeBadges_(), set=await settings_();
     const answers={}; Object.keys(p.answers||{}).forEach(k=>{ if(p.answers[k]==='Y'||p.answers[k]==='N') answers[k]=p.answers[k]; });
@@ -2746,7 +2773,7 @@ const ACTIONS={
     return {ok:true,fields:labels};
   }); },
   // تغيير القرار بعد اتخاذه: معتمد ⇄ مرفوض، بسبب مكتوب، ويُسجَّل من غيّره.
-  changeDecision:(u,p)=>{ needAdmin_(u); const reason=String(p.reason||'').trim(); if(!reason) throw err('اكتب سبب تغيير القرار.'); return withLock_(async()=>{
+  changeDecision:(u,p)=>{ needPerm_(u,'approve.change'); const reason=String(p.reason||'').trim(); if(!reason) throw err('اكتب سبب تغيير القرار.'); return withLock_(async()=>{
     const c=await Store.get('cases',String(p.id||'')); if(!c||c.deleted) throw err('الحالة غير موجودة.');
     const d0=await decOf_(c.id); const from=d0&&d0.status; const to=p.to==='Approved'?'Approved':'Rejected';
     if(!(from==='Approved'||from==='Rejected')) throw err('تغيير القرار متاح فقط للحالات المعتمدة أو المرفوضة.');
@@ -2766,7 +2793,7 @@ const ACTIONS={
     return decOut_(dec);
   }); },
   // حذف ناعم: الحالة تختفي من كل القوائم واللوحة والتقرير والبوستات، وتبقى محفوظة لإمكانية الاسترجاع.
-  deleteCase:(u,p)=>{ needAdmin_(u); const reason=String(p.reason||'').trim(); if(!reason) throw err('اكتب سبب الحذف.'); return withLock_(async()=>{
+  deleteCase:(u,p)=>{ needPerm_(u,'cases.delete'); const reason=String(p.reason||'').trim(); if(!reason) throw err('اكتب سبب الحذف.'); return withLock_(async()=>{
     const c=await Store.get('cases',String(p.id||'')); if(!c||c.deleted) throw err('الحالة غير موجودة.');
     c.deleted=true; c.deletedBy=u.name; c.deletedAt=now_(); c.deleteReason=reason.slice(0,500);
     await Store.put('cases',c.id,c);
@@ -2774,19 +2801,19 @@ const ACTIONS={
     await audit_(u,c.id,'deleted',reason+((d&&d.status)?' (كانت: '+d.status+')':''));
     return {ok:true};
   }); },
-  restoreCase:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+  restoreCase:(u,p)=>{ needPerm_(u,'cases.delete'); return withLock_(async()=>{
     const c=await Store.get('cases',String(p.id||'')); if(!c||!c.deleted) throw err('الحالة غير موجودة في المحذوفات.');
     delete c.deleted; delete c.deletedBy; delete c.deletedAt; delete c.deleteReason;
     await Store.put('cases',c.id,c); await audit_(u,c.id,'restored','');
     return {ok:true};
   }); },
-  reopen:(u,p)=>{ needAdmin_(u); if(!String(p.reason||'').trim()) throw err('اكتب سبب الإعادة للتصحيح.'); return withLock_(async()=>{
+  reopen:(u,p)=>{ needPerm_(u,'approve.change'); if(!String(p.reason||'').trim()) throw err('اكتب سبب الإعادة للتصحيح.'); return withLock_(async()=>{
     const d0=await decOf_(p.id); const before=(d0&&d0.status)||'Pending';
     await Store.put('decisions',p.id,{caseId:p.id,status:'Returned',approverId:'',approverName:'',approvedAt:'',rejectReason:'',returnReason:String(p.reason).trim().slice(0,1000),returnedBy:u.name,results:null,metCount:0,updatedAt:now_(),postStage:'',featured:false,featuredNote:''});
     await audit_(u,p.id,'returned',String(p.reason).trim()+' (كانت: '+before+')');
     return {status:'Returned'};
   }); },
-  saveBadge:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+  saveBadge:(u,p)=>{ needPerm_(u,'set.badges'); return withLock_(async()=>{
     const name=String(p.name||'').trim(), ab=String(p.ab||'').toUpperCase();
     if(!name) throw err('اكتب اسم الشارة.');
     if(!/^[A-Z]{1,2}$/.test(ab)) throw err('الرمز حرف أو حرفان إنجليزيان.');
@@ -2802,7 +2829,7 @@ const ACTIONS={
     await Store.put('badges',key,b); await audit_(u,'','badge',(old?'تعديل شارة: ':'إضافة شارة: ')+name);
     return b;
   }); },
-  setFeatured:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+  setFeatured:(u,p)=>{ needPerm_(u,'approve.featured'); return withLock_(async()=>{
     const d=await decOf_(p.id); if(!d||d.status!=='Approved') throw err('الاختيار للحالات المعتمدة فقط.');
     const c=await Store.get('cases',p.id); if(!c) throw err('الحالة غير موجودة.');
     const on=!!p.featured, note=String(p.reason||'').trim().slice(0,500);
@@ -2831,27 +2858,28 @@ const ACTIONS={
     const mk='sess:'+m+':meta'; const meta=((await Store.getMany('calib',[mk]))||{})[mk]; if(!meta||!meta.parts) return null;
     const ids=[...Array(meta.parts).keys()].map(i=>'sess:'+m+':'+i).concat(['sess:'+m+':ui']); const g=await Store.getMany('calib',ids);
     const json=[...Array(meta.parts).keys()].map(i=>((g['sess:'+m+':'+i]||{}).s)||'').join(''); return {meta,json,ui:(g['sess:'+m+':ui']||{}).ui||null}; },
-  aiArNames: async(u,p)=>{ needAdmin_(u); const names=(Array.isArray(p.names)?p.names:[]).map(v=>String(v||'').slice(0,80)).filter(Boolean).slice(0,80); if(!names.length) return {};
+  aiArNames: async(u,p)=>{ needPerm_(u,'posts.names'); const names=(Array.isArray(p.names)?p.names:[]).map(v=>String(v||'').slice(0,80)).filter(Boolean).slice(0,80); if(!names.length) return {};
     const schema={type:'object',properties:{items:{type:'array',items:{type:'object',properties:{en:{type:'string'},ar:{type:'string'}},required:['en','ar']}}},required:['items']};
     const prompt=['هذه أسماء صيادلة ومشرفين يعملون في صيدلية بالسعودية (أغلبهم مصريون وسعوديون) مكتوبة بحروف إنجليزية.',
       'اكتب كل اسم بالعربي كما يكتبه صاحبه عادةً (مثال: Mohamed → محمد، Abdelfattah → عبدالفتاح، Elsayed → السيد، Al-Anazi → العنزي).',
       'لا تضف ألقابًا مثل د. أو دكتور، ولا تترجم المعنى، واحتفظ بعدد الكلمات وترتيبها. أعد en كما هو حرفيًا.',
       'الأسماء:', names.map((n,i)=>(i+1)+'. '+n).join('\n')].join('\n');
     const obj=await AI.analyze(prompt,schema,null); const out={}; ((obj&&obj.items)||[]).forEach(x=>{ const en=String((x||{}).en||'').trim(), ar=String((x||{}).ar||'').replace(/\s+/g,' ').trim().slice(0,60); if(en&&ar&&/[\u0600-\u06FF]/.test(ar)) out[en]=ar; }); return out; },
-  setPostScale:(u,p)=>withLock_(async()=>{ const d=await decOf_(p.id); if(!d||!(d.status==='Approved'||(u.role==='admin'&&d.status==='Pending'))) throw err('البوست يخص الحالات المعتمدة فقط.');
-    const c=await Store.get('cases',p.id); if(u.role!=='admin'&&!(c&&c.reviewerId===u.id)) throw err('غير مسموح.');
+  setPostScale:(u,p)=>withLock_(async()=>{ const d=await decOf_(p.id); if(!d||!(d.status==='Approved'||(can_(u,'posts.edit')&&d.status==='Pending'))) throw err('البوست يخص الحالات المعتمدة فقط.');
+    const c=await Store.get('cases',p.id); if(!can_(u,'posts.edit')&&!(c&&c.reviewerId===u.id)) throw err('غير مسموح.');
     const cl=(v,lo,hi,st)=>Math.max(lo,Math.min(hi,Math.round((+v||100)/st)*st));
     const pp=(Array.isArray(p.p)?p.p:[]).slice(0,12).map(o=>({s:cl((o||{}).s,40,180,10),dy:Math.max(-80,Math.min(80,Math.round(+((o||{}).dy)||0)))}));
     const oo=Array.isArray(p.o)?p.o.slice(0,12).map(v=>Math.max(0,Math.min(11,Math.round(+v)||0))):null;
     d.postScale={t:cl(p.t,85,115,5),i:cl(p.i,60,150,5),b:cl(p.b!=null?p.b:p.i,60,150,5),cut:p.cut!==false,p:pp,o:(oo&&new Set(oo).size===oo.length)?oo:null}; await Store.put('decisions',p.id,d); return {postScale:d.postScale}; }),
-  setPostStage:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+  setPostStage:(u,p)=>{ needPerm_(u,'approve.featured'); return withLock_(async()=>{
     if(STAGES.indexOf(p.stage)<0) throw err('مرحلة غير معروفة.');
     const d=await decOf_(p.id); if(!d||d.status!=='Approved'||!d.featured) throw err('المراحل تخص الحالات المختارة لبوست الشهر فقط.');
     const before=d.postStage; d.postStage=p.stage; d.updatedAt=now_(); await Store.put('decisions',p.id,d);
     await audit_(u,p.id,'stage',(before||'-')+' ← '+p.stage);
     return {postStage:p.stage};
   }); },
-  saveSettings:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
+  saveSettings:(u,p)=>{ const KP={arNames:'posts.names',pageLinks:'posts.page',themes:'set.cats',importCats:'set.cats',importSubs:'set.cats',scoreSigs:'set.cats',importRoles:'set.cats',scoreW:'dash.calib'};
+    Object.keys(p||{}).forEach(k=>{ if(KP[k]) needPerm_(u,KP[k]); else needAdmin_(u); }); return withLock_(async()=>{
     const s=Object.assign({},SET_DEFAULT,(await Store.get('settings','main'))||{});
     ['sep','reqQuote','reqBadge','aiOn'].forEach(k=>{ if(k in p) s[k]=!!p[k]; });
     if('brandPrimary' in p){ if(!isHex_(p.brandPrimary)) throw err('لون غير صالح.'); s.brandPrimary=p.brandPrimary; }
@@ -2876,7 +2904,7 @@ const ACTIONS={
   }); },
   addUser:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{
     const name=String(p.name||'').trim(); if(!name) throw err('اكتب اسم المستخدم.');
-    const role=p.role==='admin'?'admin':'reviewer'; const un=await uniqueUsername_(p.username);
+    const role=ROLE_NAMES[p.role]?p.role:'reviewer'; const un=await uniqueUsername_(p.username);
     let pin; if(String(p.pin||'').trim()){ pin=checkPin_(String(p.pin).trim(),role); if(await pinTaken_(pin,'')) throw err('الرقم السري مستخدم لمستخدم آخر. اختر غيره.'); } else pin=await genPin_(role,'');
     const nu={id:'u_'+rid(),name,role,active:true,codeHash:await hash_(pin),createdAt:now_(),username:un};
     await Store.put('users',nu.id,nu); await audit_(u,'','user','إضافة مستخدم: '+name+' ('+un+', '+role+')');
@@ -2893,22 +2921,25 @@ const ACTIONS={
     const users=await Store.list('users'); const t=users.find(x=>x.id===p.id); if(!t) throw err('المستخدم غير موجود.');
     let newPin='';
     if('active' in p) t.active=!!p.active;
-    if('role' in p){ const nr=p.role==='admin'?'admin':'reviewer'; if(nr!==t.role){ newPin=await genPin_(nr,t.id); t.codeHash=await hash_(newPin); t.role=nr; } }
+    const before=JSON.stringify([t.role,t.perms||{}]);
+    if('role' in p){ const nr=ROLE_NAMES[p.role]?p.role:'reviewer'; if(nr!==t.role){ if(pinLen_(nr)!==pinLen_(t.role)){ newPin=await genPin_(nr,t.id); t.codeHash=await hash_(newPin); } t.role=nr; } }
+    if('perms' in p){ const base=ROLE_PERMS[t.role]||{}; const o={}; Object.entries(p.perms||{}).forEach(([k,v])=>{ if(PERM_KEYS.includes(k)&&(!!v)!==(!!base[k])) o[k]=!!v; }); t.perms=Object.keys(o).length?o:undefined; }
+    const permNote=JSON.stringify([t.role,t.perms||{}])!==before?' — '+ROLE_NAMES[t.role]+(t.perms?' + تخصيص: '+Object.entries(t.perms).map(([k,v])=>(v?'+':'−')+k).join(' '):''):'';
     const admins=users.filter(x=>x.id!==t.id&&x.role==='admin'&&x.active).length+(t.role==='admin'&&t.active?1:0);
     if(!admins) throw err('يجب أن يبقى مدير واحد مفعّل على الأقل.');
-    await Store.put('users',t.id,t); await audit_(u,'','user','تعديل مستخدم: '+t.name+' ('+t.role+', '+(t.active?'مفعّل':'معطّل')+')');
+    await Store.put('users',t.id,t); await audit_(u,'','user','تعديل مستخدم: '+t.name+' ('+t.role+', '+(t.active?'مفعّل':'معطّل')+')'+permNote);
     return {ok:true,pin:newPin,name:t.name,username:t.username};
   }); },
   savePostImages:(u,p)=>withLock_(async()=>{
     const c=await Store.get('cases',p.id); if(!c) throw err('الحالة غير موجودة.');
-    if(u.role!=='admin'){ if(c.reviewerId!==u.id) throw err('ليس لك صلاحية على هذه الحالة.'); const d=await decOf_(c.id); if(!(d&&d.status==='Approved')) throw err('تُضاف صور المنتجات بعد اعتماد الحالة.'); }
+    if(!can_(u,'posts.edit')){ if(c.reviewerId!==u.id) throw err('ليس لك صلاحية على هذه الحالة.'); const d=await decOf_(c.id); if(!(d&&d.status==='Approved')) throw err('تُضاف صور المنتجات بعد اعتماد الحالة.'); }
     const imgs=(Array.isArray(p.imgs)?p.imgs:[]).slice(0,8).map(x=>{ x=String(x||''); if(x&&(x.indexOf('data:image/')!==0||x.length>45000)) throw err('صورة منتج غير صالحة أو كبيرة.'); return x; });
     await Store.put('postimgs',c.id,{caseId:c.id,imgs,updatedAt:now_()});
     return {ok:true};
   }),
   getPostImages: async(u,p)=>{
     const ok=[]; for(const id of (Array.isArray(p.ids)?p.ids:[]).slice(0,60)){
-      if(u.role!=='admin'){ const c=await Store.get('cases',id); if(!c) continue; if(c.reviewerId!==u.id){ const dd=await decOf_(id); if(!(dd&&dd.status==='Approved')) continue; } }
+      if(!can_(u,'posts.edit')){ const c=await Store.get('cases',id); if(!c) continue; if(c.reviewerId!==u.id){ const dd=await decOf_(id); if(!(dd&&dd.status==='Approved')) continue; } }
       ok.push(String(id));
     }
     const docs=ok.length?await Store.getMany('postimgs',ok):{}; const out={}; ok.forEach(id=>{ out[id]=(docs[id]&&docs[id].imgs)||[]; }); return out;
@@ -2922,10 +2953,10 @@ const ACTIONS={
     const ix=(await Store.get('hc','pimg_index'))||{names:[]}; const nk=prodKey_(name); if(!(ix.names||[]).some(n=>prodKey_(n)===nk)){ ix.names=(ix.names||[]).concat([name.slice(0,120)]).slice(-3000); await Store.put('hc','pimg_index',ix); }
     return {ok:true}; }),
   prodImgList: async(u)=>{ const ix=(await Store.getMany('hc',['pimg_index'])).pimg_index; return {names:(ix&&ix.names)||[]}; },
-  prodImgDel:(u,p)=>{ needAdmin_(u); return withLock_(async()=>{ const name=String(p.name||''); const nk=prodKey_(name); await Store.put('hc',nk,{}); const ix=(await Store.get('hc','pimg_index'))||{names:[]}; ix.names=(ix.names||[]).filter(n=>prodKey_(n)!==nk); await Store.put('hc','pimg_index',ix); return {ok:true}; }); },
+  prodImgDel:(u,p)=>{ needPerm_(u,'set.hc'); return withLock_(async()=>{ const name=String(p.name||''); const nk=prodKey_(name); await Store.put('hc',nk,{}); const ix=(await Store.get('hc','pimg_index'))||{names:[]}; ix.names=(ix.names||[]).filter(n=>prodKey_(n)!==nk); await Store.put('hc','pimg_index',ix); return {ok:true}; }); },
   // قراءة سريعة لصورة الفاتورة فقط (الأصناف/الفرع/الصيدلي) لترتيب الحالات — بدون تحليل الشارات
   aiInvoice: async(u,p)=>{
-    const set=await settings_(); if(!set.aiEnabled) throw err('الذكاء الاصطناعي غير مفعّل.'); aiThrottle_(u,true);
+    needPerm_(u,'imp.ai'); const set=await settings_(); if(!set.aiEnabled) throw err('الذكاء الاصطناعي غير مفعّل.'); aiThrottle_(u,true);
     const f=p.file||{}; const okType=['image/jpeg','image/png','image/webp','application/pdf'];
     if(okType.indexOf(f.mediaType)<0||typeof f.data!=='string') throw err('نوع ملف الفاتورة غير مدعوم.'); if(f.data.length>7000000) throw err('ملف الفاتورة كبير جدًا.');
     const file={kind:f.mediaType==='application/pdf'?'pdf':'image',mediaType:f.mediaType,data:f.data};
@@ -3011,7 +3042,7 @@ function errText(c){
 }
 async function load(){
   const d=await call('bootstrap');
-  S.me={id:d.user.id,name:d.user.name,role:d.user.role,canEdit:d.user.role==='admin',canWrite:true};
+  S.me={id:d.user.id,name:d.user.name,role:d.user.role,perms:d.user.perms||{},canEdit:d.user.role==='admin'||!!(d.user.perms||{})['approve.decide'],canWrite:true};
   S.badges=d.badges||[]; S.cases=new Map((d.cases||[]).map(c=>[c.id,c])); S.dec=new Map(Object.entries(d.decisions||{})); S.deleted=d.deleted||[]; S.inbox=d.inbox||[]; S.inboxKeys=d.inboxKeys||[]; S.inboxDis=d.inboxDis||[];
   S.settings=Object.assign({sep:true,reqQuote:true,reqBadge:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'},d.settings||{}); applyBrand(); S.audit=d.audit||[]; S.users=d.users||[];
 }
@@ -3435,7 +3466,7 @@ function impRenderRows(){
     const dup=(c.dupInv&&c.dupInv.length)?'<span class="pill p-no" style="white-space:nowrap" title="'+esc(impDupTitle_(c))+'">⚠️ فاتورة مكررة</span> ':'';
     const st=(S.inboxDis||[]).includes(c.key)?'<span class="pill p-no">مستبعدة</span>':I.done&&I.done[c.key]?'<span class="pill p-ok">أُضيفت</span>':oldKeys.has(c.key)?'<span class="pill p-na">مستوردة سابقًا</span>':'<span class="pill p-na">جديدة</span>'+(c.isNew?' <span class="pill p-ok" title="ظهرت في آخر استخراج">🆕</span>':'');
     const sc='<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'+lvlBadge_(c,' data-impdetail="'+esc(c.key)+'"')+'<span class="lvl-score">'+(c.score||0)+'</span></div>'+((c.sigs||[]).length?'<div class="note" style="margin:2px 0 0;font-size:11px">'+esc(c.sigs.join(' · '))+'</div>':'');
-    return '<tr'+(I.cur===c.key?' class="cur"':'')+'><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td class="num note" style="margin:0">'+(ri+1)+'</td><td style="min-width:110px">'+sc+'</td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+((nm||w.br)?'<div class="note" style="margin:0">'+esc(nm||'')+(w.br?(nm?' · ':'')+'فرع '+esc(w.br):'')+(w.ai?' <span title="من صورة الفاتورة (الذكاء الاصطناعي)">🤖</span>':'')+'</div>':'')+'</td><td>'+(c.mention?esc(c.mention):w.sup?esc(w.sup)+' <span class="pill p-na" style="font-size:10.5px" title="من قائمة الموظفين">HC</span>':'—')+'</td><td>'+(c.cats.map(x=>'<span class="pill p-na" style="margin:1px">'+esc(x)+'</span>').join(' ')||'<span class="note">—</span>')+(subOf_(c).length?'<div style="margin-top:3px">'+subOf_(c).map((x,k)=>'<span class="pill '+(k?'p-na':'p-ok')+'" style="margin:1px" title="'+(k?'تصنيف دقيق إضافي':'التصنيف الدقيق الرئيسي')+(subParent_(x)?' · '+esc(subParent_(x)):'')+'">🎯 '+esc(x)+'</span>').join(' ')+'</div>':'')+'</td><td style="max-width:340px;font-size:12.5px;cursor:pointer" data-impdetail="'+esc(c.key)+'" title="اضغط لعرض الحالة كاملة">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+rolesHtml_(c)+dup+att+(aiMark?'<div style="margin-top:3px">'+aiMark+'</div>':'')+'</td><td class="num">'+(c.total!=null?money(c.total):(c.aiPre&&+c.aiPre.invoiceTotal)?money(c.aiPre.invoiceTotal)+' <span title="قرأها الذكاء الاصطناعي من صورة الفاتورة">🤖</span>':c.aiPre?'<span class="note">قُرئت الفاتورة 🤖</span>':c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="12"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
+    return '<tr'+(I.cur===c.key?' class="cur"':'')+'><td><input type="checkbox" data-impsel="'+esc(c.key)+'"'+(I.sel.has(c.key)?' checked':'')+'></td><td class="num note" style="margin:0">'+(ri+1)+'</td><td style="min-width:110px">'+sc+'</td><td>'+esc(c.group||'—')+'</td><td class="mono" style="white-space:nowrap">'+ymd_(c.t)+'<br>'+hm_(c.t)+'</td><td>'+esc(cleanSender_(c.sender))+((nm||w.br)?'<div class="note" style="margin:0">'+esc(nm||'')+(w.br?(nm?' · ':'')+'فرع '+esc(w.br):'')+(w.ai?' <span title="من صورة الفاتورة (الذكاء الاصطناعي)">🤖</span>':'')+'</div>':'')+'</td><td>'+(c.mention?esc(c.mention):w.sup?esc(w.sup)+' <span class="pill p-na" style="font-size:10.5px" title="من قائمة الموظفين">HC</span>':'—')+'</td><td>'+(()=>{ const sb=subOf_(c)[0]; const all=c.cats.concat(subOf_(c).slice(1)).join(' · '); return sb?'<span class="pill p-ok" style="margin:1px" title="'+esc((subParent_(sb)?subParent_(sb)+' · ':'')+(all?'أخرى: '+all:''))+'">🎯 '+esc(sb)+'</span>':(c.cats[0]?'<span class="pill p-na" style="margin:1px" title="'+esc(c.cats.join(' · '))+'">'+esc(c.cats[0])+'</span>':'<span class="note">—</span>'); })()+'</td><td style="max-width:340px;font-size:12.5px;cursor:pointer" data-impdetail="'+esc(c.key)+'" title="اضغط لعرض الحالة كاملة">'+(c.text?esc(c.text.slice(0,140))+(c.text.length>140?'…':''):'<span class="note">بدون نص (الفاتورة فقط)</span>')+(c.dupCount?'<div class="note" style="margin:0">نُشرت '+c.dupCount+' مرات، دُمجت</div>':'')+'</td><td>'+rolesHtml_(c)+dup+att+(aiMark?'<div style="margin-top:3px">'+aiMark+'</div>':'')+'</td><td class="num">'+(c.total!=null?money(c.total):(c.aiPre&&+c.aiPre.invoiceTotal)?money(c.aiPre.invoiceTotal)+' <span title="قرأها الذكاء الاصطناعي من صورة الفاتورة">🤖</span>':c.aiPre?'<span class="note">قُرئت الفاتورة 🤖</span>':c.aiFiles.length?'<span class="note">تُقرأ بالتحليل</span>':'—')+'</td><td>'+st+'</td></tr>'; }).join(''):'<tr><td colspan="12"><div class="empty">لا توجد حالات مطابقة للفلاتر.</div></td></tr>';
   const sab=$('#impSelAllBox'); if(sab){ sab.checked=rows.length>0&&rows.every(c=>I.sel.has(c.key)); }
   const qn=$('#impQN'); if(qn) qn.textContent=I.f.q?rows.length+' نتيجة':'';
 }
@@ -3547,12 +3578,12 @@ async function impExtract(){
     await impSyncCloud_(true);
   }
   I.busy=false; updateImport();
-  if(I.cases.length) impAiPre_().catch(()=>{});
+  if(I.cases.length&&canDo('imp.ai')) impAiPre_().catch(()=>{});
 }
 // قراءة صور الفواتير بالذكاء الاصطناعي لأعلى المرشحة (تلقائيًا بعد الاستخراج) لمعرفة أصنافها ومستوى الحل
 const IMP_AIPRE_N=40;
 // كل فاتورة صورة مستواها المقدّر «ب» أو أعلى (حتى 120)، ثم تكملة حتى 40 من الأعلى سكورًا
-function impAiPrePool_(){ const I=impState(); const cand=I.cases.filter(c=>c.aiFiles&&c.aiFiles.length&&!c.invoices.length&&!c.aiPre&&!c.aiPreErr&&c.src&&!c.src.stub).sort((a,b)=>b.score-a.score||(b.tlen||0)-(a.tlen||0));
+function impAiPrePool_(){ const I=impState(); if(!canDo('imp.ai')) return []; const cand=I.cases.filter(c=>c.aiFiles&&c.aiFiles.length&&!c.invoices.length&&!c.aiPre&&!c.aiPreErr&&c.src&&!c.src.stub).sort((a,b)=>b.score-a.score||(b.tlen||0)-(a.tlen||0));
   const hi=cand.filter(c=>c.lvl>=3).slice(0,120); return hi.concat(cand.filter(c=>c.lvl<3).slice(0,Math.max(0,IMP_AIPRE_N-hi.length))); }
 async function impAiPre_(){
   const I=impState(); if(I.aiPre&&I.aiPre.busy) return; if(!S.settings.aiEnabled) return; const pool=impAiPrePool_(); if(!pool.length) return;
@@ -4259,8 +4290,8 @@ async function hcLoad(force){ if(S.hc&&!force) return S.hc; const r=await call('
 function hcAll(){
   if(S.hcAllC) return S.hcAllC; const L=((S.hc&&S.hc.people)||[]).map(p=>Object.assign({},p));
   ((S.hc&&S.hc.manual)||[]).forEach(m=>{ const ph=phoneKey_(m.phone); const t=ph&&L.find(p=>p.phone===ph);
-    if(t){ t.role=m.role; t.alias=m.wa||m.name||t.alias; if(m.group) t.group=m.group; t.manual=true; }
-    else L.push({emp:'',ar:/[؀-ۿ]/.test(m.name)?m.name:'',en:/[؀-ۿ]/.test(m.name)?'':m.name,alias:m.wa||'',phone:ph,branch:'',group:m.group||'',role:m.role,sup:'',region:'',am:'',status:'active',join:'',manual:true}); });
+    if(t){ t.role=m.role; t.alias=m.wa||m.name||t.alias; if(m.group) t.group=m.group; if(m.branch) t.branch=m.branch; if(m.sup) t.sup=m.sup; t.manual=true; }
+    else L.push({emp:'',ar:/[؀-ۿ]/.test(m.name)?m.name:'',en:/[؀-ۿ]/.test(m.name)?'':m.name,alias:m.wa||'',phone:ph,branch:m.branch||'',group:m.group||'',role:m.role,sup:m.sup||'',region:'',am:'',status:'active',join:'',manual:true}); });
   S.hcAllC=L; return L;
 }
 function hcIndex(){
@@ -4304,7 +4335,7 @@ function updateHc(){
   box.innerHTML=h;
 }
 async function hcManSave(){
-  const L=(S.hcMan||[]).map(m=>({name:String(m.name||'').trim(),phone:String(m.phone||'').trim(),role:m.role||'talent',group:String(m.group||'').trim(),wa:String(m.wa||'').trim()})).filter(m=>m.name||m.phone);
+  const L=(S.hcMan||[]).map(m=>({name:String(m.name||'').trim(),phone:String(m.phone||'').trim(),role:m.role||'talent',group:String(m.group||'').trim(),wa:String(m.wa||'').trim(),branch:String(m.branch||'').trim(),sup:String(m.sup||'').trim()})).filter(m=>m.name||m.phone);
   const bad=L.find(m=>!m.name); if(bad) throw new Error('اكتب الاسم لكل عضو.');
   const badPh=L.find(m=>m.phone&&!phoneKey_(m.phone)); if(badPh) throw new Error('رقم الجوال غير صحيح: '+badPh.name);
   const r=await call('hcManSave',{items:L}); S.hc.manual=r.items; S.hcMan=null; S.hcIdx=null; S.hcAllC=null; toast('حُفظ الأعضاء المضافون يدويًا ('+r.items.length+').'); updateHc();
@@ -4414,7 +4445,7 @@ function anCompute(){
     gc.forEach(c=>{ if(c._m&&c._m.p) [c._m.p.ar,c._m.p.en].forEach(n=>{ if(n) mentionKeys.add(normN_(n)); }); });
     gc.forEach(c=>{
       const inv0=c.invoices[0]||{}; const ph=res(c.sender,inv0.pharmNo);
-      if(!ph.p) unknown[g+'|'+ph.name]={g,name:ph.name,n:((unknown[g+'|'+ph.name]||{}).n||0)+1};
+      if(!ph.p){ const uk=g+'|'+ph.name, o0=unknown[uk]||{}; unknown[uk]={g,name:ph.name,n:(o0.n||0)+1,phone:o0.phone||ph.phone||(/^\+?\d[\d\s-]{7,}$/.test(String(c.sender||'').trim())?String(c.sender).replace(/[^\d+]/g,''):''),branch:o0.branch||inv0.branch||'',pharmNo:o0.pharmNo||inv0.pharmNo||''}; }
       let sup=null;
       if(c.mention){ const m=c._m||res(c.mention); sup=(m.p&&(m.p.role==='sup'||m.p.role==='am'))?{key:m.key,name:m.name,p:m.p}:(m.p&&ph.p&&ph.p.sup&&idx.supByName.get(normN_(ph.p.sup)))?{key:hcId_(idx.supByName.get(normN_(ph.p.sup))),name:ph.p.sup,p:idx.supByName.get(normN_(ph.p.sup))}:m.p?null:(idx.supByName.get(normN_(c.mention))?{key:hcId_(idx.supByName.get(normN_(c.mention))),name:idx.supByName.get(normN_(c.mention)).alias||idx.supByName.get(normN_(c.mention)).en,p:idx.supByName.get(normN_(c.mention))}:{key:m.key,name:m.name}); }
       else if(ph.p&&ph.p.sup){ const sp=idx.supByName.get(normN_(ph.p.sup)); sup=sp?{key:hcId_(sp),name:sp.alias||sp.ar||sp.en,p:sp}:{key:'n:'+normN_(ph.p.sup),name:ph.p.sup}; }
@@ -4691,7 +4722,15 @@ function updateAn(){
   if(hasHc&&G.nonPart.length) h+='<section class="panel sec"><details><summary style="cursor:pointer;font-weight:700">صيادلة لم يشاركوا في الفترة: '+G.nonPart.length+' (حسب قائمة الموظفين للمجموعات المحمّلة)</summary><div class="tw" style="margin-top:8px"><table><thead><tr><th>الاسم</th><th>الفرع</th><th>المجموعة</th><th>المشرف</th></tr></thead><tbody>'+G.nonPart.slice(0,300).map(p=>'<tr><td>'+esc(p.ar||p.en)+'</td><td class="num">'+esc(p.branch)+'</td><td>'+esc(p.group)+'</td><td>'+esc(p.sup)+'</td></tr>').join('')+'</tbody></table></div></details></section>';
   if(R.unkRep.length) h+='<section class="panel sec"><h3>أشخاص يردّون على الحالات وغير موجودين في القائمة <span class="pill p-wait">'+R.unkRep.length+'</span></h3><p class="note" style="margin:0 0 8px">ردودهم لا تُحسب حتى تضيفهم. إذا كان الشخص من فريق Talent أو مشرفًا، أضفه بضغطة، وتُعاد الحسبة فورًا.</p><div class="tw"><table><thead><tr><th>الاسم في الواتساب</th><th>المجموعة</th><th>رسائل مدح/رد</th><th>الجوال</th><th></th></tr></thead><tbody>'+
     R.unkRep.slice(0,60).map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.g)+'</td><td class="num">'+u.n+'</td><td class="mono" dir="ltr">'+esc(u.phone?maskPhone_(u.phone):'—')+'</td><td style="white-space:nowrap"><button class="btn" data-anadd="talent|'+esc(u.name)+'|'+esc(u.phone||'')+'">➕ Talent</button> <button class="btn" data-anadd="sup|'+esc(u.name)+'|'+esc(u.phone||'')+'">➕ مشرف</button></td></tr>').join('')+'</tbody></table></div></section>';
-  if(R.unknown.length) h+='<section class="panel sec"><details><summary style="cursor:pointer;font-weight:700">مرسلون غير موجودين في قائمة الموظفين: '+R.unknown.length+'</summary><p class="note">أضف أرقامهم أو أسماءهم للقائمة حتى تُنسب حالاتهم للمشرف الصحيح. رفع تصدير الويب مع تصدير الجوال يظهر أرقام الجوالات ويحسّن الربط.</p><div class="tw"><table><thead><tr><th>الاسم في الواتساب</th><th>المجموعة</th><th>الحالات</th></tr></thead><tbody>'+R.unknown.slice(0,200).map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.g)+'</td><td class="num">'+u.n+'</td></tr>').join('')+'</tbody></table></div></details></section>';
+  if(R.unknown.length) h+='<section class="panel sec"><details><summary style="cursor:pointer;font-weight:700">مرسلون غير موجودين في قائمة الموظفين: '+R.unknown.length+'</summary><p class="note">أضف أرقامهم أو أسماءهم للقائمة حتى تُنسب حالاتهم للمشرف الصحيح. رفع تصدير الويب مع تصدير الجوال يظهر أرقام الجوالات ويحسّن الربط.</p><div class="tw"><table><thead><tr><th>الاسم في الواتساب</th><th>رقم الجوال</th><th>المجموعة</th><th>الفرع (من الفاتورة)</th><th>الحالات</th><th></th></tr></thead><tbody>'+R.unknown.slice(0,200).map((u,i)=>{ const op=S.unkAdd===i;
+      return '<tr><td>'+esc(u.name)+'</td><td dir="ltr" style="text-align:start" class="mono">'+(u.phone?esc(u.phone):'<span class="note" style="margin:0">غير ظاهر</span>')+'</td><td>'+esc(u.g)+'</td><td>'+esc(u.branch||'—')+'</td><td class="num">'+u.n+'</td><td>'+(canDo('set.hc')?'<button class="btn'+(op?'':' primary')+'" type="button" data-unkadd="'+i+'" style="min-height:30px;padding:2px 10px">'+(op?'إلغاء':'➕ إضافة')+'</button>':'')+'</td></tr>'+
+        (op?'<tr><td colspan="6" style="background:var(--row-alt)"><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px">'+
+          '<label class="f">الاسم<input type="text" id="ukName" value="'+esc(u.name)+'"></label><label class="f">رقم الجوال<input type="tel" dir="ltr" id="ukPhone" value="'+esc(u.phone||'')+'" placeholder="05xxxxxxxx"></label>'+
+          '<label class="f">الدور<select id="ukRole"><option value="pharm">صيدلي</option><option value="sup">مشرف</option><option value="talent">Talent</option><option value="am">مدير منطقة</option></select></label>'+
+          '<label class="f">الفرع<input type="text" id="ukBranch" value="'+esc(u.branch||'')+'"></label>'+
+          '<label class="f">المشرف<input type="text" id="ukSup" list="ukSupL" placeholder="اختر أو اكتب"><datalist id="ukSupL">'+[...new Set(hcAll().filter(p=>p.role==='sup').map(p=>p.alias||p.en||p.ar).filter(Boolean))].sort().map(n=>'<option value="'+esc(n)+'">').join('')+'</datalist></label>'+
+          '<label class="f">المجموعة<input type="text" id="ukGroup" value="'+esc(u.g)+'"></label></div>'+
+          '<div class="actions" style="margin-top:8px"><button class="btn primary" type="button" data-unksave="'+i+'">حفظ في قائمة الموظفين</button><span class="note" style="margin:0">يُضاف للأعضاء المضافين يدويًا ويُربط باسمه في الواتساب.</span></div></td></tr>':''); }).join('')+'</tbody></table></div></details></section>';
   h+='<p class="note">طريقة احتساب الرد: تُحسب أي رسالة من مشرف أو Talent أو مدير منطقة بعد الحالة مهما تأخرت. تُنسب أولًا لحالة ذُكر اسم صيدليها في الرد، ثم لحالة من فريق المشرف أو ذكرته بالمنشن، ثم لأقرب حالة خلال 3 ساعات لم يُرد عليها. التصدير لا يحفظ الرسالة المقتبسة، فالنسبة تقديرية ودقيقة في الغالب.</p>';
   box.innerHTML=h;
 }
@@ -4865,7 +4904,9 @@ async function anXlsx(){
 
 /* ---------- Shell ---------- */
 function tabsFor(){
-  return adminMode()?[['cases','الاعتماد والحالات'],['posts','بوستات الشهر'],['badges','الشارات'],['dash','لوحة المتابعة'],['imp','استيراد الواتساب'],['log','المستخدمون والإعدادات']]:[['cases','حالاتي'],['imp','استيراد الواتساب'],['posts','بوستات الشهر']];
+  const ok=k=>k==='dash'?canDo('dash.view'):k==='imp'?canDo('imp.use')||canDo('dash.view'):k==='log'?(isAdminRole()||canDo('set.cats')||canDo('set.hc')||canDo('cases.delete')):true;
+  if(adminMode()) return [['cases','الاعتماد والحالات'],['posts','بوستات الشهر'],['badges','الشارات'],['dash','لوحة المتابعة'],['imp','استيراد الواتساب'],['log','المستخدمون والإعدادات']].filter(t=>ok(t[0]));
+  const R=[['cases','حالاتي'],['imp','استيراد الواتساب'],['posts','بوستات الشهر']]; if(canDo('dash.view')&&!R.some(t=>t[0]==='dash')) R.push(['dash','لوحة المتابعة']); return R.filter(t=>t[0]!=='imp'||canDo('imp.use'));
 }
 function hexMix_(hex,pct){ const h=hex.replace('#',''); const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); const mix=(v)=>Math.round(v*pct+255*(1-pct)); return 'rgb('+mix(r)+','+mix(g)+','+mix(b)+')'; }
 const DEFAULT_LOGO='data:image/png;base64,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';
@@ -4881,7 +4922,7 @@ function renderShell(){
   applyBrand();
   $('#sub').textContent=admin?'تقييم حالات USE Community واعتماد الشارات وبوست الشهر':(S.me.canEdit?'معاينة بوابة الإدخال كما يراها المقيّم':'بوابة الإدخال: أدخل حالاتك وتابع اعتمادها');
   $('#tabs').innerHTML=tabsFor().map(([k,l])=>'<button class="tab" data-tab="'+k+'" aria-current="'+(S.view===k)+'">'+l+'</button>').join('');
-  $('#roleBox').innerHTML=langBtnHtml()+'<span class="rbadge">'+(S.me.role==='admin'?'مدير':'مقيّم')+'</span><span class="who">'+esc(S.me.name)+'</span>'+(S.me.canEdit?'<button class="btn" id="btnPreview">'+(S.preview?'← العودة للوحة التحكم':'عرض بوابة الإدخال')+'</button>':'')+'<button class="btn" id="btnLogout">خروج</button>';
+  $('#roleBox').innerHTML=langBtnHtml()+'<span class="rbadge">'+(ROLE_NAMES[S.me.role]||'مقيّم')+'</span><span class="who">'+esc(S.me.name)+'</span>'+(S.me.canEdit?'<button class="btn" id="btnPreview">'+(S.preview?'← العودة للوحة التحكم':'عرض بوابة الإدخال')+'</button>':'')+'<button class="btn" id="btnLogout">خروج</button>';
 }
 function go(v){S.pick=v==='best'?S.pick:null;S.view=v;S.openId=null;S.draft=null;S.bd=null;renderShell();mount();window.scrollTo(0,0);}
 function mount(){
@@ -4992,7 +5033,7 @@ function openCase(id){
 function locked(){
   const d=S.draft; if(!S.me.canWrite) return true;
   if(S.isNew) return false;
-  if(S.adminEdit&&S.me.role==='admin') return false;
+  if(S.adminEdit&&canDo('cases.editAny')) return false;
   return !(statusOf(d.id)==='Returned'&&d.reviewerId===S.me.id);
 }
 function qHtml(q){
@@ -5093,7 +5134,7 @@ function refreshEditor(){
     if(!admin) h+='<div class="ok-msg">أُرسلت للاعتماد، ولا يمكن تعديلها الآن.</div>';
     else if(own.length) h+='<ul class="issues">'+own.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'; else h+='<div class="ok-msg">مستوفية شروط الاعتماد.</div>';
     if(admin&&S.railErr) h+='<div class="banner" style="margin-top:10px">'+esc(S.railErr)+'</div>';
-    if(admin){
+    if(admin&&canDo('approve.decide')){
       if(S.rail.mode==='reject') h+='<label class="f" style="margin-top:10px">سبب الرفض (الرفض نهائي)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn bad" id="btnRejectOk">تأكيد الرفض</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
       else if(S.rail.mode==='reopen') h+='<label class="f" style="margin-top:10px">ما الذي يحتاج تصحيحًا؟ (يظهر للمقيّم)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn primary" id="btnReopenOk">إعادة للمقيّم</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
       else h+='<div class="actions" style="margin-top:10px"><button class="btn primary" id="btnApprove"'+((is.length||!S.me.canWrite)?' disabled':'')+'>اعتماد</button><button class="btn" id="btnReopen">إعادة للتصحيح</button><button class="btn bad" id="btnReject"'+(S.me.canWrite?'':' disabled')+'>رفض</button></div>';
@@ -5101,15 +5142,15 @@ function refreshEditor(){
   } else {
     h+='<p class="note" style="margin:0">'+(st==='Approved'?'اعتمدها <b>'+esc(dec.approverName||'—')+'</b> بتاريخ <span class="mono">'+esc(dec.approvedAt||'')+'</span>.':'رُفضت. السبب: '+esc(dec.rejectReason||'—'))+'</p>';
     if(admin&&S.railErr) h+='<div class="banner" style="margin-top:10px">'+esc(S.railErr)+'</div>';
-    if(admin&&S.me.canWrite){
+    if(admin&&S.me.canWrite&&canDo('approve.change')){
       if(S.rail.mode==='reopen') h+='<label class="f" style="margin-top:10px">ما الذي يحتاج تصحيحًا؟ (يظهر للمقيّم)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><div class="actions" style="margin-top:8px"><button class="btn primary" id="btnReopenOk">إعادة للمقيّم</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
       else if(S.rail.mode==='change') h+='<label class="f" style="margin-top:10px">سبب تغيير القرار إلى «'+(st==='Approved'?'مرفوضة':'معتمدة')+'» (يُسجَّل ويظهر في الحالة)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label>'+(st==='Approved'?'<p class="note" style="margin:4px 0 0">إن كانت ضمن أفضل المشاركات فسيُلغى اختيارها.</p>':'')+'<div class="actions" style="margin-top:8px"><button class="btn '+(st==='Approved'?'bad':'primary')+'" id="btnChangeOk">تأكيد التغيير</button><button class="btn" id="btnRailCancel">إلغاء</button></div>';
       else h+='<div class="actions" style="margin-top:10px"><button class="btn" id="btnChangeDec">'+(st==='Approved'?'تغيير القرار إلى مرفوض':'تغيير القرار إلى معتمد')+'</button><button class="btn" id="btnReopen">إعادة للمقيّم للتصحيح</button></div>';
     } else if(st==='Rejected') h+='<p class="note">الرفض نهائي.</p>';
   }
-  if(admin&&d.id&&!S.isNew&&S.me.canWrite!==false){
+  if(admin&&d.id&&!S.isNew&&S.me.canWrite!==false&&(canDo('cases.delete')||canDo('cases.editAny'))){
     if(S.rail.mode==='delete') h+='<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px">'+(S.railErr?'<div class="banner" style="margin-bottom:8px">'+esc(S.railErr)+'</div>':'')+'<label class="f">سبب الحذف (مثال: حالة مكررة من 2026-09-004)<textarea id="railReason" rows="2">'+esc(S.rail.reason)+'</textarea></label><p class="note" style="margin:4px 0 8px">تختفي الحالة من القوائم ولوحة المتابعة والتقرير والبوستات، ويمكن استرجاعها من «المستخدمون والإعدادات».</p><div class="actions"><button class="btn bad" id="btnDeleteOk">تأكيد الحذف</button><button class="btn" id="btnRailCancel">إلغاء</button></div></div>';
-    else if(!S.rail.mode&&!S.adminEdit) h+='<div class="actions" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">'+(L?'<button class="btn" id="btnAdminEdit">✏️ تعديل الحالة</button>':'')+'<button class="btn bad" id="btnDelete" style="background:transparent">🗑 حذف الحالة (مكررة أو مُدخلة بالخطأ)</button></div>';
+    else if(!S.rail.mode&&!S.adminEdit) h+='<div class="actions" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">'+(L&&canDo('cases.editAny')?'<button class="btn" id="btnAdminEdit">✏️ تعديل الحالة</button>':'')+(canDo('cases.delete')?'<button class="btn bad" id="btnDelete" style="background:transparent">🗑 حذف الحالة (مكررة أو مُدخلة بالخطأ)</button>':'')+'</div>';
   }
   h+='</div>';
   h+='<div class="panel sec"><h3>بوست الشهر</h3>';
@@ -5317,7 +5358,11 @@ function cycleStage(){
   const d=new Date().getDate();
   if(d>=25||d<=1) return 0; if(d<=3) return 1; if(d===4) return 2; if(d<=7) return 3; if(d===8) return 4; if(d<=10) return 5; return -1;
 }
-function mountDash(){ $('#main').innerHTML='<div class="bar"><select id="dMonth" aria-label="الشهر"></select><span class="sp"></span></div><div id="dBody"></div>'; }
+const DTABS=[['ov','نظرة عامة'],['lv','الحل المتكامل'],['tna','التدريب والفجوات'],['part','المشاركة والمشرفين'],['ph','الصيادلة والشارات'],['cal','المعايرة']];
+function dTabsHtml_(){ const T=DTABS.filter(([k])=>k==='ov'||(k==='cal'?canDo('dash.calib'):canDo('dash.view'))); if(!T.some(t=>t[0]===S.dTab)) S.dTab='ov';
+  return T.map(([k,l])=>'<button type="button" class="chip'+(S.dTab===k?' on':'')+'" data-dtab="'+k+'">'+l+'</button>').join(''); }
+function dTabApply_(){ const b=$('#dBody'); if(b) b.dataset.tab=S.dTab||'ov'; const t=$('#dTabs'); if(t) t.innerHTML=dTabsHtml_(); }
+function mountDash(){ if(!S.dTab) S.dTab='ov'; $('#main').innerHTML='<div class="bar"><select id="dMonth" aria-label="الشهر"></select><span class="sp"></span></div><div id="dTabs" class="actions" style="margin:0 0 14px;gap:8px">'+dTabsHtml_()+'</div><div id="dBody" data-tab="'+(S.dTab||'ov')+'"></div>'; }
 function pct(a,b){return b?Math.round(a/b*100):null;}
 function updateDash(){
   const sel=$('#dMonth'); if(!sel) return;
@@ -5334,7 +5379,7 @@ function updateDash(){
   if(pm){ const cp=[...S.cases.entries()].filter(([id,c])=>c.month===pm).map(([id,c])=>({id,c,st:statusOf(id),r:resultsOf(id,c)})); if(cp.length){ const a2=cp.filter(x=>x.st==='Approved'); P={n:cp.length,ap:a2.length,pe:cp.filter(x=>x.st==='Pending').length,rj:cp.filter(x=>x.st==='Rejected').length,avg:a2.length?a2.reduce((s,x)=>s+metCount(x.r),0)/a2.length:null,inc:cp.filter(x=>Object.values(x.r).includes('Incomplete')).length}; } }
   const dl=(cur,prev,lowGood,dec)=>{ if(prev==null||cur==null||cur==='—') return '<span class="kd">&nbsp;</span>'; const d=(+cur)-(+prev); if(!d) return '<span class="kd">= مثل '+esc(monthLabel(pm))+'</span>'; const good=lowGood?d<0:d>0; return '<span class="kd '+(good?'up':'dn')+'">'+(d>0?'▲ ':'▼ ')+(dec?Math.abs(d).toFixed(1):Math.abs(d))+' عن '+esc(monthLabel(pm))+'</span>'; };
   let h='<div class="kpis kpis2">'+[['المقدَّمة',cs.length,P&&P.n],['المعتمدة',ap.length,P&&P.ap],['قيد المراجعة',pe.length,P&&P.pe,1],['المرفوضة',rj.length,P&&P.rj,1],['متوسط الشارات للمعتمدة',avg,P&&P.avg,0,1],['أدلة غير مكتملة',inc,P&&P.inc,1],['ملاحظات حوكمة',flags,null,1]].map(k=>'<div class="panel kpi"><span>'+k[0]+'</span><b>'+k[1]+'</b>'+dl(k[1],k[2],k[3],k[4])+'</div>').join('')+'</div>';
-  if(adminMode()) h+='<div id="dashLv"></div>';
+  h='<div data-dsec="ov">'+h+'</div>'; if(canDo('dash.view')) h+='<div id="dashLv"></div>';
   h+='<h2 class="sh" style="margin-top:0">مراحل بوست الشهر (للمختارة)</h2><div class="kpis">'+STAGE_KEYS.map(k=>'<div class="panel kpi"><span>'+STAGE_AR[k]+'</span><b>'+ap.filter(x=>(S.dec.get(x.id)||{}).featured&&((S.dec.get(x.id)||{}).postStage||'selected')===k).length+'</b></div>').join('')+'</div>';
   const rowsB=allBadges().filter(b=>b.active!==false||cs.some(x=>b.key in x.r));
   h+='<div class="panel tw"><table><thead><tr><th>الشارة</th><th>المقدَّمة</th><th>المنطبقة</th><th>متحققة</th><th>الانتشار على المنطبقة</th><th>على المعتمدة فقط</th></tr></thead><tbody>'+
@@ -5351,8 +5396,8 @@ function updateDash(){
    '</div></div><div><h2 class="sh">Workflow</h2><div class="panel tw"><table><thead><tr><th>اليوم</th><th>المرحلة</th><th>المسؤول</th></tr></thead><tbody>'+
    CYCLE.map((c,i)=>'<tr'+(i===stage?' style="background:var(--brand-soft)"':'')+'><td class="mono">'+c[0]+'</td><td>'+c[1]+(i===stage?' <span class="pill p-ok">الآن</span>':'')+'</td><td>'+c[2]+'</td></tr>').join('')+
    '</tbody></table></div><p class="note">'+(stage<0?'نحن بين دورتين حاليًا. تبدأ مرحلة الاختيار يوم 25. ':'')+'الأرقام أيام من الشهر. الاختيار يمتد من 25 إلى 1 من الشهر التالي.</p></div></div>';
-  if(adminMode()) h+='<div id="calibBox" style="margin-top:18px"></div>';
-  $('#dBody').innerHTML=h; if(adminMode()){ calibRender(); dashLevels_(); }
+  if(canDo('dash.calib')) h+='<div data-dsec="cal"><div id="calibBox"></div></div>';
+  $('#dBody').innerHTML=h; dTabApply_(); if(canDo('dash.view')) dashLevels_(); if(canDo('dash.calib')) calibRender();
 }
 function prevMonth_(m){ const [y,mo]=m.split('-').map(Number); const d=new Date(y,mo-2,1); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 // ---------- لوحة المتابعة: نضج «الحل المتكامل» من لقطات الاستخراج ----------
@@ -5367,6 +5412,17 @@ const GAP_DEF=[
   {k:'htreat',t:'حالات شعر بدون علاج موضعي',test:r=>r[11]==='hair'&&!(r[13]&32),base:r=>r[11]==='hair'&&(r[13]&512),rec:'العلاجات الموضعية للشعر (سيروم/لوشن) وطريقة استخدامها.'},
   {k:'add',t:'حالات أخرى بدون منتج إضافي (Cross-selling)',test:r=>r[11]==='other'&&!(r[13]&256),base:r=>r[11]==='other'&&(r[13]&512),rec:'الكروس سيلنج: ربط منتج تكميلي من موضوع آخر بالحاجة الأساسية للعميل.'}];
 function gapStats_(R){ return GAP_DEF.map(g=>{ const B=R.filter(r=>r.length>13&&g.base(r)); const n=B.filter(g.test).length; return Object.assign({},g,{n,of:B.length,p:B.length?Math.round(n/B.length*100):0}); }); }
+async function gapCases_(k){ let C; try{ C=await calibLoad_(); }catch(e){ return toast(e.message,true); } const ms=Object.keys(C.months).sort(); const m=(S.dashMonth&&S.dashMonth!=='all'&&C.months[S.dashMonth])?S.dashMonth:ms[ms.length-1];
+  const g=GAP_DEF.find(x=>x.k===k); if(!g) return; const R=(C.months[m].rows||[]).filter(r=>r.length>13&&g.base(r)&&g.test(r));
+  const I=impState(); if(!I.cases.length){ try{ if(await impSess.info()) await impSess.load(); }catch(e){} } const CM=new Map(impState().cases.map(c=>[c.key,c]));
+  const bySup={}; R.forEach(r=>{ const s2=r[10]||'— غير محدد'; bySup[s2]=(bySup[s2]||0)+1; });
+  let m2=$('#anModal'); if(m2) m2.remove(); m2=document.createElement('div'); m2.id='anModal'; m2.style.cssText='position:fixed;inset:0;background:rgba(10,20,40,.72);z-index:998;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto';
+  m2.innerHTML='<div style="background:var(--bg,#F5F7FA);border-radius:14px;max-width:1100px;width:100%;padding:18px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="flex:1"><b style="font-size:18px;color:var(--navy)">'+esc(g.t)+'</b><div class="note" style="margin:0">'+esc(monthLabel(m))+' · '+R.length+' حالة · التوصية: '+esc(g.rec)+'</div></div><button class="btn" type="button" id="phX">إغلاق</button></div>'+
+    '<div class="actions" style="margin:0 0 10px;gap:6px">'+Object.entries(bySup).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k2,n])=>'<span class="pill p-na">'+esc(k2)+' · '+n+'</span>').join('')+'</div>'+
+    '<div class="panel tw"><table><thead><tr><th>#</th><th>الصيدلي</th><th>المشرف</th><th>المجموعة</th><th>التاريخ</th><th>المستوى</th><th>الموضوع</th><th>نص الحالة</th><th></th></tr></thead><tbody>'+
+    R.slice().sort((a,b)=>(b[1]||0)-(a[1]||0)).slice(0,400).map((r,i)=>{ const c=CM.get(r[0]); const dt=String(r[0]).split('|')[1]||''; return '<tr><td class="num">'+(i+1)+'</td><td>'+esc(r[12]||'—')+'<div class="note" style="margin:0">'+(r[9]?'فرع '+esc(r[9]):'')+'</div></td><td>'+esc(r[10]||'—')+'</td><td>'+esc(r[4]||'')+'</td><td class="mono" style="white-space:nowrap">'+esc(dt.replace('T',' '))+'</td><td><span class="lvl lvl-'+(r[6]||0)+'"><i>'+LVL_LETTER[r[6]||0]+'</i></span> <span class="lvl-score">'+(r[1]||0)+'</span></td><td>'+esc(r[14]||'—')+'</td><td style="max-width:320px;white-space:normal;font-size:12.5px">'+(c?esc(String(c.text||'').slice(0,160))+'…':'<span class="note" style="margin:0">افتح جلسة الاستخراج لعرض النص</span>')+'</td><td>'+(c?'<button class="btn" type="button" data-gapopen="'+esc(r[0])+'" style="min-height:30px;padding:2px 10px">تفاصيل</button>':'')+'</td></tr>'; }).join('')+
+    '</tbody></table></div></div>';
+  document.body.appendChild(m2); m2.addEventListener('click',e=>{ if(e.target===m2||e.target.id==='phX') m2.remove(); const b=e.target.closest&&e.target.closest('[data-gapopen]'); if(b){ m2.remove(); impDetail(b.dataset.gapopen); } }); }
 function trainSec_(C,m){
   const R=(C.months[m].rows||[]).filter(r=>r.length>13); if(!R.length) return '<h2 class="sh">التدريب والفجوات</h2><div class="panel dsec"><p class="note">يظهر تحليل الفجوات بعد الاستخراج القادم (اللقطات القديمة لا تحتوي أدوار المنتجات).</p></div>';
   const G=gapStats_(R).filter(g=>g.of>=5).sort((a,b)=>b.p-a.p);
@@ -5375,7 +5431,7 @@ function trainSec_(C,m){
   const TP={}; R.forEach(r=>{ if(!r[14]) return; const o=TP[r[14]]||(TP[r[14]]={n:0,g:0}); o.n++; if(r[6]>=3) o.g++; }); const weak=Object.entries(TP).filter(([k,o])=>o.n>=8).map(([k,o])=>({k,n:o.n,p:Math.round(o.g/o.n*100)})).sort((a,b)=>a.p-b.p).slice(0,5);
   const bar=p=>'<div class="meter"><div class="track"><i style="width:'+p+'%;background:'+(p>=60?'var(--bad)':p>=35?'#E3A13B':'var(--good)')+'"></i></div><span class="num">'+p+'%</span></div>';
   let h='<h2 class="sh">التدريب والفجوات · '+esc(monthLabel(m))+'</h2><div class="two"><div class="panel dsec"><h3>الفجوات الأكثر تكرارًا</h3><div class="tw"><table><thead><tr><th>الفجوة</th><th>الحالات</th><th>النسبة</th></tr></thead><tbody>'+
-    G.map(g=>'<tr><td>'+esc(g.t)+'</td><td class="num">'+g.n+' من '+g.of+'</td><td style="min-width:150px">'+bar(g.p)+'</td></tr>').join('')+'</tbody></table></div><p class="note">محسوبة من الحالات التي عُرفت أصناف فاتورتها (مقروءة أو قرأها الذكاء الاصطناعي).</p></div>'+
+    G.map(g=>'<tr data-gap="'+g.k+'" title="اضغط لعرض الحالات"><td>'+esc(g.t)+' <span class="note" style="margin:0">›</span></td><td class="num">'+g.n+' من '+g.of+'</td><td style="min-width:150px">'+bar(g.p)+'</td></tr>').join('')+'</tbody></table></div><p class="note">محسوبة من الحالات التي عُرفت أصناف فاتورتها (مقروءة أو قرأها الذكاء الاصطناعي).</p></div>'+
     '<div class="panel dsec"><h3>توصيات تدريبية مقترحة</h3>'+top.map((g,i)=>'<div class="lead" style="align-items:flex-start"><span class="medal" style="background:var(--accent);color:#fff">'+(i+1)+'</span><div style="flex:1"><b>'+esc(g.rec)+'</b><div class="note" style="margin:2px 0 0">السبب: '+esc(g.t)+' في '+g.p+'% من الحالات'+(g.ws.length?' · الأعلى: '+g.ws.map(w=>esc(w.k)+' ('+w.p+'%)').join('، '):'')+'</div></div></div>').join('')+
     (weak.length?'<h3 style="margin-top:14px">المواضيع الأضعف في الحل المتكامل</h3>'+weak.map(w=>'<div class="lead"><div style="flex:1"><b>'+esc(w.k)+'</b><div class="note" style="margin:0">'+w.n+' حالة</div></div><span class="lead-v" style="color:var(--bad)">'+w.p+'%</span></div>').join(''):'')+'</div></div>';
   return h;
@@ -5423,30 +5479,44 @@ async function certPng_(nameKey){
   cv.toBlob(bl=>{ const u=URL.createObjectURL(bl); const a=document.createElement('a'); a.href=u; a.download='USE_Certificate_'+o.name.replace(/[^\p{L}\p{N}]+/gu,'_')+'.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); toast('✔ نُزّلت الشهادة.'); },'image/png');
 }
 // ===== 3) تقرير شهري للمشرف (صفحة جاهزة للطباعة/الحفظ PDF) =====
+async function sheetCanvas_(el){ await libOnce_(H2C_URL,()=>window.html2canvas); return window.html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false}); }
+async function sheetPdf_(el,name){ const cv=await sheetCanvas_(el); await libOnce_(JSPDF_URL,()=>window.jspdf&&window.jspdf.jsPDF);
+  const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); const W=190, pageH=277; const pxPerMm=cv.width/W, slice=Math.floor(pageH*pxPerMm);
+  for(let y=0,pg=0;y<cv.height;y+=slice,pg++){ const h=Math.min(slice,cv.height-y); const c=document.createElement('canvas'); c.width=cv.width; c.height=h; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,h); g.drawImage(cv,0,y,cv.width,h,0,0,cv.width,h); if(pg) pdf.addPage(); pdf.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',10,10,W,h/pxPerMm); }
+  await saveFile(name+'.pdf',pdf.output('blob')); }
 async function supReport_(sup){
-  let C; try{ C=await calibLoad_(); await hcLoad(); }catch(e){ return toast(e.message,true); } const ms=Object.keys(C.months).sort(); const m=(S.dashMonth!=='all'&&C.months[S.dashMonth])?S.dashMonth:ms[ms.length-1];
+  let C; try{ C=await calibLoad_(); await hcLoad(); }catch(e){ return toast(e.message,true); } const ms=Object.keys(C.months).sort(); const m=(S.dashMonth&&S.dashMonth!=='all'&&C.months[S.dashMonth])?S.dashMonth:ms[ms.length-1];
   const R=(C.months[m].rows||[]).filter(r=>r[10]===sup); const pc=(a,b)=>b?Math.round(a/b*100):0; const D=partData_(C,m); const P=D&&D.sups.find(o=>o.sup===sup);
-  const ap=new Set((C.g.approved||{})[m]||[]); const PI=phIndex_(C);
-  const ph={}; R.forEach(r=>{ const k=normN_(r[12]||''); const o=ph[k]||(ph[k]={name:r[12]||'—',br:r[9]||'',n:0,a:0,g:0,ap:0}); o.n++; if(r[6]===4) o.a++; if(r[6]>=3) o.g++; if(ap.has(r[0])) o.ap++; });
-  const rows=Object.entries(ph).sort((a,b)=>pc(b[1].g,b[1].n)-pc(a[1].g,a[1].n)||b[1].n-a[1].n);
-  const rec=o=>o.n<2?'تشجيع على مشاركة حالات أكثر':pc(o.g,o.n)>=40?'قدوة — مشاركة حالاته مع الفريق':pc(o.g,o.n)>=15?'إكمال الروتين وإضافة العلاج':'أولوية كوتشينغ: بناء الحل المتكامل';
-  const tier=k=>{ const o=PI.get(k); const t=o&&tierOf_(o,C).tier; return t?t.n:''; };
-  const G=gapStats_(R.filter(r=>r.length>13)).filter(g=>g.of>=3).sort((a,b)=>b.p-a.p).slice(0,3);
+  const pm=ms[ms.indexOf(m)-1]; const RP=pm?(C.months[pm].rows||[]).filter(r=>r[10]===sup):[];
+  const ap=new Set((C.g.approved||{})[m]||[]); const PI=phIndex_(C); const good=r=>r[6]>=3;
+  const ph={}; R.forEach(r=>{ const k=normN_(r[12]||''); const o=ph[k]||(ph[k]={k,name:r[12]||'—',br:r[9]||'',n:0,a:0,g:0,ap:0}); o.n++; if(r[6]===4) o.a++; if(good(r)) o.g++; if(ap.has(r[0])) o.ap++; });
+  const rows=Object.values(ph).sort((a,b)=>pc(b.g,b.n)-pc(a.g,a.n)||b.n-a.n);
+  const rec=o=>o.n<2?'تشجيع على مشاركة حالات أكثر':pc(o.g,o.n)>=40?'قدوة — شارك حالاته مع الفريق':pc(o.g,o.n)>=15?'إكمال الروتين وإضافة العلاج':'أولوية كوتشينغ: بناء الحل المتكامل';
+  const tier=k=>{ const o=PI.get(k); const t=o&&tierOf_(o,C).tier; return t?'<span class="rs-p" style="background:'+t.c+';color:#fff">'+t.n+'</span>':'—'; };
+  const G=gapStats_(R.filter(r=>r.length>13)).filter(g=>g.of>=3).sort((a,b)=>b.p-a.p).slice(0,4);
+  const TP={}; R.forEach(r=>{ const k=r[14]||r[11]; if(k) TP[k]=(TP[k]||0)+1; }); const tps=Object.entries(TP).sort((a,b)=>b[1]-a[1]).slice(0,8); const tmax=Math.max(1,...tps.map(x=>x[1]));
+  const lv=[4,3,2,1,0].map(l=>R.filter(r=>(r[6]||0)===l).length);
   const best=R.slice().sort((a,b)=>(b[6]-a[6])||(b[1]-a[1]))[0]; const bc=best&&impState().cases.find(c=>c.key===best[0]);
-  const good=R.filter(r=>r[6]>=3).length;
-  const css='body{font-family:"IBM Plex Sans Arabic",Tahoma,Arial,sans-serif;color:#14213D;margin:0;padding:28px;background:#fff}h1{margin:0;color:#003261;font-size:24px}h2{color:#003261;font-size:16px;margin:22px 0 8px;border-bottom:2px solid #E3E8EF;padding-bottom:4px}.k{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}.k div{border:1px solid #E3E8EF;border-radius:10px;padding:10px}.k span{display:block;font-size:12px;color:#4A5872}.k b{font-size:24px;color:#003261}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#F1F5FB;text-align:start;padding:7px;border-bottom:1px solid #C9D3E0}td{padding:7px;border-bottom:1px solid #EEF1F5}.n{color:#4A5872;font-size:12.5px}.bar{display:inline-block;height:8px;border-radius:4px;background:#003261;vertical-align:middle}.box{border:1px solid #E3E8EF;border-radius:10px;padding:12px;line-height:1.8;white-space:pre-wrap}@media print{.np{display:none}body{padding:10mm}}';
-  const html='<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تقرير المشرف — '+esc(sup)+' — '+esc(monthLabel(m))+'</title><style>'+css+'</style></head><body>'+
-    '<div class="np" style="text-align:left;margin-bottom:10px"><button onclick="print()" style="padding:10px 18px;border-radius:8px;border:0;background:#C2410C;color:#fff;font:inherit;font-weight:700;cursor:pointer">طباعة / حفظ PDF</button></div>'+
-    '<div class="n">Talent Management · USE Community</div><h1>تقرير المشرف: '+esc(sup)+'</h1><div class="n">'+esc(monthLabel(m))+'</div>'+
-    '<div class="k"><div><span>حالات الفريق</span><b>'+R.length+'</b></div><div><span>حلول متكاملة (أ + ب)</span><b>'+pc(good,R.length)+'%</b></div><div><span>نسبة المشاركة</span><b>'+(P?pc(P.yes.length,P.all.length)+'%':'—')+'</b><span>'+(P?P.yes.length+' من '+P.all.length:'')+'</span></div><div><span>حالات معتمدة</span><b>'+R.filter(r=>ap.has(r[0])).length+'</b></div></div>'+
-    '<h2>صيادلة الفريق</h2><table><thead><tr><th>الصيدلي</th><th>الفرع</th><th>الحالات</th><th>أ</th><th>أ + ب</th><th>معتمدة</th><th>المستوى</th><th>التوصية</th></tr></thead><tbody>'+rows.map(([k,o])=>'<tr><td>'+esc(o.name)+'</td><td>'+esc(o.br)+'</td><td>'+o.n+'</td><td>'+o.a+'</td><td><span class="bar" style="width:'+Math.max(2,pc(o.g,o.n)*0.6)+'px"></span> '+pc(o.g,o.n)+'%</td><td>'+o.ap+'</td><td>'+esc(tier(k))+'</td><td class="n">'+esc(rec(o))+'</td></tr>').join('')+'</tbody></table>'+
-    (G.length?'<h2>أهم الفجوات والتوصيات التدريبية</h2><table><thead><tr><th>الفجوة</th><th>النسبة</th><th>التوصية</th></tr></thead><tbody>'+G.map(g=>'<tr><td>'+esc(g.t)+'</td><td>'+g.p+'% ('+g.n+' من '+g.of+')</td><td class="n">'+esc(g.rec)+'</td></tr>').join('')+'</tbody></table>':'')+
-    (P&&P.no.length?'<h2>صيادلة لم يشاركوا هذا الشهر ('+P.no.length+')</h2><div class="n" style="line-height:1.9">'+P.no.map(p=>esc(p.ar||p.en||p.alias||'')+(p.branch?' ('+esc(p.branch)+')':'')).join(' · ')+'</div>':'')+
-    (P&&P.stopped.length?'<h2>توقفوا عن المشاركة</h2><div class="n">'+P.stopped.map(p=>esc(p.ar||p.en||'')).join(' · ')+'</div>':'')+
-    (best?'<h2>أفضل حالة في الفريق</h2><div class="n">'+esc(best[12]||'')+' · '+esc(String(best[0]).split('|')[1]||'').replace('T',' ')+' · مستوى '+(LVL_LETTER[best[6]||0])+'</div>'+(bc&&bc.text?'<div class="box">'+esc(bc.text.slice(0,1200))+'</div>':''):'')+
-    '<p class="n" style="margin-top:24px">التوصيات مبنية على بيانات الحالات المشارَكة في مجموعات USE Community، وهي نقطة بداية للحوار مع الفريق وليست تقييم أداء.</p></body></html>';
-  const w=window.open('','_blank'); if(!w) return toast('اسمح بالنوافذ المنبثقة لفتح التقرير.',true); w.document.open(); w.document.write(html); w.document.close();
-}
+  const groups=[...new Set(R.map(r=>r[4]).filter(Boolean))].join('، '), brs=new Set(R.map(r=>r[9]).filter(Boolean)).size;
+  const tbl=(head,rws)=>'<table class="rs-t"><thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rws.join('')+'</tbody></table>';
+  const rc=v=>'<span class="rs-p '+(v>=40?'ok':v>=20?'w':'no')+'">'+v+'%</span>';
+  const kp=(l,v,s2)=>'<div class="rs-k"><span>'+l+'</span><b>'+v+'</b>'+(s2?'<i>'+s2+'</i>':'')+'</div>';
+  const dlt=(a,b)=>b==null?'':(a>b?'▲ ':a<b?'▼ ':'')+'الشهر السابق: '+b;
+  const sheet='<div class="rs" id="supSheet"><div class="rs-h"><div><div class="rs-k0">USE Community · Talent Management</div><h2>تقرير المشرف — '+esc(sup)+'</h2><div class="rs-sub">'+esc(monthLabelAr(m))+(groups?' · المجموعات: '+esc(groups):'')+' · '+brs+' فرع</div></div><div class="rs-meta">أُنشئ '+esc(new Date().toISOString().slice(0,16).replace('T',' '))+'<br>بواسطة '+esc(S.me.name||'')+'</div></div>'+
+    '<div class="rs-kpis">'+kp('حالات الفريق',R.length,dlt(R.length,pm?RP.length:null))+kp('مشاركة الفريق',P?pc(P.yes.length,P.all.length)+'%':'—',P?P.yes.length+' من '+P.all.length+' صيدلي':'')+kp('حلول متكاملة (أ + ب)',pc(R.filter(good).length,R.length)+'%',pm?'الشهر السابق: '+pc(RP.filter(good).length,RP.length)+'%':'')+kp('حالات «أ»',lv[0],pc(lv[0],R.length)+'% من الحالات')+kp('معتمدة',R.filter(r=>ap.has(r[0])).length,'')+kp('توقفوا عن المشاركة',P?P.stopped.length:'—','')+'</div>'+
+    '<h3>مستوى الحلول</h3><div class="rs-b" style="grid-template-columns:1fr"><i style="display:flex;height:16px;border-radius:8px;overflow:hidden;background:#EEF1F5">'+[[lv[0],'var(--lvl4)'],[lv[1],'var(--lvl3)'],[lv[2],'#E3A13B']].map(([v,c])=>'<u style="width:'+pc(v,R.length)+'%;background:'+c+';display:block;height:100%"></u>').join('')+'</i></div><div class="rs-n" style="margin-top:4px">أ '+lv[0]+' · ب '+lv[1]+' · ج '+lv[2]+' · منتج/منتجان أو بدون '+(lv[3]+lv[4])+'</div>'+
+    '<h3>صيادلة الفريق</h3>'+tbl(['الصيدلي','الفرع','الحالات','أ','أ + ب','معتمدة','المستوى','التوصية'],rows.map(o=>'<tr><td><b>'+esc(o.name)+'</b></td><td>'+esc(o.br||'—')+'</td><td>'+o.n+'</td><td>'+o.a+'</td><td>'+rc(pc(o.g,o.n))+'</td><td>'+o.ap+'</td><td>'+tier(o.k)+'</td><td>'+esc(rec(o))+'</td></tr>'))+
+    '<div class="rs-2"><div><h3>أهم الفجوات والتدريب المقترح</h3>'+(G.length?tbl(['الفجوة','النسبة','التوصية'],G.map(g=>'<tr><td>'+esc(g.t)+'</td><td>'+rc(g.p)+'<div class="rs-n">'+g.n+' من '+g.of+'</div></td><td>'+esc(g.rec)+'</td></tr>')):'<p class="rs-n">لا توجد بيانات كافية.</p>')+
+      '<h3>لم يشاركوا هذا الشهر'+(P?' ('+P.no.length+')':'')+'</h3>'+(P&&P.no.length?'<p style="line-height:1.9;margin:0">'+P.no.slice(0,80).map(p=>esc(p.ar||p.en||p.alias||'')+(p.branch?' <span class="rs-n">('+esc(p.branch)+')</span>':'')).join(' · ')+'</p>':'<p class="rs-n">'+(P?'كل الفريق شارك 👏':'ارفع قائمة الموظفين لحسابها.')+'</p>')+
+      (P&&P.stopped.length?'<h3>توقفوا عن المشاركة</h3><p style="margin:0">'+P.stopped.map(p=>esc(p.ar||p.en||'')).join(' · ')+'</p>':'')+'</div>'+
+      '<div><h3>المواضيع</h3>'+(tps.map(([k2,n])=>'<div class="rs-b"><span>'+esc(k2)+'</span><i><u style="width:'+Math.round(n*100/tmax)+'%"></u></i><b>'+n+'</b></div>').join('')||'<p class="rs-n">—</p>')+
+      (best?'<h3>أفضل حالة في الفريق</h3><div style="border:1px solid #e3e8ef;border-radius:8px;padding:10px"><b>'+esc(best[12]||'')+'</b> <span class="rs-n">· '+esc(String(best[0]).split('|')[1]||'').replace('T',' ')+' · مستوى '+LVL_LETTER[best[6]||0]+' · '+(best[1]||0)+'</span>'+(bc&&bc.text?'<p style="white-space:pre-wrap;line-height:1.7;margin:6px 0 0;font-size:12px">'+esc(bc.text.slice(0,700))+'</p>':'')+'</div>':'')+'</div></div>'+
+    '<p class="rs-n">التوصيات مبنية على حالات USE Community المشارَكة في مجموعات الواتساب، وهي نقطة بداية للحوار مع الفريق وليست تقييم أداء. «أ + ب» = حل متكامل أو 3 منتجات فأكثر.</p></div>';
+  let md=$('#anModal'); if(md) md.remove(); md=document.createElement('div'); md.id='anModal'; md.style.cssText='position:fixed;inset:0;background:rgba(10,20,40,.72);z-index:998;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto';
+  md.innerHTML='<div style="background:var(--bg,#F5F7FA);border-radius:14px;max-width:1060px;width:100%;padding:16px"><div class="actions" style="margin:0 0 12px"><button class="btn primary" type="button" id="supPdf">⬇ تنزيل PDF</button><button class="btn" type="button" id="supPng">⬇ تنزيل صورة PNG</button><span class="sp" style="flex:1"></span><button class="btn" type="button" id="phX">إغلاق</button></div><div style="overflow:auto">'+sheet+'</div></div>';
+  document.body.appendChild(md); const nm='تقرير_المشرف_'+String(sup).replace(/[^\p{L}\p{N}]+/gu,'_')+'_'+m;
+  md.addEventListener('click',async e=>{ if(e.target===md||e.target.id==='phX') return md.remove(); const id=e.target.id; if(id!=='supPdf'&&id!=='supPng') return; const b=e.target, old=b.textContent; b.disabled=true; b.textContent='جارٍ التجهيز…';
+    try{ const el=$('#supSheet'); if(id==='supPdf') await sheetPdf_(el,nm); else { const cv=await sheetCanvas_(el); const bl=await new Promise(r=>cv.toBlob(r,'image/png')); await saveFile(nm+'.png',bl); } }catch(err){ toast(err.message,true); } b.disabled=false; b.textContent=old; }); }
 async function dashLevels_(){
   const box=$('#dashLv'); if(!box) return; box.innerHTML='<p class="note">جارٍ تحميل مستوى الحلول…</p>';
   let C; try{ C=await calibLoad_(); }catch(e){ box.innerHTML=''; return; }
@@ -5457,7 +5527,7 @@ async function dashLevels_(){
   const cur=pct(R.filter(good).length,R.length), prv=PR.length?pct(PR.filter(good).length,PR.length):null;
   const nA=R.filter(r=>r[6]===4).length, nB=R.filter(r=>r[6]===3).length, nC=R.filter(r=>r[6]===2).length;
   const kd=(c,p)=>p==null?'<span class="kd">&nbsp;</span>':'<span class="kd '+(c>=p?'up':'dn')+'">'+(c===p?'= ':c>p?'▲ ':'▼ ')+Math.abs(c-p)+' نقطة عن '+esc(monthLabel(pm))+'</span>';
-  let h='<h2 class="sh">نضج «الحل المتكامل» · '+esc(monthLabel(m))+' <span class="note" style="font-weight:400">('+R.length+' حالة مستخرجة)</span></h2>'+
+  let h='<div data-dsec="lv"><h2 class="sh">نضج «الحل المتكامل» · '+esc(monthLabel(m))+' <span class="note" style="font-weight:400">('+R.length+' حالة مستخرجة)</span></h2>'+
     '<div class="kpis kpis2"><div class="panel kpi"><span>حلول متكاملة (أ + ب)</span><b>'+cur+'%</b>'+kd(cur,prv)+'</div>'+
     '<div class="panel kpi"><span>أ · حل متكامل</span><b>'+nA+'</b><span class="kd">'+pct(nA,R.length)+'% من الحالات</span></div>'+
     '<div class="panel kpi"><span>ب · 3 منتجات+</span><b>'+nB+'</b><span class="kd">'+pct(nB,R.length)+'%</span></div>'+
@@ -5497,11 +5567,11 @@ async function dashLevels_(){
   const stars=PI.filter(o=>o.n>=3).sort((a,b)=>pc2(b)-pc2(a)||b.n-a.n).slice(0,8), coach=PI.filter(o=>o.n>=3).sort((a,b)=>pc2(a)-pc2(b)||b.n-a.n).slice(0,8);
   const prow=o=>'<tr><td><button type="button" class="phlink" data-phprof="'+esc(o.k)+'">'+esc(o.name)+'</button></td><td>'+esc(top1_(o.sup)||'—')+'</td><td class="num">'+o.n+'</td><td class="num">'+o.lv[4]+'</td><td class="num"><b>'+pc2(o)+'%</b></td></tr>';
   const pth='<thead><tr><th>الصيدلي</th><th>المشرف</th><th>الحالات</th><th>أ</th><th>أ + ب</th></tr></thead>';
-  h+='<h2 class="sh">ملف الصيدلي</h2><div class="panel dsec"><label class="f" style="max-width:520px">ابحث عن صيدلي لفتح ملفه<input type="search" id="phQ" list="phList" placeholder="اكتب الاسم ثم اختر…" autocomplete="off"></label><datalist id="phList">'+PI.sort((a,b)=>b.n-a.n).slice(0,1500).map(o=>'<option value="'+esc(o.name)+'">').join('')+'</datalist><p class="note" style="margin:6px 0 0">'+PI.length+' صيدلي في البيانات. الملف يعرض حالاته المشارَكة، مستوى حلوله شهريًا، شاراته، وتوصية تطوير.</p></div>'+
+  h+='</div><div data-dsec="ph"><h2 class="sh">ملف الصيدلي</h2><div class="panel dsec"><label class="f" style="max-width:520px">ابحث عن صيدلي لفتح ملفه<input type="search" id="phQ" list="phList" placeholder="اكتب الاسم ثم اختر…" autocomplete="off"></label><datalist id="phList">'+PI.sort((a,b)=>b.n-a.n).slice(0,1500).map(o=>'<option value="'+esc(o.name)+'">').join('')+'</datalist><p class="note" style="margin:6px 0 0">'+PI.length+' صيدلي في البيانات. الملف يعرض حالاته المشارَكة، مستوى حلوله شهريًا، شاراته، وتوصية تطوير.</p></div>'+
     '<div class="two"><div class="panel dsec"><h3>الأعلى في الحل المتكامل (3 حالات أو أكثر)</h3><div class="tw"><table>'+pth+'<tbody>'+(stars.map(prow).join('')||'<tr><td colspan="5" class="note">لا بيانات كافية</td></tr>')+'</tbody></table></div></div>'+
     '<div class="panel dsec"><h3>فرص تطوير: أولوية كوتشينغ (3 حالات أو أكثر)</h3><div class="tw"><table>'+pth+'<tbody>'+(coach.map(prow).join('')||'<tr><td colspan="5" class="note">لا بيانات كافية</td></tr>')+'</tbody></table></div></div></div>';
   try{ await hcLoad(); }catch(e){}
-  h+=trainSec_(C,m)+partSec_(C,m)+tierSec_(C,PI);
+  h+=tierSec_(C,PI)+'</div><div data-dsec="tna">'+trainSec_(C,m)+'</div><div data-dsec="part">'+partSec_(C,m)+'</div>';
   S._phNames=new Map(PI.map(o=>[o.name,o.k]));
   if(!$('#dashLv')) return; $('#dashLv').innerHTML=h;
 }
@@ -5621,8 +5691,12 @@ function mountRules(){
 
 /* ---------- Log & settings ---------- */
 function mountUsers(){ $('#main').innerHTML=usersHtml(); }
-function mountLog(){
-  $('#main').innerHTML=usersHtml()+'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p><h2 class="sh">قائمة الموظفين (مرجع تحليل الواتساب)</h2><div class="panel sec" id="hcBox"></div><h2 class="sh">تصنيفات استيراد الواتساب</h2><div class="panel sec" id="icBox"></div><h2 class="sh">التصنيفات الدقيقة (مشكلة العميل)</h2><div class="panel sec" id="isubBox"></div><h2 class="sh">أدوار الروتين (لتحديد «الحل المتكامل» من الفاتورة)</h2><div class="panel sec" id="rolesBox"></div><h2 class="sh">محور الشهر</h2><div class="panel sec" id="themeBox"></div><h2 class="sh">مكتبة صور المنتجات</h2><div class="panel sec" id="plibBox"></div><h2 class="sh">إشارات ترشيح الحالات</h2><div class="panel sec" id="scBox"></div><h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div><h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>';
+function mountLog(){ const A=isAdminRole(), sec=(ok,h)=>ok?h:'<div hidden>'+h+'</div>';
+  $('#main').innerHTML=(A?usersHtml():'<div hidden><div id="codeBox"></div><table><tbody id="uB"></tbody></table></div>')+sec(A,'<h2 class="sh">الذكاء الاصطناعي</h2><div class="panel sec" id="aiBox"></div><h2 class="sh">الهوية والألوان</h2><div class="panel sec" id="brandBox"></div><h2 class="sh">إعدادات الضبط</h2><div class="panel" id="setBox"></div><p class="note" id="setNote"></p>')+
+   sec(canDo('set.hc'),'<h2 class="sh">قائمة الموظفين (مرجع تحليل الواتساب)</h2><div class="panel sec" id="hcBox"></div>')+
+   sec(canDo('set.cats'),'<h2 class="sh">تصنيفات استيراد الواتساب</h2><div class="panel sec" id="icBox"></div><h2 class="sh">التصنيفات الدقيقة (مشكلة العميل)</h2><div class="panel sec" id="isubBox"></div><h2 class="sh">أدوار الروتين (لتحديد «الحل المتكامل» من الفاتورة)</h2><div class="panel sec" id="rolesBox"></div><h2 class="sh">محور الشهر</h2><div class="panel sec" id="themeBox"></div>')+
+   sec(canDo('set.hc'),'<h2 class="sh">مكتبة صور المنتجات</h2><div class="panel sec" id="plibBox"></div>')+sec(canDo('set.cats'),'<h2 class="sh">إشارات ترشيح الحالات</h2><div class="panel sec" id="scBox"></div>')+
+   sec(canDo('cases.delete'),'<h2 class="sh">الحالات المحذوفة</h2><div id="delBox"></div>')+sec(A,'<h2 class="sh">سجل التدقيق</h2><div class="panel tw"><table><thead><tr><th>التاريخ</th><th>الحالة</th><th>الإجراء</th><th>المنفّذ</th><th>الملاحظة</th></tr></thead><tbody id="auditB"></tbody></table></div>');
 }
 function updateDeleted(){
   const box=$('#delBox'); if(!box) return; const L=S.deleted||[];
@@ -5685,12 +5759,12 @@ const isBest=id=>statusOf(id)==='Approved'&&!!(S.dec.get(id)||{}).featured;
 function nominatedMonths(){ const adm=adminMode(); return [...new Set([...S.cases.values()].filter(c=>statusOf(c.id)==='Approved'||(adm&&statusOf(c.id)==='Pending')).map(c=>c.month))].sort().reverse(); }
 function mountPosts(){
   if(!adminMode()){ $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>'; S.postsSig=''; return; }
-  $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span><label class="f" style="flex-direction:row;align-items:center;gap:8px">عدد أفضل المشاركات<input type="number" id="bestCountIn" min="1" max="20" value="'+(S.settings.bestCount||3)+'" style="width:70px;border:1.5px solid var(--line);border-radius:7px;padding:6px 8px"></label><button class="btn" id="btnBestCount">حفظ العدد</button><button class="btn" id="btnAllZip">⬇ تحميل كل البوستات المعتمدة (ZIP)</button><button class="btn primary" id="btnBestZip">⬇ تحميل أفضل المشاركات (ZIP)</button>'+(adminMode()?'<button class="btn" id="btnMonthPage">🌐 صفحة الشهر للصيادلة</button>':'')+'</div><div id="pTabs" class="actions" style="margin:0 0 12px"></div><div id="pNames"></div><div id="pPage"></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>';
+  $('#main').innerHTML='<div class="bar"><select id="pMonth" aria-label="الشهر"></select><span class="sp"></span><label class="f" style="flex-direction:row;align-items:center;gap:8px">عدد أفضل المشاركات<input type="number" id="bestCountIn" min="1" max="20" value="'+(S.settings.bestCount||3)+'" style="width:70px;border:1.5px solid var(--line);border-radius:7px;padding:6px 8px"></label><button class="btn" id="btnBestCount">حفظ العدد</button><button class="btn" id="btnAllZip">⬇ تحميل كل البوستات المعتمدة (ZIP)</button><button class="btn primary" id="btnBestZip">⬇ تحميل أفضل المشاركات (ZIP)</button>'+(canDo('posts.page')?'<button class="btn" id="btnMonthPage">🌐 صفحة الشهر للصيادلة</button>':'')+'</div><div id="pTabs" class="actions" style="margin:0 0 12px"></div><div id="pNames"></div><div id="pPage"></div><div id="pSummary"></div><div id="pList" style="display:flex;flex-direction:column;gap:18px"></div>';
   S.postsSig='';
 }
 // ---------- أسماء البوست بالعربي (للصيدلي والمشرف) ----------
 function pNamesList_(){ const L=new Map(); [...S.cases.values()].filter(c=>c.month===S.postsMonth&&statusOf(c.id)==='Approved').forEach(c=>[[c.pharmacist,'صيدلي'],[c.supervisor,'مشرف']].forEach(([v,r])=>{ const n=stripDr_(v); if(!n||AR_LET_.test(n)) return; const k=normN_(n); if(!k) return; const o=L.get(k)||{k,n,roles:new Set(),cnt:0}; o.roles.add(r); o.cnt++; L.set(k,o); })); return [...L.values()].sort((a,b)=>a.n.localeCompare(b.n)); }
-function pNamesRender_(force){ const box=$('#pNames'); if(!box) return; if(!adminMode()){ box.innerHTML=''; return; }
+function pNamesRender_(force){ const box=$('#pNames'); if(!box) return; if(!canDo('posts.names')){ box.innerHTML=''; return; }
   const L=pNamesList_(), M=(S.settings||{}).arNames||{}; const sig=S.postsMonth+'|'+L.map(o=>o.k).join(',')+'|'+JSON.stringify(M);
   if(!force&&box.dataset.sig===sig) return; box.dataset.sig=sig; if(!L.length){ box.innerHTML=''; return; }
   const miss=L.filter(o=>!M[o.k]).length;
@@ -5721,7 +5795,7 @@ function plAdd_(){ plCollect_(); const D=S.pLinksDraft; const used=new Set(D.map
 function plDel_(i){ plCollect_(); const D=S.pLinksDraft, o=D[i]; if(!o) return; if(!confirm('حذف الرابط «'+(o.label||o.g)+'»؟ الزيارات المسجلة له تبقى محفوظة.')) return; D.splice(i,1); S.plVer=(S.plVer||0)+1; pPageRender_(); }
 function plSave_(){ plCollect_(); const D=S.pLinksDraft||[]; const seen=new Set(); for(const o of D){ if(!/^[A-Za-z0-9_-]{1,12}$/.test(o.g)) return toast('الرمز «'+o.g+'» غير صالح: حروف إنجليزية أو أرقام فقط (حتى 12).',true); const k=o.g.toLowerCase(); if(seen.has(k)) return toast('الرمز «'+o.g+'» مكرر.',true); seen.add(k); }
   if(S.busy) return; S.busy=true; call('saveSettings',{pageLinks:D.map(o=>({g:o.g,label:o.label}))}).then(s2=>{ S.settings=Object.assign({},S.settings,s2); S.busy=false; S.pLinksDraft=null; S.plVer=(S.plVer||0)+1; pPageRender_(); toast('✔ حُفظت الروابط.'); }).catch(e=>{ S.busy=false; toast(e.message,true); }); }
-function pPageRender_(){ const box=$('#pPage'); if(!box) return; if(!adminMode()||!S.postsMonth){ box.innerHTML=''; return; }
+function pPageRender_(){ const box=$('#pPage'); if(!box) return; if(!canDo('posts.page')||!S.postsMonth){ box.innerHTML=''; return; }
   const m=S.postsMonth; const key=m+'|'+(S.pViewsAt||'')+'|'+(S.plVer||0)+'|'+JSON.stringify((S.settings||{}).pageLinks||null); if(box.dataset.k===key) return; box.dataset.k=key;
   const wasOpen=!!(box.querySelector('details')||{}).open;
   if(!S.pLinksDraft) S.pLinksDraft=pLinks_().map(o=>({g:o.g,label:o.label}));
@@ -5772,7 +5846,7 @@ function pageHtml_(m,top,rest,logo){
     (rest.length?'<div class="div"></div><div class="hd"><h2>Congratulations to all approved contributions in '+esc(mEn)+'</h2><p dir="rtl">باقي المشاركات المعتمدة ('+rest.length+')</p></div><div class="card">'+car('c2',rest)+'</div><p class="hint">Use the arrow keys or swipe to explore every highlight.</p>':'')+
     '</main><footer>'+lg+'<div><b>United Pharmaceuticals Company</b><span>Talent Management Department</span></div></footer><script>'+js+'<\/script></body></html>';
 }
-async function monthPage_(){ if(!adminMode()) return; const m=S.postsMonth; if(!m) return; if(S.busy) return;
+async function monthPage_(){ if(!canDo('posts.page')) return; const m=S.postsMonth; if(!m) return; if(S.busy) return;
   const inM=[...S.cases.values()].filter(c=>c.month===m&&statusOf(c.id)==='Approved').map(c=>c.id).sort();
   if(!inM.length) return toast('لا توجد حالات معتمدة في هذا الشهر.',true);
   const top=inM.filter(isBest), rest=inM.filter(id=>!isBest(id));
@@ -5790,7 +5864,7 @@ async function monthPage_(){ if(!adminMode()) return; const m=S.postsMonth; if(!
 function updatePosts(){
   const sel=$('#pMonth'); if(!sel) return; const ms=nominatedMonths();
   if(!S.postsMonth||!ms.includes(S.postsMonth)) S.postsMonth=ms[0]||'';
-  const ro=!adminMode();
+  const ro=!adminMode()||!canDo('approve.featured');
   sel.innerHTML=ms.length?ms.map(m=>'<option value="'+m+'">'+esc(monthLabel(m))+'</option>').join(''):'<option value="">'+'لا توجد حالات معتمدة'+'</option>'; sel.value=S.postsMonth;
   const inM=[...S.cases.values()].filter(c=>c.month===S.postsMonth);
   const nPend=inM.filter(c=>statusOf(c.id)==='Pending').length, nAppr=inM.filter(c=>statusOf(c.id)==='Approved').length, nBest=inM.filter(c=>statusOf(c.id)==='Approved'&&(S.dec.get(c.id)||{}).featured).length;
@@ -6106,7 +6180,7 @@ async function autoProdImgs(only){
   }catch(e){ toast(e.message,true); }
   S.pimgBusy=false; const b2=$('#btnAutoImgs'); if(b2){ b2.disabled=false; b2.textContent=trStr('🔍 جلب صور المنتجات تلقائيًا'); }
 }
-function canEditImgs(id){ return adminMode()||(statusOf(id)==='Approved'&&(S.cases.get(id)||{}).reviewerId===S.me.id); }
+function canEditImgs(id){ return canDo('posts.edit')||(statusOf(id)==='Approved'&&(S.cases.get(id)||{}).reviewerId===S.me.id); }
 async function openPost(id){ S.postId=id; S.view='post'; S.pimgs=[]; S.postFrom=S.view; S.openId=null; S.draft=null; renderShell(); mount(); window.scrollTo(0,0);
   try{ const r=await call('getPostImages',{ids:[id]}); if(S.view==='post'&&S.postId===id){ S.pimgs=(r[id]||[]).slice(); const before=S.pimgs.filter(Boolean).length; const m2=await withLib_([id],{[id]:S.pimgs.slice()}); if(S.view!=='post'||S.postId!==id) return; S.pimgs=(m2[id]||[]).slice(); renderPost(); pimgPrev_();
     const added=S.pimgs.filter(Boolean).length-before; if(added>0&&canEditImgs(id)){ savePimgs_(id).then(()=>{ S.postsSig=''; toast('✔ تم جلب '+added+' صورة منتج تلقائيًا وحفظها مع البوست.'); }).catch(()=>{}); } } }catch(e){} }
@@ -6195,14 +6269,27 @@ function relist(){ const a=$('#lSituation'),b=$('#lProducts'); if(a) a.innerHTML
 
 /* ---------- Users (admin) ---------- */
 function usersHtml(){
-  return '<div class="panel sec"><h3>إضافة مستخدم</h3><div class="grid"><label class="f">الاسم الظاهر<input type="text" id="nuName"></label><label class="f">اسم الدخول (حروف أو أرقام بلا مسافات)<input type="text" id="nuUser" autocapitalize="none" spellcheck="false" style="direction:ltr"></label><label class="f">الدور<select id="nuRole" style="width:100%"><option value="reviewer">مقيّم (رقم سري 4 أرقام)</option><option value="admin">مدير (رقم سري 6 أرقام)</option></select></label><label class="f">الرقم السري (اتركه فارغًا ليُولَّد)<input type="text" id="nuPin" inputmode="numeric" maxlength="6" class="mono" style="direction:ltr"></label></div><div class="actions" style="margin-top:10px"><button class="btn primary" id="btnAddUser">إضافة</button></div><div id="codeBox"></div></div>'+
+  return '<div class="panel sec"><h3>إضافة مستخدم</h3><div class="grid"><label class="f">الاسم الظاهر<input type="text" id="nuName"></label><label class="f">اسم الدخول (حروف أو أرقام بلا مسافات)<input type="text" id="nuUser" autocapitalize="none" spellcheck="false" style="direction:ltr"></label><label class="f">الدور<select id="nuRole" style="width:100%"><option value="reviewer">مقيّم (رقم سري 4 أرقام)</option><option value="approver">معتمد (رقم سري 4 أرقام)</option><option value="admin">مدير (رقم سري 6 أرقام)</option></select></label><label class="f">الرقم السري (اتركه فارغًا ليُولَّد)<input type="text" id="nuPin" inputmode="numeric" maxlength="6" class="mono" style="direction:ltr"></label></div><div class="actions" style="margin-top:10px"><button class="btn primary" id="btnAddUser">إضافة</button></div><div id="codeBox"></div></div>'+
   '<h2 class="sh">المستخدمون</h2><div class="panel tw"><table><thead><tr><th>الاسم</th><th>اسم الدخول</th><th>الدور</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="uB"></tbody></table></div><p class="note">الرقم السري يظهر مرة واحدة عند إنشائه أو إعادة توليده، ولا يمكن استرجاعه لاحقًا. عند نسيانه اضغط «رقم جديد». بعد 5 محاولات خاطئة يُقفل المستخدم 15 دقيقة. تعطيل المستخدم يمنعه من الدخول فورًا دون حذف سجلاته.</p>';
 }
+function permModal_(id){ const u=(S.users||[]).find(x=>x.id===id); if(!u) return; S.permEdit={id,role:u.role,perms:Object.assign({},u.perms||{})}; permModalRender_(); }
+function permEff_(){ const E=S.permEdit; const o={}; if(E.role==='admin'){ PERM_KEYS.forEach(k=>o[k]=true); return o; } const base=ROLE_PERMS[E.role]||{}; PERM_KEYS.forEach(k=>o[k]=k in E.perms?!!E.perms[k]:!!base[k]); return o; }
+function permModalRender_(){ const E=S.permEdit; let m=$('#permModal'); if(!E){ if(m) m.remove(); return; } const u=(S.users||[]).find(x=>x.id===E.id)||{}; const eff=permEff_(), base=ROLE_PERMS[E.role]||{}, adm=E.role==='admin';
+  if(!m){ m=document.createElement('div'); m.id='permModal'; m.className='modal-bg'; m.style.cssText='position:fixed;inset:0;background:rgba(10,25,45,.45);z-index:200;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 12px'; document.body.appendChild(m); }
+  m.innerHTML='<div class="panel" role="dialog" aria-modal="true" style="max-width:720px;width:100%;padding:0;overflow:hidden"><div style="background:var(--navy);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:10px"><b style="flex:1;font-size:16px">🔐 صلاحيات: '+esc(u.name||'')+'</b><button class="btn" data-permclose="1" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.5)">✕</button></div><div style="padding:16px 18px">'+
+    '<label class="f" style="max-width:320px">الدور<select id="permRole">'+Object.entries(ROLE_NAMES).map(([k,v])=>'<option value="'+k+'"'+(k===E.role?' selected':'')+'>'+v+'</option>').join('')+'</select></label>'+
+    (adm?'<p class="note">المدير يملك كل الصلاحيات دائمًا، ولا يمكن تقييده. تعديل المستخدمين وصلاحياتهم وإعدادات الذكاء الاصطناعي والهوية للمدير فقط.</p>':'<p class="note" style="margin:6px 0 10px">العلامات الافتراضية تأتي من الدور. ما تغيّره عن الدور يظهر بخلفية ملوّنة.</p>')+
+    PERM_GROUPS.map(([g,L])=>'<div style="border:1px solid var(--line);border-radius:10px;margin:8px 0;overflow:hidden"><div style="background:var(--row-alt);padding:7px 12px;font-weight:800;color:var(--navy);font-size:13px">'+g+'</div>'+L.map(([k,l])=>{ const ch=eff[k], diff=!adm&&(k in E.perms)&&(!!E.perms[k])!==(!!base[k]);
+      return '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line);cursor:'+(adm?'default':'pointer')+(diff?';background:'+(ch?'var(--good-soft)':'var(--bad-soft)'):'')+'"><input type="checkbox" data-permk="'+k+'"'+(ch?' checked':'')+(adm?' disabled':'')+'><span style="flex:1">'+l+'</span>'+(diff?'<span class="pill '+(ch?'p-ok':'p-no')+'">'+(ch?'مضافة':'مسحوبة')+'</span>':'')+'</label>'; }).join('')+'</div>').join('')+
+    '<div style="border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin-top:8px;color:var(--muted);font-size:12.5px">👤 إضافة المستخدمين وتعديل صلاحياتهم: للمدير فقط.</div>'+
+    '<div class="actions" style="margin-top:14px"><button class="btn primary" data-permsave="1">حفظ الصلاحيات</button>'+(!adm&&Object.keys(E.perms).length?'<button class="btn" data-permreset="1">رجوع لافتراضي الدور</button>':'')+'<button class="btn" data-permclose="1">إلغاء</button></div></div></div>';
+  const rs=m.querySelector('#permRole'); if(rs) rs.onchange=()=>{ S.permEdit.role=rs.value; S.permEdit.perms={}; permModalRender_(); };
+  m.querySelectorAll('[data-permk]').forEach(i=>{ i.onchange=()=>{ const k=i.dataset.permk, base=ROLE_PERMS[S.permEdit.role]||{}; if(!!i.checked===!!base[k]) delete S.permEdit.perms[k]; else S.permEdit.perms[k]=!!i.checked; permModalRender_(); }; }); }
 function updateUsers(){
   const b=$('#uB'); if(!b) return;
   const cb=$('#codeBox');
   if(cb) cb.innerHTML=S.code?'<div class="codebox"><div>بيانات دخول <b>'+esc(S.code.name)+'</b> (تظهر الآن فقط، سلّمها له بشكل خاص):</div><div class="mono big">'+esc(S.code.username)+' / '+esc(S.code.pin)+'</div><button class="btn" id="btnCopy">نسخ</button> <button class="btn" id="btnCodeDone">تم الحفظ</button></div>':'';
-  b.innerHTML=S.users.map(u=>'<tr><td><b>'+esc(u.name)+'</b>'+(u.id===S.me.id?' <span class="pill p-na">أنت</span>':'')+'</td><td class="mono">'+esc(u.username||'—')+'</td><td>'+(u.role==='admin'?'مدير':'مقيّم')+'</td><td><span class="pill '+(u.active?'p-ok':'p-na')+'">'+(u.active?'مفعّل':'معطّل')+'</span></td><td><div class="actions"><button class="btn" data-ureset="'+esc(u.id)+'">رقم جديد</button><button class="btn" data-urole="'+esc(u.id)+'">'+(u.role==='admin'?'اجعله مقيّمًا':'اجعله مديرًا')+'</button><button class="btn '+(u.active?'bad':'')+'" data-uact="'+esc(u.id)+'">'+(u.active?'تعطيل':'تفعيل')+'</button></div></td></tr>').join('')||'<tr><td colspan="5"><div class="empty">لا مستخدمين</div></td></tr>';
+  b.innerHTML=S.users.map(u=>'<tr><td><b>'+esc(u.name)+'</b>'+(u.id===S.me.id?' <span class="pill p-na">أنت</span>':'')+'</td><td class="mono">'+esc(u.username||'—')+'</td><td>'+(ROLE_NAMES[u.role]||'مقيّم')+(u.perms&&u.role!=='admin'?' <span class="pill p-pend" title="صلاحيات معدّلة عن الدور">مخصص</span>':'')+'</td><td><span class="pill '+(u.active?'p-ok':'p-na')+'">'+(u.active?'مفعّل':'معطّل')+'</span></td><td><div class="actions"><button class="btn" data-ureset="'+esc(u.id)+'">رقم جديد</button><button class="btn primary" data-uperm="'+esc(u.id)+'">🔐 الصلاحيات</button><button class="btn '+(u.active?'bad':'')+'" data-uact="'+esc(u.id)+'">'+(u.active?'تعطيل':'تفعيل')+'</button></div></td></tr>').join('')||'<tr><td colspan="5"><div class="empty">لا مستخدمين</div></td></tr>';
 }
 async function userOp(fn){ if(S.busy) return; S.busy=true; try{ await fn(); await load(); }catch(e){ toast(e.message,true); } S.busy=false; onData(); }
 
@@ -6254,6 +6341,10 @@ document.addEventListener('click',e=>{
   if(t.id==='btnAddUser'){ const n=$('#nuName').value.trim(); if(!n){$('#nuName').focus();return;} const role=$('#nuRole').value, un=$('#nuUser').value, pin=$('#nuPin').value.trim(); return userOp(async()=>{ const r=await call('addUser',{name:n,username:un,role,pin}); S.code={name:r.name,username:r.username,pin:r.pin}; $('#nuName').value=''; $('#nuUser').value=''; $('#nuPin').value=''; }); }
   if(t.dataset.ureset){ const u=S.users.find(x=>x.id===t.dataset.ureset); return userOp(async()=>{ const r=await call('resetCode',{id:u.id}); S.code={name:r.name,username:r.username,pin:r.pin}; }); }
   if(t.dataset.uact){ const u=S.users.find(x=>x.id===t.dataset.uact); return userOp(()=>call('setUser',{id:u.id,active:!u.active})); }
+  if(t.dataset.uperm) return permModal_(t.dataset.uperm);
+  if(t.dataset.permclose){ S.permEdit=null; return permModalRender_(); }
+  if(t.dataset.permreset){ S.permEdit.perms={}; return permModalRender_(); }
+  if(t.dataset.permsave&&S.permEdit){ const E=S.permEdit; const u=(S.users||[]).find(x=>x.id===E.id); S.permEdit=null; permModalRender_(); return userOp(async()=>{ const r=await call('setUser',{id:E.id,role:E.role,perms:E.role==='admin'?{}:E.perms}); if(r.pin) S.code={name:r.name,username:r.username,pin:r.pin}; toast('✔ حُفظت صلاحيات '+(u?u.name:'')+'.'); }); }
   if(t.dataset.urole){ const u=S.users.find(x=>x.id===t.dataset.urole); return userOp(async()=>{ const r=await call('setUser',{id:u.id,role:u.role==='admin'?'reviewer':'admin'}); if(r.pin) S.code={name:r.name,username:r.username,pin:r.pin}; }); }
   if(t.id==='btnCodeDone'){ S.code=null; return updateUsers(); }
   if(t.id==='btnCopy'){ try{ navigator.clipboard.writeText(S.code.username+' / '+S.code.pin); t.textContent='تم النسخ'; }catch(e){} return; }
@@ -6266,6 +6357,12 @@ document.addEventListener('click',e=>{
   if(t.id==='btnEdNext') return edNext_();
   if(t.dataset&&t.dataset.phprof) return phProfile_(t.dataset.phprof);
   if(t.dataset&&t.dataset.supreport) return supReport_(t.dataset.supreport);
+  if(t.dataset&&t.dataset.dtab){ S.dTab=t.dataset.dtab; return dTabApply_(); }
+  if(t.dataset&&t.dataset.unkadd!==undefined){ const i=+t.dataset.unkadd; S.unkAdd=S.unkAdd===i?null:i; return updateAn(); }
+  if(t.dataset&&t.dataset.unksave!==undefined){ const nm=($('#ukName')||{}).value||''; if(!nm.trim()) return toast('اكتب الاسم.',true); if(S.busy) return; S.busy=true; t.disabled=true;
+    const R0=((impState().an||{}).R||{}).unknown||[]; const u0=R0[+t.dataset.unksave]||{}; const ph=String(($('#ukPhone')||{}).value||'').replace(/[^\d+]/g,'');
+    S.hcMan=JSON.parse(JSON.stringify((S.hc&&S.hc.manual)||[])); S.hcMan.push({name:nm.trim(),phone:ph,role:($('#ukRole')||{}).value||'pharm',group:(($('#ukGroup')||{}).value||'').trim(),wa:u0.name||nm.trim(),branch:(($('#ukBranch')||{}).value||'').trim(),sup:(($('#ukSup')||{}).value||'').trim()});
+    return hcManSave().then(()=>{ S.unkAdd=null; S.hcIdx=null; S.hcAllC=null; toast('✔ أُضيف '+nm.trim()+' لقائمة الموظفين.'); updateAn(); }).catch(e=>{ toast(e.message,true); t.disabled=false; }).then(()=>{ S.busy=false; }); }
   if(t.dataset&&t.dataset.cert) return certPng_(t.dataset.cert);
   if(t.id==='btnThAdd'){ const m=($('#thM')||{}).value, v=($('#thV')||{}).value; if(!/^\d{4}-\d{2}$/.test(m||'')||!v) return toast('اختر الشهر والموضوع.',true); const T=Object.assign({},(S.settings&&S.settings.themes)||{}); T[m]=v; return themeSave_(T); }
   if(t.dataset&&t.dataset.thdel){ const T=Object.assign({},(S.settings&&S.settings.themes)||{}); delete T[t.dataset.thdel]; return themeSave_(T); }
@@ -6417,6 +6514,7 @@ document.addEventListener('input',e=>{
   if(el.dataset.reason){ S.draft.reasons[el.dataset.reason]=el.value; refreshEditor(); return touch(); }
 });
 document.addEventListener('click',e=>{ const d=e.target.closest&&e.target.closest('[data-impdetail]'); if(!d||(e.target.closest('button,input,a')&&!e.target.closest('.lvl'))) return; impDetail(d.dataset.impdetail); });
+document.addEventListener('click',e=>{ const g=e.target.closest&&e.target.closest('tr[data-gap]'); if(g) gapCases_(g.dataset.gap); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const m=$('#impModal')||$('#anModal'); if(m) m.remove(); } });
 document.addEventListener('click',e=>{ const th=e.target.closest&&e.target.closest('th[data-impsort]'); if(!th) return; const so=impSortState(), k=th.dataset.impsort;
   if(so.k===k) so.dir=-so.dir; else { so.k=k; so.dir=(IMP_SORT[k]&&IMP_SORT[k].num)?-1:1; } updateImport(); });
