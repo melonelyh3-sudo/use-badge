@@ -2452,8 +2452,9 @@ const ROLE_NAMES={admin:'مدير',approver:'معتمد',reviewer:'مقيّم'};
 function permsOf_(u){ const o={}; if(!u) return o; if(u.role==='admin'){ PERM_KEYS.forEach(k=>o[k]=true); return o; } const base=ROLE_PERMS[u.role]||ROLE_PERMS.reviewer; PERM_KEYS.forEach(k=>{ o[k]=!!base[k]; }); Object.entries(u.perms||{}).forEach(([k,v])=>{ if(PERM_KEYS.includes(k)) o[k]=!!v; }); return o; }
 const can_=(u,k)=>!!u&&(u.role==='admin'||!!permsOf_(u)[k]);
 function needPerm_(u,k){ if(!can_(u,k)) throw err('ليس لديك صلاحية لهذه العملية.'); }
-const fullView_=u=>u.role==='admin'||can_(u,'approve.decide')||can_(u,'dash.view');
-try{ Object.assign(window,{PERM_GROUPS,PERM_KEYS,ROLE_PERMS,ROLE_NAMES}); }catch(e){}
+const MGMT_PERMS=['approve.decide','approve.change','approve.featured','cases.editAny','cases.delete','posts.edit','posts.names','posts.page','imp.assign'];
+const fullView_=u=>u.role==='admin'||can_(u,'dash.view')||MGMT_PERMS.some(k=>can_(u,k));
+try{ Object.assign(window,{PERM_GROUPS,PERM_KEYS,ROLE_PERMS,ROLE_NAMES,MGMT_PERMS}); }catch(e){}
 
 /* عمليات بدون تسجيل دخول: حالة التهيئة والإعداد الأول */
 const PUBLIC={
@@ -3044,7 +3045,7 @@ function errText(c){
 }
 async function load(){
   const d=await call('bootstrap');
-  S.me={id:d.user.id,name:d.user.name,role:d.user.role,perms:d.user.perms||{},canEdit:d.user.role==='admin'||!!(d.user.perms||{})['approve.decide'],canWrite:true};
+  S.me={id:d.user.id,name:d.user.name,role:d.user.role,perms:d.user.perms||{},canEdit:d.user.role==='admin'||MGMT_PERMS.some(k=>(d.user.perms||{})[k]),canWrite:true};
   S.badges=d.badges||[]; S.cases=new Map((d.cases||[]).map(c=>[c.id,c])); S.dec=new Map(Object.entries(d.decisions||{})); S.deleted=d.deleted||[]; S.inbox=d.inbox||[]; S.inboxKeys=d.inboxKeys||[]; S.inboxDis=d.inboxDis||[];
   S.settings=Object.assign({sep:true,reqQuote:true,reqBadge:true,brandLogo:'',brandPrimary:'#1f4e78',brandAccent:'#c9a86a'},d.settings||{}); applyBrand(); S.audit=d.audit||[]; S.users=d.users||[];
 }
